@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/prometheus/client_golang v1.17.0
-	github.com/wfusion/gofusion v0.0.0-20231103155141-f3227c02ecd1
+	github.com/wfusion/gofusion v1.0.0
 )
 
 require (

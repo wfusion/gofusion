@@ -46,7 +46,7 @@ func main() {
 ```bash
 ~ > go install github.com/wfusion/gofusion/config/common/fus@master
 ~ > fus -h
-Gofusion CLI (v0.0.4 built with go1.18.10 darwin/arm64 from f3227c02 on Sat Nov  4 00:03:57 CST 2023)
+Gofusion CLI (v0.0.4 built with go1.18.10 darwin/arm64 from v1.0.0 on Sat Nov  4 01:00:32 CST 2023)
 
 Capability:
   asynq client integrated
@@ -326,16 +326,16 @@ Use "fus [command] --help" for more information about a command.
 
 # Thanks for
 
-- github.com/go-gorm/gorm
-- github.com/hibiken/asynq
-- github.com/ThreeDotsLabs/watermill
-- github.com/hashicorp/go-metrics
-- github.com/huandu/go-clone
-- github.com/chenzhuoyu/go-inspect
-- github.com/agiledragon/gomonkey
-- github.com/fvbock/endless
-- github.com/longbridgeapp/sqlparser
-- github.com/jinzhu/configor
+- [hibiken/asynq](https://github.com/hibiken/asynq)
+- [ThreeDotsLabs/watermill](https://github.com/ThreeDotsLabs/watermill)
+- [hashicorp/go-metrics](https://github.com/hashicorp/go-metrics)
+- [huandu/go-clone](https://github.com/huandu/go-clone)
+- [chenzhuoyu/go-inspect](https://github.com/chenzhuoyu/go-inspect)
+- [agiledragon/gomonkey](https://github.com/agiledragon/gomonkey)
+- [fvbock/endless](https://github.com/fvbock/endless)
+- [longbridgeapp/sqlparser](https://github.com/longbridgeapp/sqlparser)
+- [jinzhu/configor](https://github.com/jinzhu/configor)
+- [go-gorm/postgres](https://github.com/go-gorm/postgres)
 
 # Todo List
 
