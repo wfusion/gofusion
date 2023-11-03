@@ -34,7 +34,7 @@
 
 # Quick Start
 
-> gofusion quick start
+> Gofusion quick start
 
 - Copy `test/config/configs/app.yml` to the `configs` directory in your business repository, or specify another location
   at startup with the `-configPath` parameter.

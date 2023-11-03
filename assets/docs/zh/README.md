@@ -23,9 +23,9 @@
 
 # 快速开始
 
-> gofusion quick start
+> Gofusion quick start
 
-- 拷贝 test/config/configs/app.yml 到业务仓库 configs 目录中, 或者其他位置在启动时通过 -configPath 参数指定
+- 拷贝 test/config/configs/app_zh.yml 到业务仓库 configs 目录中并重命名为 app.yml, 或者其他位置在启动时通过 -configPath 参数指定
 - 通过如下代码初始化 gofusion
 
 ```go
