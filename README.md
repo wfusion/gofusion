@@ -1,5 +1,5 @@
 - English README version: you are reading now =。= translated by openai chat gpt4
-- Chinese README version: https://github.com/wfusion/gofusion/blob/master/assets/docs/README.md
+- Chinese README version: https://github.com/wfusion/gofusion/blob/master/assets/docs/zh/README.md
 
 # Usage Limitations
 
