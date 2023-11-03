@@ -1,0 +1,310 @@
+base:
+  debug: false
+  app: gofusion
+
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_time: 24
+        rotation_count: 10
+        rotation_size: 1000
+        compress: false
+      skip_callers: [ ]
+      shorter_filepath: true
+
+  db:
+    default:
+      driver: mysql
+      db: mysql
+      host: localhost
+      port: 23306
+      user: root
+      password: ci
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: false
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+    postgres:
+      driver: postgres
+      db: postgres
+      host: localhost
+      port: 25432
+      user: postgres
+      password: ci
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 10
+      max_open_conns: 20
+      enable_logger: false
+      logger_config:
+        log_level: info
+        slow_threshold: 200ms
+
+  redis:
+    default:
+      db: 0
+      password: ci
+      cluster: false
+      endpoints:
+        - localhost:26379
+      dial_timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      min_idle_conns: 100
+      max_idle_conns: 10000
+      enable_logger: false
+      unlogable_commands: [echo,ping]
+
+  mq:
+    default:
+      topic: gofusion_default
+      type: mysql
+      producer: true
+      consumer: true
+      consumer_group: default_group
+      consumer_concurrency: 10
+      endpoint:
+        instance: default
+        instance_type: db
+      persistent: true
+      serialize_type: gob
+      compress_type: zstd
+      enable_logger: true
+      logger: github.com/wfusion/gofusion/log/customlogger.mqLogger
+      message_scheme: message
+      series_scheme: series
+      consumer_scheme: subscriber
+      consume_middlewares:
+        - type: throttle
+          throttle_count: 10
+          throttle_duration: 1s
+        - type: retry
+          retry_max_retries: 1
+          retry_initial_interval: 1s
+          retry_max_interval: 10s
+          retry_multiplier: 1.1
+          retry_max_elapsed_time: 20s
+          retry_randomization_factor: 0.1
+        - type: poison
+          poison_topic: failed
+        - type: timeout
+          timeout: 10s
+        - type: circuit_breaker
+          circuit_breaker_max_requests: 0
+          circuit_breaker_interval: 15s
+          circuit_breaker_timeout: 60s
+          circuit_breaker_trip_expr: consecutive_successes > 5
+    raw_rabbitmq:
+      topic: other_topic
+      type: rabbitmq
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 10
+      endpoint:
+        user: guest
+        password: guest
+        addresses:
+          - localhost:25672
+      persistent: true
+      serialize_type: json
+      enable_logger: true
+    raw_kafka:
+      topic: other_topic
+      type: kafka
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 2
+      endpoint:
+        version: 3.6.0
+        addresses:
+          - localhost:9092
+      persistent: true
+      serialize_type: json
+      enable_logger: true
+    raw_pulsar:
+      topic: other_topic
+      type: pulsar
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 10
+      endpoint:
+        addresses:
+          - localhost:26650
+      persistent: true
+      serialize_type: json
+      enable_logger: true
+    raw_redis:
+      topic: other_topic
+      type: redis
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 10
+      endpoint:
+        instance: default
+        instance_type: redis
+      persistent: true
+      serialize_type: gob
+      enable_logger: true
+    raw_mysql:
+      topic: other_topic
+      type: mysql
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 10
+      endpoint:
+        instance: default
+        instance_type: db
+      persistent: false
+      serialize_type: json
+      enable_logger: true
+      message_scheme: message
+      series_scheme: series
+      consumer_scheme: subscriber
+    raw_postgres:
+      topic: other_topic
+      type: postgres
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 10
+      endpoint:
+        instance: postgres
+        instance_type: db
+      persistent: false
+      serialize_type: json
+      enable_logger: true
+      message_scheme: message
+      series_scheme: series
+      consumer_scheme: subscriber
+    raw_gochannel:
+      topic: other_topic
+      type: gochannel
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 10
+      persistent: false
+      serialize_type: gob
+      enable_logger: true
+    event_rabbitmq:
+      topic: gofusion_event
+      type: rabbitmq
+      producer: true
+      consumer: true
+      consumer_group: event_group
+      consumer_concurrency: 10
+      endpoint:
+        user: guest
+        password: guest
+        addresses:
+          - localhost:25672
+      persistent: true
+      serialize_type: gob
+      enable_logger: true
+    event_kafka:
+      topic: gofusion_event
+      type: kafka
+      producer: true
+      consumer: true
+      consumer_group: event_group
+      consumer_concurrency: 2
+      endpoint:
+        version: 3.6.0
+        addresses:
+          - localhost:9092
+      persistent: true
+      serialize_type: gob
+      compress_type: zstd
+      enable_logger: true
+    event_pulsar:
+      topic: gofusion_event
+      type: pulsar
+      producer: true
+      consumer: true
+      consumer_group: event_group
+      consumer_concurrency: 10
+      endpoint:
+        addresses:
+          - localhost:26650
+      persistent: true
+      serialize_type: gob
+      compress_type: zstd
+      enable_logger: true
+    event_redis:
+      topic: gofusion_event
+      type: redis
+      producer: true
+      consumer: true
+      consumer_group: event_group
+      consumer_concurrency: 10
+      endpoint:
+        instance: default
+        instance_type: redis
+      persistent: true
+      serialize_type: gob
+      enable_logger: true
+    event_mysql:
+      topic: gofusion_event
+      type: mysql
+      producer: true
+      consumer: true
+      consumer_group: event_group
+      consumer_concurrency: 10
+      endpoint:
+        instance: default
+        instance_type: db
+      persistent: false
+      serialize_type: gob
+      enable_logger: true
+      message_scheme: message
+      series_scheme: series
+      consumer_scheme: subscriber
+    event_postgres:
+      topic: gofusion_event
+      type: postgres
+      producer: true
+      consumer: true
+      consumer_group: event_group
+      consumer_concurrency: 10
+      endpoint:
+        instance: postgres
+        instance_type: db
+      persistent: false
+      serialize_type: gob
+      enable_logger: true
+      message_scheme: message
+      series_scheme: series
+      consumer_scheme: subscriber
+    event_gochannel:
+      topic: other_topic
+      type: gochannel
+      producer: true
+      consumer: true
+      consumer_group: gofusion_consumer_group
+      consumer_concurrency: 10
+      persistent: false
+      serialize_type: gob
+      enable_logger: true

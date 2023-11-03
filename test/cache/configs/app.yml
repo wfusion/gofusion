@@ -1,0 +1,177 @@
+base:
+  debug: false
+  app: gofusion
+  http:
+    port: 9001
+    xss_white_url_list: [ "" ]
+
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_time: 24
+        rotation_count: 10
+        rotation_size: 1000
+        compress: false
+
+  redis:
+    default:
+      db: 0
+      password: ci
+      cluster: false
+      endpoints:
+        - localhost:26379
+      dial_timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      enable_logger: true
+      unlogable_commands: [echo,ping]
+      hooks:
+        - github.com/wfusion/gofusion/log/customlogger.redisLogger
+
+  cache:
+    local:
+      size: 10
+      expired: 5s
+      version: 1
+      type: local
+      local_evict_type: arc
+      log_instance: default
+    local_without_log:
+      size: 10
+      expired: 5s
+      version: 1
+      type: local
+    local_with_cb:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      callback: github.com/wfusion/gofusion/test/cache/cases.randomObjCallback
+      log_instance: default
+    local_with_serialize:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      serialize_type: json
+      log_instance: default
+    local_with_serialize_and_compress:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      serialize_type: json
+      compress: zstd
+      log_instance: default
+    local_with_zstd_compress:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      compress: zstd
+      log_instance: default
+    local_with_zlib_compress:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      compress: zlib
+      log_instance: default
+    local_with_s2_compress:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      compress: s2
+      log_instance: default
+    local_with_gzip_compress:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      compress: gzip
+      log_instance: default
+    local_with_deflate_compress:
+      size: 10000000
+      expired: 5h
+      version: 1
+      type: local
+      local_evict_type: arc
+      compress: deflate
+      log_instance: default
+    redis:
+      expired: 5s
+      version: 1
+      type: remote
+      serialize_type: gob
+      remote_type: redis
+      remote_instance: default
+      log_instance: default
+    redis_json:
+      expired: 5s
+      version: 1
+      type: remote
+      serialize_type: json
+      remote_type: redis
+      remote_instance: default
+      log_instance: default
+    redis_with_zstd_compress:
+      expired: 5h
+      version: 1
+      type: remote
+      compress: zstd
+      remote_type: redis
+      remote_instance: default
+      log_instance: default
+    redis_with_zlib_compress:
+      expired: 5h
+      version: 1
+      type: remote
+      compress: zlib
+      remote_type: redis
+      remote_instance: default
+      log_instance: default
+    redis_with_s2_compress:
+      expired: 5h
+      version: 1
+      type: remote
+      compress: s2
+      remote_type: redis
+      remote_instance: default
+      log_instance: default
+    redis_with_gzip_compress:
+      expired: 5h
+      version: 1
+      type: remote
+      compress: gzip
+      remote_type: redis
+      remote_instance: default
+      log_instance: default
+    redis_with_deflate_compress:
+      expired: 5h
+      version: 1
+      type: remote
+      compress: deflate
+      remote_type: redis
+      remote_instance: default
+      log_instance: default

@@ -1,0 +1,60 @@
+# OS
+.DS_Store
+Desktop.ini
+Thumbs.db
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.iml
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# tar file.
+*.tar.gz
+
+# Prevent accidental node_modules installed at root.
+node_modules/
+package.json
+yarn.lock
+package-json.lock
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+*.log
+coverage.xml
+junit.xml
+#coverage.html
+
+# binaries
+cmd/asynqmon/asynqmon
+dist/
+bin/
+output/
+
+# Editor configs
+.idea/
+.vscode/
+.editorconfig
+venv/
+
+
+# Go workspace
+go.work*
+*local.yml
+.mod-cache
+/vendor
+
+# Docs
+docs/themes/
+docs/public/
+docs/content/src-link
+gen/
+
+# examples
+examples/
+example/

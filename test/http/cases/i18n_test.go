@@ -1,0 +1,46 @@
+package cases
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/suite"
+	"golang.org/x/text/language"
+
+	"github.com/wfusion/gofusion/config"
+	"github.com/wfusion/gofusion/i18n"
+	"github.com/wfusion/gofusion/log"
+
+	fmkHtp "github.com/wfusion/gofusion/http"
+	testHtp "github.com/wfusion/gofusion/test/http"
+)
+
+func TestI18n(t *testing.T) {
+	testingSuite := &I18n{Test: testHtp.T}
+	testingSuite.Init(testingSuite)
+	suite.Run(t, testingSuite)
+}
+
+type I18n struct {
+	*testHtp.Test
+}
+
+func (t *I18n) BeforeTest(suiteName, testName string) {
+	t.Catch(func() {
+		log.Info(context.Background(), "right before %s %s", suiteName, testName)
+	})
+}
+
+func (t *I18n) AfterTest(suiteName, testName string) {
+	t.Catch(func() {
+		log.Info(context.Background(), "right after %s %s", suiteName, testName)
+	})
+}
+
+func (t *I18n) TestCase() {
+	t.Catch(func() {
+		config.Use(testHtp.Component).DI().MustInvoke(func(b i18n.Localizable[fmkHtp.Errcode]) {
+			b.AddMessages(fmkHtp.Errcode(1), map[language.Tag]*i18n.Message{})
+		})
+	})
+}

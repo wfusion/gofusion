@@ -1,0 +1,597 @@
+base:
+  # debug 模式, 支持开启 gorm 和 gin 的 debug 模式
+  # 注: 和 db 配置中的 log 配置冲突, 优先开启 gorm 原生 debug
+  debug: true
+
+  # 应用或系统名称, 同一运行环境不重名即可
+  app: gofusion
+
+  # 加密配置
+  crypto:
+    # 本配置文件的加密
+    config:
+      # 密码模式, 支持 ecb, cbc, cfb, ctr, ofb, gcm
+      mode: gcm
+      # 加密算法, 支持 des, 3des, aes, rc4, chacha20poly1305, xchacha20poly1305, sm4
+      algorithm: sm4
+      # 对称密钥 base64
+      key_base64: MTIzNDU2NzhhYmNkZWZnaA== # 12345678abcdefgh
+      # 是否混淆对称密钥, 开启后拿到本配置文件中的加密配置和密文也无法直接解密, 对应密文也需要使用 fus 工具进行混淆加密才可正常解析
+      confuse_key: true
+      # 密文格式, 加密后的密文若经过可打印编码则需要配置, 支持 hex, base32, base32-hex, base64, base64-url, base64-raw, base64-raw-url
+      output_algorithm: base64
+    # 自定义加密配置, 对应结构体字段中配置 tag: `encrypted:"gorm"`, 即可对配置内容进行对应解析
+    custom:
+      gorm:
+        mode: gcm
+        algorithm: sm4
+        key_base64: MTIzNDU2NzhhYmNkZWZnaA== # 12345678abcdefgh
+        confuse_key: true
+        output_algorithm: base64
+
+  # http 配置
+  http:
+    # 开启端口
+    port: 9001
+    # 开启 tls 所需证书的文件路径
+    cert: ""
+    # 开启 tls 所需证书的文件路径
+    key: ""
+    # tls, 开启后且 <next_protos> 选择 h2 则 gofusion/http 中定义的零拷贝 gin 函数会退化为内存流拷贝
+    tls: false
+    # 协议, 优先采用靠前者, 支持 h2, http/1.1
+    next_protos: [http/1.1]
+    # console 是否以彩色输出, 影响日志可读性
+    colorful_console: false
+    # 可配置 http response body: {"code": 0, "message": "ok", "data": {}} 中成功返回时 code 的值
+    success_code: 0
+    # 是否开启 pprof, 可使用 http 端口获取 golang 程序状态
+    pprof: false
+    read_timeout: 10s
+    write_timeout: 10s
+    # xss 防御中间件白名单
+    xss_white_url_list: [ "" ]
+    # asynq 监控配置
+    asynq:
+        # http 路径
+      - path: /asynq
+        # asynq 依赖的 broker 实例名称, 对应 instance_type 的配置名
+        instance: default
+        # asynq 依赖的 broker 类型
+        instance_type: redis
+        readonly: false
+        prometheus_address: ""
+
+  # 国际化配置
+  i18n:
+    # 默认语言, 支持 golang.org/x/text/language 中定义的语言
+    default_lang: zh
+
+  # 协程配置
+  goroutine_pool:
+    # 配置通过本组件中 Go, Loop, Promise, Pool 的最大协程数, 可控制业务调用中 goroutine 的总量
+    max_routine_amount: -1
+    # 优雅退出时单个 pool 最大等待时间
+    max_release_time_per_pool: 3h
+    # 主要用于调试和单测测试, 可强制 Go, Loop, Promise, Pool 同步执行
+    force_sync: false
+    # Pool 是否开启日志记录
+    enabled_logger: false
+    # 可配置自定义的实现 ants.Logger 接口的日志对象
+    # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+    # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+    logger: github.com/wfusion/gofusion/log/customlogger.routineLogger
+    # 日志配置, 对应 log 组件中的名称
+    log_instance: default
+
+  # 打点配置
+  metrics:
+    # 打点配置名称
+    prometheus:
+      # 远端服务类型, 目前仅支持 prometheus
+      type: prometheus
+      # 打点方式, 支持 push, pull
+      # 注: 使用 pull 时需要使用 metrics.HttpHandler 自行注册 http 开启接口
+      mode: push
+      # type 为 push 时有效, 推送的间隔时间, 要求 < 60s
+      interval: 15s
+      # 定义 label 常量 kv
+      labels:
+        constant_key: constant_value
+      # 远端连接配置
+      endpoint:
+        # 连接地址
+        addresses: [ localhost:29090 ]
+      # 所有打点默认添加 _service, _service_hostname, _service_ip labels
+      enable_service_label: true
+      # 自动采集上报 golang 程序数据打点, 包含:
+      # runtime_alloc_bytes
+      # runtime_sys_bytes
+      # runtime_malloc_count
+      # runtime_free_count
+      # runtime_heap_objects
+      # runtime_total_gc_pause_ns
+      # runtime_total_gc_runs
+      enable_runtime_metrics: true
+      # 自动采集上报各个组件的打点
+      enable_internal_metrics: true
+      # 日志配置, 对应 log 组件中的名称
+      log_instance: default
+      # 打点队列长度限制, 限制因为高并发打点所占用的内存大小, 默认为 16384
+      # 到达限制时默认丢弃打点, 可通过 metrics.WithTimeout hang 住保证打点, 或 metrics.Timeout 选项设置业务容忍时间
+      queue_limit: 16384
+      # 打点队列处理并发度, 限制因为高并发打点所占用的 cpu, 默认取 runtime.NumCPU()
+      queue_concurrency: 0
+
+  # 日志配置
+  log:
+    # 日志配置名称, 本例中为 default, 必须含有一个 default 日志, 其可通过 log.Info, log.Warn 直接调用时使用
+    default:
+      # 日志级别, 支持 debug, info, warn, error, panic, fatal
+      log_level: debug
+      # 配置在某个日志级别之上打印堆栈, 支持 debug, info, warn, error, panic, fatal
+      stacktrace_level: error
+      # 配置需要跳过的日志打印的文件位置, 即跳过后定位到其上层调用对应的文件位置, 支持通配符
+      skip_callers: [ ]
+      # 是否开启, 使得日志打印中文件位置的路径信息更短
+      shorter_filepath: true
+      # 是否开启 console 日志输出
+      enable_console_output: true
+      # console 输出配置
+      console_output_option:
+        # 输出格式, 支持 console, json
+        layout: console
+        # 是否以彩色输出, 影响日志可读性
+        colorful: false
+      # 是否开启 file 日志输出
+      enable_file_output: false
+      # file 输出配置
+      file_output_option:
+        # 输出格式, 支持 console, json
+        layout: json
+        # 保存路径
+        path: .
+        # 保存名称, 未配置则默认按照 <app>.log 输出, 若未配置 <app> 则按照<程序运行目录名>.log 输出, 若运行目录为 / 则 md5 哈希
+        name: gofusion.log
+        # 切割时间间隔, 填写为不带单位的数字时单位为小时
+        rotation_time: 24h
+        # 文件最大保存份数
+        rotation_count: 10
+        # 文件切割大小, 填写为不带单位的数字时单位为 mb
+        rotation_size: 1g
+        # 是否对归档日志自动进行 gzip 压缩
+        compress: false
+
+  # 关系型数据库配置
+  db:
+    # db 配置名称, 本例中为 read
+    read:
+      # 数据库类型, 默认为 mysql, 支持 mysql, postgres, sqlite, sqlserver, tidb, clickhouse
+      driver: mysql
+      # 数据库驱动方言, 可以不填充, 各个数据库类型都有默认驱动
+      # - 当 driver 为 postgres 时, 支持 opengauss
+      dialect: mysql
+      # database 或 schema 名称
+      db: mysql
+      # 数据库地址
+      host: localhost
+      # 数据库端口
+      port: 23306
+      # 用户名
+      user: root
+      # 用户名密码, 本 demo 中为 crypto.config 中配置的对应加密密文
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8" # confused
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      # 数据库连接池最大空闲连接数
+      max_idle_conns: 20
+      # 数据库连接池最大可用连接数
+      max_open_conns: 20
+      # 单连接最大存活时间, 应小于数据库 server 中的配置
+      conn_max_life_time: 30m
+      # 单连接最大空闲时间
+      conn_max_idle_time: 15m
+      # 自增 id 步长, driver 为 mysql 或 mariadb 时生效, 为 0 时则或自动获取 database 的配置(非对应表的配置)
+      # 注: 解决 github.com/go-gorm/gorm/issues/5814, 当业务定义的表结构体嵌套两层以上时会出现新建时步长对应不上的问题
+      auto_increment_increment: 0
+      # 自动分表配置
+      sharding:
+        # 表名
+        - table: ""
+          # 自定义分表表名尾缀
+          # 例如 user 表中, 配置为 az1_%02d, 则分表结果会是 user_az1_00, user_az1_01 等等
+          # 默认尾缀为 user_0, user_1, 当 <number_of_shards> > 10 则为 user_00, user_01, 最大支持到 user_9999
+          suffix: ""
+          # 分表 key, 即根据表中哪些列进行分表, 支持多列
+          columns: []
+          # 分表 key 自定义表达式, 如根据 type 和 user_id 列分表, 则可以写 type << 8 | user_id
+          # 表达式支持语法详见: github.com/PaesslerAG/gval, 数字会丢失精度, 因为会全部转换为 float64 进行计算
+          # 默认分表表达式为: 按照 <columns> 配置先后顺序以大端序拼接后进行 crc32 哈希再对 number_of_shards 求余
+          sharding_key_expr: ""
+          # 开启是否直接根据 columns 原始值进行分表, 如 user 表 az_name 列可分表为 user_az1, user_az2
+          # 注: 开启后 <number_of_shards> 不再生效
+          sharding_key_by_raw_value: false
+          # 开启 <sharding_key_by_raw_value> 后, 调用 db.Migrate 进行自动建表时, 需要指定分表有哪些 key, 如 [az1,az2,az3]
+          sharding_keys_for_migrating: []
+          # 使用默认分表表达式或自定义分表表达式时, 最大分表数量
+          # 注: 一旦配置后则不可随意修改数量, 修改后会导致无法正常读写原分表结果的数据, 若要变动分表数量需业务自行进行分表迁移
+          number_of_shards: 1
+          # 若使用主键 id 进行分表时, 需要选择主键 id 的生成算法
+          # 可配置自定义的实现 common/infra/drivers/orm/idgen.Generator 接口的生成算法对象
+          # 默认配置为基于 github.com/sony/sonyflake 的雪花算法, 无法保证绝对不碰撞, 机器码表达式为:
+          # byte(hash/fnv(host_ip+ip+pid) % 255) << 8 |  byte(ip[24:]), host_ip 默认取 host.docker.internal
+          # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+          idgen: github.com/wfusion/gofusion/common/infra/drivers/orm/idgen.NewSnowflake
+      # 是否开启日志, 可在程序运行时实时切换生效
+      enable_logger: true
+      # 日志配置, 可在程序运行中实时生效
+      # 注:
+      # 1. 和全局 debug 配置冲突, 优先开启 gorm 原生 debug
+      # 2. logger_config.logger 配置无法实时生效
+      logger_config:
+        # 日志级别, 支持 debug, info, warn, error
+        log_level: info
+        # 当日志级别低于 error 时可打印超过此耗时的 sql 日志
+        slow_threshold: 500ms
+        # 可配置自定义的实现 gorm.logger.Interface 接口的日志对象
+        # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+        # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+        logger: github.com/wfusion/gofusion/log/customlogger.gormLogger
+        # 日志配置, 对应 log 组件中的名称
+        log_instance: default
+    # db 配置名称, 本例中为 write
+    write:
+      driver: mysql
+      db: mysql
+      host: localhost
+      port: 23306
+      user: root
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8" # confuse
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+
+  # mongo 配置
+  mongo:
+    # mongo 配置名称, 本例中为 default
+    default:
+      # database 名称
+      db: admin
+      # 用于认证的 database 名称
+      auth_db: admin
+      # 用户名
+      user: mongo
+      # 用户名密码, 本 demo 中为 crypto.config 中配置的对应加密密文
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8" # confuse
+      # 集群地址
+      endpoints:
+        - localhost:27017
+      timeout: 5s
+      conn_timeout: 30s
+      socket_timeout: 5s
+      heartbeat_interval: 10s
+      max_connecting: 2
+      min_pool_size: 0
+      max_pool_size: 100
+      max_conn_idle_time: 10s
+      retry_writes: true
+      retry_reads: true
+      # 是否开启日志, 可在程序运行时实时切换生效
+      enable_logger: true
+      # 日志配置, 可在程序运行中实时生效
+      # 注: logger_config.logger 配置无法实时生效
+      logger_config:
+        # 配置需要打印的 mongo 命令
+        logable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
+        # 可配置自定义的实现 gofusion/mongo.logger 接口的日志对象
+        # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+        # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+        logger: github.com/wfusion/gofusion/log/customlogger.mongoLogger
+        # 日志配置, 对应 log 组件中的名称
+        log_instance: default
+
+  # redis 配置
+  redis:
+    # redis 配置名称, 本例中为 default
+    default:
+      # dadatabse 在 server 中的位置
+      db: 0
+      # 用户名
+      user: ""
+      # 用户名密码, 本 demo 中为 crypto.config 中配置的对应加密密文
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8" # confuse
+      # server 端是否开启 cluster 模式
+      cluster: false
+      # server 地址
+      endpoints:
+        - localhost:26379
+      dial_timeout: 5s
+      # socket reads 超时时间, 除正常 time.Duration 的配置外, 还支持 -1(阻塞), -2(不设置 deadline) 配置
+      read_timeout: 2s
+      # socket writes 超时时间, 除正常 time.Duration 的配置外, 还支持 -1(阻塞), -2(不设置 deadline) 配置
+      write_timeout: 2s
+      min_idle_conns: 0
+      max_idle_conns: 0
+      # 若配置 <= 0 的数则单连接永不过时
+      conn_max_idle_time: 30m
+      # 若配置 <= 0 的数则单连接永不过时
+      conn_max_life_time: "0"
+      max_retries: 3
+      min_retry_backoff: 8ms
+      max_retry_backoff: 512ms
+      # 连接池大小, 默认为 runtime.GOMAXPROCS() x 10
+      pool_size: 0
+      # 连接池阻塞超时时间, 默认为 <read_timeout> + 1s
+      pool_timeout: ""
+      # 是否开启日志, 可在程序运行时实时切换生效
+      enable_logger: true
+      # 无需记录日志的 redis 命令, 可在程序运行时实时切换生效
+      # 配置的 hooks 中包含 gofusion/log/customlogger.redisLogger 才能生效
+      unlogable_commands: [echo,ping]
+      # 日志配置, 对应 log 组件中的名称
+      log_instance: default
+      # 可配置自定义的实现 github.com/redis/go-redis/v9/redis.Hook 接口的对象
+      # 默认配置的对象可打印日志到 log.default 中配置的日志中
+      # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+      hooks:
+        - github.com/wfusion/gofusion/log/customlogger.redisLogger
+
+  # message queue 配置
+  mq:
+    # mq 配置名称, 本例中为 mysql
+    mysql:
+      # 消息队列 topic, 或者在消费者视角则是 consumer group
+      topic: gofusion
+      # 消息队列类型, 支持 amqp, rabbitmq, gochannel, kafka, pulsar, redis, mysql, postgres
+      type: mysql
+      # 是否开启触消息队列的生产端, 默认开启
+      producer: true
+      # 是否开启消息队列的消费端, 用于消费消息, 或可称为 worker, server
+      consumer: true
+      # 消费者组
+      consumer_group: default_group
+      # 消费者数量, 若消息队列类型支持多消费者时才能生效
+      # 配置过大对于某些消息队列没有作用
+      #  - type 为 kafka, 若分布式情况下所有 consumer 数量大于 partition 数量, 则多余 consumer 会空闲无用
+      #  - type 为 mysql, mariadb, postgres, 因实现方式是对 offset 表上事务锁, 所以分布式和多消费者无意义, 但可控制单次锁中一次性消费的消息数
+      consumer_concurrency: 10
+      # 服务端连接配置
+      endpoint:
+          # instance 类型, 支持 redis, db, 对应本配置文件中的 redis, db 模块
+          instance_type: db
+          # instance_type 对应的配置名称
+          instance: write
+          # 非 instance 类型的连接地址
+          addresses:
+            - localhost:25672
+          # 非 instance 类型的连接用户名
+          # - type 为 kafka 时对应 SASL/PLAIN username
+          # - type 为 pulsar 时对应 basic username
+          user: "rabbitmq"
+          # 非 instance 类型的连接密码或凭证
+          # - type 为 kafka 时对应 SASL/PLAIN password 或者 OAUTHBEARER 中的 token
+          # - type 为 pulsar 时对应 basic 的 username, tls, token, athenz, oauth2 的 json 序列化凭证
+          password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+          # 非 instance 类型的凭证类型
+          # - type 为 kafka 时支持 plain, scram-sha-256, scram-sha-512, oauthbearer
+          # - type 为 pulsar 时支持 basic, tls, token, athenz, oauth2, 其中除 basic 外所需参数为 json 序列化的 <password>
+          auth_type: ""
+          # 服务端版本, type 为 kafka 时生效
+          version: 3.6.0
+      # 消息是否持久化, type 为 amqp, rabbitmq, gochannel, mysql, postgres, pulsar 时生效
+      # - type 为 gochannel 时即持久化到内存中, 下一个 subscriber 订阅时能够拉到历史消息
+      # - type 为 pulsar 时, 含义不是指消息是否持久化, 而是 subscriber 的消费 offset 是否持久化, 若关闭则不会持久化消费 offset
+      persistent: true
+      # 消息序列化算法, 支持 gob, json, msgpack, cbor, 默认使用 gob
+      serialize_type: gob
+      # 消息压缩算法, 支持 zstd, zlib, s2, gzip, deflate, 当未配置序列化算法时, 默认采用 gob 算法进行序列化
+      compress_type: zstd
+      # 是否开启日志, 可在程序运行时实时切换生效
+      enable_logger: true
+      # 可配置自定义的实现 github.com/wfusion/gofusion/common/infra/watermill.LoggerAdapter 接口的日志对象
+      # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+      # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+      logger: github.com/wfusion/gofusion/log/customlogger.mqLogger
+      # 日志配置, 对应 log 组件中的名称
+      log_instance: default
+      # 消息 scheme 名称, type 为 mongo, mysql, mariadb, postgres 时生效
+      message_scheme: gofusion_message
+      # series scheme 名称, type 为 mongo 是生效
+      series_scheme: gofusion_series
+      # subscriber scheme 名称, type 为 mongo 是生效
+      consumer_scheme: gofusion_subscriber
+      # 消息消费中间件
+      consume_middlewares:
+          # type 支持 throttle, retry, instance_ack, poison, timeout, circuit_breaker
+          # 可配置自定义实现 github.com/wfusion/gofusion/common/infra/watermill/message.HandlerMiddleware 的对象
+          # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+        - type: throttle
+          # type 为 throttle 时生效, 表示 <throttle_duration> 周期内可接受消息数
+          throttle_count: 10
+          # type 为 throttle 时生效, 设置单位周期
+          throttle_duration: 1s
+          # type 为 retry 时生效, 单次消费失败最大重试次数
+          retry_max_retries: 1
+          # type 为 retry 时生效, 首次重试时间间隔
+          retry_initial_interval: 1s
+          # type 为 retry 时生效, 最大重试时间间隔
+          retry_max_interval: 10s
+          # type 为 retry 时生效, 重试时间间隔乘子, 即两次相邻重试时间间隔间的倍数
+          retry_multiplier: 1.1
+          # type 为 retry 时生效, 最大重试时间, 若配置 0 则不限制
+          retry_max_elapsed_time: 20s
+          # type 为 retry 时生效, 计算下次重试时间间隔的抖动因子, 本例中为计算出下一轮重试时间间隔后, 随机选择 [90%, 110%] * 时间间隔
+          retry_randomization_factor: 0.1
+          # type 为 poison 时生效, 处理失败的消息将会堆积在此 topic 中
+          poison_topic: "failed"
+          # type 为 timeout 时生效, 设置处理消息的超时时间
+          timeout: 10s
+          # type 为 circuit_breaker 时生效, 当熔断器处于 half-open 状态时最大可接受的请求
+          circuit_breaker_max_requests: 0
+          # type 为 circuit_breaker 时生效, 熔断后从 closed 恢复到 half-open 状态的时间间隔
+          circuit_breaker_interval: 15s
+          # type 为 circuit_breaker 时生效, 从 open 变为 half-open 状态的时间间隔
+          circuit_breaker_timeout: 60s
+          # type 为 circuit_breaker 时生效, 熔断器恢复为 open 状态的表达式, 默认为 consecutive_successes > 5
+          # 支持参数 requests, total_successes, total_failures, consecutive_successes, consecutive_failures
+          circuit_breaker_trip_expr: consecutive_successes > 5
+
+  # cache 配置
+  cache:
+    # cache 配置名称, 本例中为 local
+    local:
+      # 缓存池大小, type 为 local 时生效
+      size: 10
+      # 缓存对象超时时间, 可在程序运行时实时切换生效
+      expired: 5s
+      # 缓存对象版本, 可在程序运行时实时切换生效, 如需刷新整个缓存时可修改版本号来完成
+      version: 1
+      # 缓存类型, 支持 local(近端缓存), remote(远端缓存)
+      type: local
+      # 逐出算法, type 为 local 时生效, 支持 simple, lru, lfu, arc
+      local_evict_type: arc
+      # 远端缓存类型, type 为 remote 时生效, 支持 redis
+      remote_type: ""
+      # 压缩算法, 可在程序运行时实时切换生效, 支持 zstd, zlib, s2, gzip, deflate, 当未配置序列化算法时, 默认采用 gob 算法进行序列化
+      compress: ""
+      # 序列化算法, 可在程序运行时实时切换生效, 支持 gob, json, msgpack, cbor
+      serialize_type: ""
+      # 日志配置, 对应 log 组件中的名称, 可在程序运行时实时切换生效
+      log_instance: default
+      # 缓存未命中时的回调函数, 可在程序运行时实时切换生效
+      # 无需配置也可以在业务中调用 Get, GetAll 时设置回调函数(优先级高于本配置), 若 Get 和 GetAll 时未传入回调函数则会回调本配置
+      # 可配置自定义的实现 gofusion/cache.callback 的对象
+      # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+      callback: ""
+
+  # 分布式锁配置
+  lock:
+    # lock 配置名称, 本例中为 default
+    default:
+      # 支持 redis_lua, redis_nx, mysql, mariadb
+      type: redis_lua
+      # 对应 redis 或 db 组件中的配置
+      instance: default
+
+  # 分布式异步任务配置
+  async:
+    # async 配置名称, 本例中为 default
+    default:
+      # 支持 asynq (基于 redis)
+      type: asynq
+      # 对应组件的实例
+      # - type 为 asynq 时, 则对应 redis 组件配置的名称
+      instance: default
+      # 实例类型, 支持 redis
+      instance_type: redis
+      # 是否开启触发异步任务的生产端, 默认开启
+      producer: true
+      # 是否开启异步任务的消费端, 用于执行异步任务, 或可称为 worker, server
+      consumer: true
+      # worker 数量, 多个定时任务时影响执行效率, 默认取 runtime.NumCPU()
+      consumer_concurrency: 0
+      # 数据序列化算法, 支持 gob, json, msgpack, cbor, 默认使用 gob
+      message_serialize_type: gob
+      # 数据压缩算法, 支持 zstd, zlib, s2, gzip, deflate, 当未配置序列化算法时, 默认采用 gob 算法进行序列化
+      message_compress_type: zstd
+      # 队列配置, 若未配置时默认为单个 queue, queue 名称为 <app>:async
+      queues:
+        # 队列名称, 默认为 <app>:async, 本例中为 gofusion:async
+        - name: ""
+          # 队列优先级, 3 表示单位时间执行其任务的量大概是 30%
+          level: 3
+      # 是否开启严格优先级模式, 开启后高优先级任务执行完后才会执行低优先级的任务
+      strict_priority: false
+      # 日志等级, 支持 debug, info, warn, error, fatal
+      log_level: info
+      # 是否开启日志, 可在程序运行时实时切换生效
+      enable_logger: true
+      # 日志对象, 可配置自定义的实现接口的对象
+      # - type 为 asynq 时接口为: gofusion/common/infra/asynq.Logger
+      # 默认配置的对象可打印日志到 log.default 中配置的日志中
+      # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+      logger: github.com/wfusion/gofusion/log/customlogger.asyncLogger
+      # 日志配置, 对应 log 组件中的名称
+      log_instance: default
+
+  # 分布式定时任务配置
+  cron:
+    # cron 配置名称, 本例中为 default
+    default:
+      # 支持 asynq (基于 redis)
+      type: asynq
+      # 对应组件的实例
+      # - type 为 asynq 时, 则对应 redis 组件配置的名称
+      instance: default
+      # 实例类型, 支持 redis
+      instance_type: redis
+      # 分布式锁实例名称, 防止同一时刻触发多个定时任务执行
+      # 锁的 key 为 cron_<task.name>
+      # - type 为 asynq 时不配置此项, 则锁逻辑通过 asynq Unique 选项实现
+      lock_instance: "default"
+      # 是否开启触发定时任务的 trigger 端, 或可称为 producer
+      trigger: true
+      # 是否开启执行定时任务的 server 端, 或可称为 worker, consumer
+      server: true
+      # worker 数量, 多个定时任务时影响执行效率
+      # 默认取 runtime.NumCPU()
+      server_concurrency: 0
+      # 时区配置, 默认为 Asia/Shanghai
+      timezone: "Asia/Shanghai"
+      # 任务队列名称, 默认为 <app>:cron, 本例中为 gofusion:cron
+      queue: ""
+      # 日志等级, 支持 debug, info, warn, error, fatal
+      log_level: info
+      # 是否开启日志, 可在程序运行时实时切换生效
+      enable_logger: true
+      # 日志对象, 可配置自定义的实现接口的对象
+      # - type 为 asynq 时接口为: gofusion/common/infra/asynq.Logger
+      # 默认配置的对象可打印日志到 log.default 中配置的日志中
+      # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+      logger: github.com/wfusion/gofusion/log/customlogger.cronLogger
+      # 日志配置, 对应 log 组件中的名称
+      log_instance: default
+      # 定时任务实时生成器, 当开启 trigger 时生效, 可在本配置文件定义的 tasks 外追在业务上追加定时任务执行
+      # 可配置自定义的实现接口的对象, 当开启 trigger 时生效
+      # - type 为 asynq 时接口为: gofusion/common/infra/asynq.PeriodicTaskConfigProvider
+      task_loader: ""
+      # 刷新定时任务时间间隔, 即每个周期重新注册一次定时任务
+      refresh_tasks_interval: 3m
+      # 任务配置, 可在程序运行时实时切换生效
+      tasks:
+        # 任务名, 会被格式化为 <app>:cron:<name>, 本例中为 gofusion:cron:test, 业务注册中无需关心直接使用 test 注册 Handler 即可
+        test:
+          # crontab 表达式
+          crontab: "@every 1s"
+          # 定时任务执行函数, 可不配置, 业务中可通过调用 Handle 来注册且支持的函数签名更多
+          # 可配置实现 gofusion/cron.routerHandleFunc 的函数
+          # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+          callback: ""
+          # json 格式 payload, 当使用 Handle 注册时, 可自动反序列化出 func(context.Context, arg *JsonSerializable) 中的 arg 对象
+          payload: ""
+          # 定时任务执行出错时, 对应任务的最大重试次数
+          retry: 0
+          # 定时任务执行超时时间, time.Duration 格式
+          # 默认超时时间为单个定时任务触发的周期
+          timeout: ""
+          # 定时任务死期, 格式: 2006-01-02 15:04:05
+          deadline: ""
+
+# 下面是单测中模拟的业务配置, 和 gofusion 自身的配置无关, 业务可完全自定义
+
+InstanceSync:
+  Enable: true
+  Crontab: "0 0 1 * * *"
+
+Forecast:
+  Enable: true
+  Crontab: "0 0 4 * * *"
+  History: 3
+  Future: 1

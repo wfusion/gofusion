@@ -1,0 +1,40 @@
+base:
+  debug: false
+  app: gofusion
+  http:
+    port: 9001
+    xss_white_url_list: [ "" ]
+
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_time: 24
+        rotation_count: 10
+        rotation_size: 1000
+        compress: false
+
+  metrics:
+    prometheus_push:
+      type: prometheus
+      mode: push
+      interval: 1s
+      labels:
+        key1: value1
+      endpoint:
+        addresses: [ localhost:29091 ]
+      enable_service_label: true
+      enable_runtime_metrics: true
+      log_instance: default

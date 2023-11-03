@@ -1,0 +1,140 @@
+base:
+  debug: false
+  app: gofusion
+  goroutine_pool:
+    max_routine_amount: -1
+
+  http:
+    port: 8080
+    cert: ""
+    key: ""
+    tls: false
+    next_protos: [http/1.1]
+    colorful_console: false
+    success_code: 0
+    pprof: false
+    read_timeout: 10s
+    write_timeout: 10s
+    xss_white_url_list: [ "" ]
+    asynq:
+      - path: /asynq
+        instance: default
+        instance_type: redis
+        prometheus_address: ""
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_time: 24
+        rotation_count: 10
+        rotation_size: 1000
+        compress: false
+
+  db:
+    default:
+      driver: mysql
+      db: mysql
+      host: localhost
+      port: 23306
+      user: root
+      password: ci
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+
+  redis:
+    default:
+      db: 0
+      password: ci
+      cluster: false
+      endpoints:
+        - localhost:26379
+      dial_timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      min_idle_conns: 100
+      max_idle_conns: 10000
+      enable_logger: false
+      unlogable_commands: [echo,ping]
+
+  lock:
+    redis_lua:
+      type: redis_lua
+      instance: default
+    redis_nx:
+      type: redis_nx
+      instance: default
+    mysql:
+      type: mysql
+      instance: default
+
+  cron:
+    default:
+      type: asynq
+      instance: default
+      instance_type: redis
+      queue: gofusion:cron:default
+      server: true
+      trigger: true
+      tasks:
+        test:
+          crontab: "@every 1s"
+    default_dup:
+      type: asynq
+      instance: default
+      instance_type: redis
+      queue: gofusion:cron:default
+      server: true
+      trigger: true
+      tasks:
+        test:
+          crontab: "@every 1s"
+    with_lock:
+      type: asynq
+      instance: default
+      instance_type: redis
+      lock_instance: redis_lua
+      queue: gofusion:cron:with_lock
+      server: true
+      trigger: true
+      tasks:
+        test:
+          crontab: "@every 1s"
+        with_callback:
+          crontab: "@every 1s"
+          callback: github.com/wfusion/gofusion/test/cron/cases.handleWithCallback
+        with_args:
+          crontab: "@every 1s"
+          payload: '{"msg": "ok"}'
+    with_lock_dup:
+      type: asynq
+      instance: default
+      instance_type: redis
+      lock_instance: redis_lua
+      queue: gofusion:cron:with_lock
+      server: true
+      trigger: true
+      tasks:
+        test:
+          crontab: "@every 1s"
+        with_callback:
+          crontab: "@every 1s"
+          callback: github.com/wfusion/gofusion/test/cron/cases.handleWithCallback
+        with_args:
+          crontab: "@every 1s"
+          payload: '{"msg": "ok"}'

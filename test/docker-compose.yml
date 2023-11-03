@@ -1,0 +1,106 @@
+version: "2"
+
+services:
+  kafka:
+    image: docker.io/bitnami/kafka:3.6
+    container_name: kafka
+    networks: [gofusion]
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+  pulsar:
+    image: apachepulsar/pulsar:3.1.0
+    container_name: pulsar
+    networks: [gofusion]
+    ports:
+      - "26650:6650"
+      - "28080:8080"
+    command: "bin/pulsar standalone"
+  rabbitmq:
+    image: 'rabbitmq:3.12.6-management-alpine'
+    container_name: rabbitmq
+    networks: [gofusion]
+    ports:
+      - "15672:15672"
+      - "25672:5672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=root
+      - RABBITMQ_DEFAULT_PASS=ci
+  redis:
+    image: redis:7.2.2-alpine
+    container_name: redis
+    networks: [gofusion]
+    ports:
+      - "26379:6379"
+    command: --requirepass "ci"
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    networks: [gofusion]
+    environment:
+      - MYSQL_ROOT_PASSWORD=ci
+    ports:
+      - "23306:3306"
+  postgres:
+    image: postgres:16.0-alpine3.18
+    container_name: postgres
+    networks: [gofusion]
+    ports:
+      - "25432:5432"
+    environment:
+      - POSTGRES_PASSWORD=ci
+  opengauss:
+    image: enmotech/opengauss:3.1.0
+    container_name: opengauss
+    networks: [gofusion]
+    privileged: true
+    environment:
+      - GS_PASSWORD=openGauss@123
+    ports:
+      - "25433:5432"
+  sqlserver:
+    image: mcr.microsoft.com/azure-sql-edge
+    container_name: sqlserver
+    networks: [gofusion]
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=MyPass@word
+      - MSSQL_USER=SA
+    ports:
+      - "21433:1433"
+  mongo:
+    image: mongo:4.2
+    container_name: mongo
+    networks: [gofusion]
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=ci
+    privileged: true
+  prometheus:
+    image: prom/prometheus:v2.47.2
+    container_name: prometheus
+    networks: [gofusion]
+    volumes:
+      - "./metrics/configs/prometheus.yml:/etc/prometheus/prometheus.yml"
+    ports:
+      - "29090:9090"
+  prometheus_push:
+    image: prom/pushgateway:v1.6.2
+    container_name: prometheus_push
+    networks: [ gofusion ]
+    ports:
+      - "29091:9091"
+
+networks:
+  gofusion:

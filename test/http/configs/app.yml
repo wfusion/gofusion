@@ -1,0 +1,29 @@
+base:
+  debug: true
+  app: gofusion
+  http:
+    port: 9001
+    pprof: false
+    success_code: 200
+    xss_white_url_list: [ "" ]
+
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_time: 24
+        rotation_count: 10
+        rotation_size: 1000
+        compress: false

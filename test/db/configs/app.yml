@@ -1,0 +1,283 @@
+base:
+  debug: false
+  app: gofusion
+  http:
+    port: 9001
+    xss_white_url_list: [ "" ]
+
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_time: 24
+        rotation_count: 10
+        rotation_size: 1000
+        compress: false
+
+  db:
+    read:
+      driver: mysql
+      db: mysql
+      host: localhost
+      port: 23306
+      user: root
+      password: ci
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+      sharding:
+      - table: model_with_sharding
+        suffix:
+        columns: [az_name]
+        number_of_shards: 3
+        sharding_key_expr:
+      - table: model_with_sharding_extend
+        suffix:
+        columns: [az_name]
+        number_of_shards: 3
+        sharding_key_expr:
+      - table: model_with_sharding_embed
+        suffix:
+        columns: [az_name]
+        number_of_shards: 3
+        sharding_key_expr:
+      - table: model_with_sharding_ptr
+        suffix: age%02d
+        columns: [id, age]
+        number_of_shards: 16
+        sharding_key_expr: ((id & 255) << 8) | age
+      - table: model_with_sharding_by_raw_value
+        suffix:
+        columns: [az_name]
+        sharding_key_by_raw_value: true
+        sharding_keys_for_migrating: ["az1", "az2", "az3", "az4"]
+
+    write:
+      driver: mysql
+      db: mysql
+      host: localhost
+      port: 23306
+      user: root
+      password: ci
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+      sharding:
+      - table: model_with_sharding
+        suffix:
+        columns: [az_name]
+        number_of_shards: 3
+        sharding_key_expr:
+      - table: model_with_sharding_extend
+        suffix:
+        columns: [az_name]
+        number_of_shards: 3
+        sharding_key_expr:
+      - table: model_with_sharding_embed
+        suffix:
+        columns: [az_name]
+        number_of_shards: 3
+        sharding_key_expr:
+      - table: model_with_sharding_ptr
+        suffix: age%02d
+        columns: [id, age]
+        number_of_shards: 16
+        sharding_key_expr: ((id & 255) << 8) | age
+      - table: model_with_sharding_by_raw_value
+        suffix:
+        columns: [az_name]
+        sharding_key_by_raw_value: true
+        sharding_keys_for_migrating: ["az1", "az2", "az3", "az4"]
+
+    postgres:
+      driver: postgres
+      db: postgres
+      host: localhost
+      port: 25432
+      user: postgres
+      password: ci
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+      sharding:
+        - table: model_with_sharding
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_extend
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_embed
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_ptr
+          suffix: age%02d
+          columns: [ id, age ]
+          number_of_shards: 16
+          sharding_key_expr: ((id & 255) << 8) | age
+        - table: model_with_sharding_by_raw_value
+          suffix:
+          columns: [ az_name ]
+          sharding_key_by_raw_value: true
+          sharding_keys_for_migrating: [ "az1", "az2", "az3", "az4" ]
+
+    opengauss:
+      driver: postgres
+      dialect: opengauss
+      db: postgres
+      host: localhost
+      port: 25433
+      user: postgres
+      password: openGauss@123
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 2
+      max_open_conns: 2
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+      sharding:
+        - table: model_with_sharding
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_extend
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_embed
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_ptr
+          suffix: age%02d
+          columns: [ id, age ]
+          number_of_shards: 16
+          sharding_key_expr: ((id & 255) << 8) | age
+        - table: model_with_sharding_by_raw_value
+          suffix:
+          columns: [ az_name ]
+          sharding_key_by_raw_value: true
+          sharding_keys_for_migrating: [ "az1", "az2", "az3", "az4" ]
+
+    sqlserver:
+      driver: sqlserver
+      db: master
+      host: localhost
+      port: 21433
+      user: SA
+      password: MyPass@word
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+      sharding:
+        - table: model_with_sharding
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_extend
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_embed
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_ptr
+          suffix: age%02d
+          columns: [ id, age ]
+          number_of_shards: 16
+          sharding_key_expr: ((id & 255) << 8) | age
+        - table: model_with_sharding_by_raw_value
+          suffix:
+          columns: [ az_name ]
+          sharding_key_by_raw_value: true
+          sharding_keys_for_migrating: [ "az1", "az2", "az3", "az4" ]
+
+    sqlite:
+      driver: sqlite
+      db: ./configs/sqlite.db
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+      sharding:
+        - table: model_with_sharding
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_extend
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_embed
+          suffix:
+          columns: [ az_name ]
+          number_of_shards: 3
+          sharding_key_expr:
+        - table: model_with_sharding_ptr
+          suffix: age%02d
+          columns: [ id, age ]
+          number_of_shards: 16
+          sharding_key_expr: ((id & 255) << 8) | age
+        - table: model_with_sharding_by_raw_value
+          suffix:
+          columns: [ az_name ]
+          sharding_key_by_raw_value: true
+          sharding_keys_for_migrating: [ "az1", "az2", "az3", "az4" ]

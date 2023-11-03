@@ -1,0 +1,37 @@
+base:
+  debug: false
+  app: gofusion
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_time: 24
+        rotation_count: 10
+        rotation_size: 1000
+        compress: false
+
+  redis:
+    default:
+      db: 0
+      password: ci
+      cluster: false
+      endpoints:
+        - localhost:26379
+      dial_timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      min_idle_conns: 100
+      max_idle_conns: 10000
+      enable_logger: false
+      unlogable_commands: [echo,ping]
