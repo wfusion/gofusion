@@ -99,7 +99,7 @@ Use "fus [command] --help" for more information about a command.
 
 > Briefly describing gofusion capabilities
 
-## config
+## Config
 
 > Configuration Component, primarily provides gofusion initialization, configuration parsing, and graceful exit
 > functionality for various components
@@ -121,7 +121,7 @@ Use "fus [command] --help" for more information about a command.
 - Supports encrypting passwords for db, mongo, redis through fus, and loading corresponding configurations from the
   configuration file in ciphertext.
 
-## db
+## DB
 
 > Database Component, provides relational database encapsulation features, some types are still under development
 > testing...
@@ -190,7 +190,7 @@ mysql, postgres, sqlserver all passed tests.
 - Supports defining variables.
 - Supports duplicate key detection, i.e., startup will fail if error code definitions are duplicated.
 
-## context
+## Context
 
 > Context component, provides field passing functionality based on context
 
@@ -200,7 +200,7 @@ mysql, postgres, sqlserver all passed tests.
 - In db component, supports gorm transaction propagation.
 - In log component, supports automatic parsing and printing of user id, trace id information carried by context.
 
-## lock
+## Lock
 
 > Distributed Lock component, provides distributed lock functionality
 
