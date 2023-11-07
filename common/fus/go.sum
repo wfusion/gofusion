@@ -425,6 +425,8 @@ github.com/ugorji/go/codec v1.2.11 h1:BMaWp1Bb6fHwEtbplGBGJ498wD+LKlNSl25MjdZY4d
 github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 github.com/wfusion/gofusion v1.0.3 h1:/a5gXa2GrTyp2KJGgkYDcODFNQOiKjd24yrGlXp0Er4=
 github.com/wfusion/gofusion v1.0.3/go.mod h1:qXiZkZOoAPsaLHCPE0Q7PnHNpiiibWyDebdCcbJ8Rro=
+github.com/wfusion/gofusion v1.0.4 h1:J9YQlh5UqQlsngd/BJPIUl+mBNDdDa1SqYqxlKu4rsY=
+github.com/wfusion/gofusion v1.0.4/go.mod h1:qXiZkZOoAPsaLHCPE0Q7PnHNpiiibWyDebdCcbJ8Rro=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
