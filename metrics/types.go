@@ -59,7 +59,7 @@ type Conf struct {
 	QueueLimit            int               `yaml:"queue_limit" json:"queue_limit" toml:"queue_limit" default:"16384"`
 	QueueConcurrency      int               `yaml:"queue_concurrency" json:"queue_concurrency" toml:"queue_concurrency"`
 	Logger                string            `yaml:"logger" json:"logger" toml:"logger" default:"github.com/wfusion/gofusion/log/customlogger.metricsLogger"`
-	LogInstance           string            `yaml:"log_instance" json:"log_instance" toml:"log_instance"`
+	LogInstance           string            `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
 	EnableLogger          bool              `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger" default:"false"`
 }
 
