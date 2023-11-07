@@ -30,8 +30,8 @@ base:
     read:
       driver: mysql
       db: mysql
-      host: localhost
-      port: 23306
+      host: mysql
+      port: 3306
       user: root
       password: ci
       timeout: 5s
@@ -73,8 +73,8 @@ base:
     write:
       driver: mysql
       db: mysql
-      host: localhost
-      port: 23306
+      host: mysql
+      port: 3306
       user: root
       password: ci
       timeout: 5s
@@ -116,8 +116,8 @@ base:
     postgres:
       driver: postgres
       db: postgres
-      host: localhost
-      port: 25432
+      host: postgres
+      port: 5432
       user: postgres
       password: ci
       timeout: 5s
@@ -160,9 +160,9 @@ base:
       driver: postgres
       dialect: opengauss
       db: postgres
-      host: localhost
-      port: 25433
-      user: postgres
+      host: opengauss
+      port: 5433
+      user: gaussdb
       password: openGauss@123
       timeout: 5s
       read_timeout: 2s
@@ -203,8 +203,8 @@ base:
     sqlserver:
       driver: sqlserver
       db: master
-      host: localhost
-      port: 21433
+      host: sqlserver
+      port: 1433
       user: SA
       password: MyPass@word
       timeout: 5s

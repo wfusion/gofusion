@@ -11,3 +11,9 @@ func WithMonitor(monitor *event.CommandMonitor) utils.OptionFunc[newOption] {
 		o.monitor = monitor
 	}
 }
+
+func WithPoolMonitor(monitor *event.PoolMonitor) utils.OptionFunc[newOption] {
+	return func(o *newOption) {
+		o.poolMonitor = monitor
+	}
+}

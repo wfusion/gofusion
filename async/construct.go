@@ -43,13 +43,12 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 				} else {
 					log.Printf("%v [Gofusion] %s %s %s exit failed: %s", pid, app, config.ComponentAsync, name, err)
 				}
+				delete(consumers[opt.AppName], name)
 			}
-			delete(consumers, opt.AppName)
 		}
 
 		if producers != nil {
 			producers[opt.AppName] = make(map[string]Producable, len(producers))
-			delete(producers, opt.AppName)
 		}
 	}
 }

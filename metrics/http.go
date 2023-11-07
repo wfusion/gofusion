@@ -17,12 +17,12 @@ func HttpHandler(path, name string, opts ...utils.OptionExtender) http.Handler {
 	rwlock.RLock()
 	defer rwlock.RUnlock()
 
-	if instances == nil || instances[opt.appName] == nil || instances[opt.appName][name] == nil {
+	if appInstances == nil || appInstances[opt.appName] == nil || appInstances[opt.appName][name] == nil {
 		panic(errors.Errorf("metrics instance not found: %s %s", opt.appName, name))
 	}
 
 	// cfg := cfgsMap[opt.appName][name]
-	m := utils.MapValues(instances[opt.appName][name])[0]
+	m := utils.MapValues(appInstances[opt.appName][name])[0]
 	switch sink := m.getProxy().(type) {
 	case *prometheus.PrometheusSink:
 		gatherer, ok := sink.Registry.(proDrv.Gatherer)

@@ -10,44 +10,38 @@ import (
 	"go.uber.org/atomic"
 
 	"github.com/wfusion/gofusion/common/env"
+	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/test"
 )
 
 var (
-	T         = &Test{Suite: test.S}
-	Component = "config"
+	component = "config"
 )
 
 type Test struct {
-	*test.Suite
+	test.Suite
 
 	once  sync.Once
 	exits []func()
 
+	testName   string
 	testsLefts atomic.Int64
 }
 
 func (t *Test) SetupTest() {
 	t.Catch(func() {
-		log.Info(context.Background(), fmt.Sprintf("------------ %s test case begin ------------", Component))
+		log.Info(context.Background(), fmt.Sprintf("------------ %s test case begin ------------", component))
 
-		files := []string{
-			"app.local.yml",
-			"app.yml",
-			"app.json",
-			"app.toml",
-		}
 		t.once.Do(func() {
-			// t.exits = append(t.exits, t.Suite.Copy(files, 1))
-			t.Cleanup(t.Suite.Copy(files, 1))
+			t.exits = append(t.exits, t.Suite.Copy(t.AllConfigFiles(), t.testName, 1))
 		})
 	})
 }
 
 func (t *Test) TearDownTest() {
 	t.Catch(func() {
-		log.Info(context.Background(), fmt.Sprintf("------------ %s test case end ------------", Component))
+		log.Info(context.Background(), fmt.Sprintf("------------ %s test case end ------------", component))
 		if t.testsLefts.Add(-1) == 0 {
 			for i := len(t.exits) - 1; i >= 0; i-- {
 				t.exits[i]()
@@ -57,11 +51,20 @@ func (t *Test) TearDownTest() {
 }
 
 func (t *Test) ConfigFiles() []string {
-	files := []string{"config.app.local.yml", "config.app.yml"}
+	files := []string{
+		"app.local.yml",
+		"app.yml",
+		"app.json",
+		"app.toml",
+	}
 	for i := 0; i < len(files); i++ {
-		files[i] = env.WorkDir + "/configs/" + files[i]
+		files[i] = env.WorkDir + "/configs/" + t.AppName() + "." + files[i]
 	}
 	return files
+}
+
+func (t *Test) AppName() string {
+	return fmt.Sprintf("%s.%s", component, t.testName)
 }
 
 func (t *Test) Init(testingSuite suite.TestingSuite) {
@@ -77,5 +80,6 @@ func (t *Test) Init(testingSuite suite.TestingSuite) {
 		}
 		numTestLeft++
 	}
+	t.testName = utils.IndirectType(methodFinder).Name()
 	t.testsLefts.Add(numTestLeft)
 }

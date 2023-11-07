@@ -14,7 +14,7 @@ import (
 )
 
 func TestModel(t *testing.T) {
-	testingSuite := &Model{Test: testDB.T}
+	testingSuite := &Model{Test: new(testDB.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -62,7 +62,7 @@ func (t *Model) testDefault(read, write string) {
 func (t *Model) testDataModel(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component)).WithContext(ctx)
+		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
 
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithBusiness)))
@@ -99,7 +99,7 @@ func (t *Model) testDataModel(read, write string) {
 func (t *Model) testJoins(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component)).WithContext(ctx)
+		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
 
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithDataExtend)))
@@ -116,7 +116,7 @@ func (t *Model) testJoins(read, write string) {
 		mwdtTableName := mwdt.TableName()
 
 		var mwdList []*modelWithData
-		joins := modelWithDataDAL(read, write).
+		joins := modelWithDataDAL(read, write, t.AppName()).
 			ReadDB(ctx).
 			Joins(fmt.Sprintf("left join %s on %s.model_id = %s.id",
 				mwdtTableName, mwdtTableName, mwdTableName))
@@ -131,7 +131,7 @@ func (t *Model) testJoins(read, write string) {
 func (t *Model) testSoftDelete(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component)).WithContext(ctx)
+		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSoftDeleted)))
 		defer func() {
 			t.NoError(orm.Migrator().DropTable(new(modelWithSoftDeleted)))
@@ -161,7 +161,7 @@ func (t *Model) testSoftDelete(read, write string) {
 func (t *Model) testBusinessSoftDelete(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component)).WithContext(ctx)
+		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
 		t.NoError(orm.Migrator().AutoMigrate(new(modelBizWithSoftDeleted)))
 		defer func() {
 			t.NoError(orm.Migrator().DropTable(new(modelBizWithSoftDeleted)))
@@ -190,12 +190,12 @@ func (t *Model) testBusinessSoftDelete(read, write string) {
 func (t *Model) testSoftDeleteUnscoped(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component)).WithContext(ctx)
+		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSoftDeleted)))
 		defer func() {
 			t.NoError(orm.Migrator().DropTable(new(modelWithSoftDeleted)))
 		}()
-		dal := db.NewDAL[modelWithSoftDeleted, []*modelWithSoftDeleted](read, write, db.AppName(testDB.Component))
+		dal := db.NewDAL[modelWithSoftDeleted, []*modelWithSoftDeleted](read, write, db.AppName(t.AppName()))
 
 		mwb := &modelWithSoftDeleted{Name: "test"}
 		t.NoError(dal.InsertOne(ctx, mwb))

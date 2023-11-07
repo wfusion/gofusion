@@ -111,6 +111,9 @@ func (d *defaultDialect) New(ctx context.Context, option Option, opts ...utils.O
 	if newOpt.monitor != nil {
 		opt = opt.SetMonitor(newOpt.monitor)
 	}
+	if newOpt.poolMonitor != nil {
+		opt = opt.SetPoolMonitor(newOpt.poolMonitor)
+	}
 
 	mgoCli, err := mongo.Connect(ctx, opt)
 	if err != nil {

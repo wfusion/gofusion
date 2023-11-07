@@ -19,7 +19,7 @@ import (
 )
 
 func TestGroup(t *testing.T) {
-	testingSuite := &Group{Test: testHtp.T}
+	testingSuite := &Group{Test: new(testHtp.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -80,11 +80,11 @@ func (t *Group) TestGroupDispatch() {
 		req.Header.Set("Content-Type", "application/json")
 		t.Require().NoError(err)
 
-		groupRouter := fmkHtp.Use(fmkHtp.AppName(testHtp.Component)).Group(group)
+		groupRouter := fmkHtp.Use(fmkHtp.AppName(t.AppName())).Group(group)
 		groupRouter.POST(path, hd)
 
 		// When
-		fmkHtp.Use(fmkHtp.AppName(testHtp.Component)).ServeHTTP(w, req)
+		fmkHtp.Use(fmkHtp.AppName(t.AppName())).ServeHTTP(w, req)
 
 		// Then
 		t.Equal(http.StatusOK, w.Code)

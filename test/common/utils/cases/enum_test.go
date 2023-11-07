@@ -13,7 +13,8 @@ import (
 )
 
 func TestEnum(t *testing.T) {
-	testingSuite := &Enum{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Enum{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

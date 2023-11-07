@@ -15,7 +15,7 @@ import (
 )
 
 func TestTableSharding(t *testing.T) {
-	testingSuite := &TableSharding{Test: testDB.T}
+	testingSuite := &TableSharding{Test: new(testDB.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -71,7 +71,7 @@ func (t *TableSharding) testDefault(read, write string) {
 func (t *TableSharding) testMigrate(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
 
@@ -86,7 +86,7 @@ func (t *TableSharding) testMigrate(read, write string) {
 func (t *TableSharding) testInsert(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
@@ -115,7 +115,7 @@ func (t *TableSharding) testInsert(read, write string) {
 func (t *TableSharding) testInsertNested(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
@@ -155,7 +155,7 @@ func (t *TableSharding) testInsertNested(read, write string) {
 func (t *TableSharding) testBatchInsert(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
@@ -206,7 +206,7 @@ func (t *TableSharding) testBatchInsert(read, write string) {
 func (t *TableSharding) testBatchInInsert(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
@@ -258,7 +258,7 @@ func (t *TableSharding) testBatchInInsert(read, write string) {
 func (t *TableSharding) testQuery(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
@@ -317,7 +317,7 @@ func (t *TableSharding) testQuery(read, write string) {
 func (t *TableSharding) testQueryNested(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
@@ -365,7 +365,7 @@ func (t *TableSharding) testQueryNested(read, write string) {
 func (t *TableSharding) testDelete(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
@@ -397,7 +397,7 @@ func (t *TableSharding) testDelete(read, write string) {
 func (t *TableSharding) testDAL(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		dal1 := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(testDB.Component))
+		dal1 := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
 		t.NoError(dal1.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(dal1.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
@@ -426,7 +426,7 @@ func (t *TableSharding) testDAL(read, write string) {
 		_, err := dal1.Delete(ctx, mList1, db.Unscoped())
 		t.NoError(err)
 
-		dal2 := db.NewDAL[modelWithShardingPtr, []*modelWithShardingPtr](read, write, db.AppName(testDB.Component))
+		dal2 := db.NewDAL[modelWithShardingPtr, []*modelWithShardingPtr](read, write, db.AppName(t.AppName()))
 		t.NoError(dal2.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingPtr)))
 		defer func() {
 			t.NoError(dal2.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingPtr)))
@@ -462,7 +462,7 @@ func (t *TableSharding) testDALQueryWithDeletedAt(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 
-		dal := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(testDB.Component))
+		dal := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
 		t.NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
@@ -502,9 +502,9 @@ func (t *TableSharding) testDALQueryWithDeletedAt(read, write string) {
 func (t *TableSharding) testJoins(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		mwsDAL := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(testDB.Component))
+		mwsDAL := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
 		mwseDAL := db.NewDAL[modelWithShardingExtend, []*modelWithShardingExtend](
-			read, write, db.AppName(testDB.Component))
+			read, write, db.AppName(t.AppName()))
 		t.NoError(mwsDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
 		t.NoError(mwsDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		t.NoError(mwseDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingExtend)))
@@ -546,7 +546,7 @@ func (t *TableSharding) testDALFindAndCount(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 
-		dal := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(testDB.Component))
+		dal := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
 		t.NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
 		defer func() {
 			t.NoError(dal.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
@@ -594,7 +594,7 @@ func (t *TableSharding) testDALFindAndCount(read, write string) {
 func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingByRawValue)))
 		defer func() {
 			t.NoError(orm.Migrator().DropTable(new(modelWithShardingByRawValue)))

@@ -4,8 +4,6 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/wfusion/gofusion/db"
-
-	testDB "github.com/wfusion/gofusion/test/db"
 )
 
 const (
@@ -26,8 +24,8 @@ func (*modelWithData) TableName() string {
 	return "model_with_data"
 }
 
-func modelWithDataDAL(read, write string) db.DalInterface[modelWithData, []*modelWithData] {
-	return db.NewDAL[modelWithData, []*modelWithData](read, write, db.AppName(testDB.Component))
+func modelWithDataDAL(read, write, appName string) db.DalInterface[modelWithData, []*modelWithData] {
+	return db.NewDAL[modelWithData, []*modelWithData](read, write, db.AppName(appName))
 }
 
 type modelWithDataExtend struct {

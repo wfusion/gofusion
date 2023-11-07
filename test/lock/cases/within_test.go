@@ -16,7 +16,7 @@ import (
 )
 
 func TestWithin(t *testing.T) {
-	testingSuite := &Within{Test: testLock.T}
+	testingSuite := &Within{Test: new(testLock.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -39,7 +39,7 @@ func (t *Within) AfterTest(suiteName, testName string) {
 
 func (t *Within) TestRedisLua() {
 	t.Catch(func() {
-		locker := lock.Use("redis_lua", lock.AppName(testLock.Component))
+		locker := lock.Use("redis_lua", lock.AppName(t.AppName()))
 		key := "redis_lua_lock_key"
 		t.testWithin(locker, key)
 	})
@@ -47,7 +47,7 @@ func (t *Within) TestRedisLua() {
 
 func (t *Within) TestRedisNx() {
 	t.Catch(func() {
-		locker := lock.Use("redis_nx", lock.AppName(testLock.Component))
+		locker := lock.Use("redis_nx", lock.AppName(t.AppName()))
 		key := "redis_nx_lock_key"
 		t.testWithin(locker, key)
 	})
@@ -55,7 +55,7 @@ func (t *Within) TestRedisNx() {
 
 func (t *Within) TestMySQL() {
 	t.Catch(func() {
-		locker := lock.Use("mysql", lock.AppName(testLock.Component))
+		locker := lock.Use("mysql", lock.AppName(t.AppName()))
 		key := "mysql_lock_key"
 		t.testWithin(locker, key)
 	})
@@ -73,9 +73,9 @@ func (t *Within) testWithin(locker lock.Lockable, key string) {
 				unsafeMap[idx] = idx
 				log.Info(ctx, "[+] goroutine[%v]: %+v", idx, unsafeMap)
 				return
-			}, lock.AppName(testLock.Component))
+			}, lock.AppName(t.AppName()))
 			t.NoError(err)
-		}, routine.Args(i), routine.WaitGroup(wg), routine.AppName(testLock.Component))
+		}, routine.Args(i), routine.WaitGroup(wg), routine.AppName(t.AppName()))
 	}
 	wg.Wait()
 	t.Len(unsafeMap, parallel)

@@ -6,50 +6,53 @@ import (
 	"reflect"
 	"sync"
 
+	"go.uber.org/atomic"
+
 	"github.com/stretchr/testify/suite"
+	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/test"
-	"go.uber.org/atomic"
 )
 
 var (
-	T         = &Test{Suite: test.S}
-	Component = "mq"
+	component = "mq"
 )
 
 type Test struct {
-	*test.Suite
+	test.Suite
 
 	once  sync.Once
 	exits []func()
 
+	testName   string
 	testsLefts atomic.Int64
 }
 
 func (t *Test) SetupTest() {
 	t.Catch(func() {
-		log.Info(context.Background(), fmt.Sprintf("------------ %s test case begin ------------", Component))
+		log.Info(context.Background(), fmt.Sprintf("------------ %s test case begin ------------", component))
 
-		files := []string{"app.local.yml", "app.yml"}
 		t.once.Do(func() {
-			// t.exits = append(t.exits, t.Suite.Copy(files, 1))
-			t.Cleanup(t.Suite.Copy(files, 1))
+			t.exits = append(t.exits, t.Suite.Copy(t.ConfigFiles(), t.testName, 1))
 		})
 
-		t.Cleanup(t.Suite.Init(files, 1))
-		// t.exits = append(t.exits, t.Suite.Init(files, 1))
+		t.exits = append(t.exits, t.Suite.Init(t.ConfigFiles(), t.testName, 1))
 	})
 }
 
 func (t *Test) TearDownTest() {
 	t.Catch(func() {
-		log.Info(context.Background(), fmt.Sprintf("------------ %s test case end ------------", Component))
+		log.Info(context.Background(), fmt.Sprintf("------------ %s test case end ------------", component))
 		if t.testsLefts.Add(-1) == 0 {
 			for i := len(t.exits) - 1; i >= 0; i-- {
 				t.exits[i]()
 			}
 		}
 	})
+}
+
+func (t *Test) AppName() string {
+	return fmt.Sprintf("%s.%s", component, t.testName)
 }
 
 func (t *Test) Init(testingSuite suite.TestingSuite) {
@@ -65,5 +68,6 @@ func (t *Test) Init(testingSuite suite.TestingSuite) {
 		}
 		numTestLeft++
 	}
+	t.testName = utils.IndirectType(methodFinder).Name()
 	t.testsLefts.Add(numTestLeft)
 }

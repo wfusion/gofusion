@@ -14,7 +14,8 @@ import (
 )
 
 func TestInspect(t *testing.T) {
-	testingSuite := &Inspect{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Inspect{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

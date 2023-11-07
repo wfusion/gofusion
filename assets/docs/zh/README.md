@@ -78,7 +78,7 @@ Use "fus [command] --help" for more information about a command.
 
 # 单元测试
 
-> 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 57%
+> 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 56%
 
 ![go-cover-treemap](assets/coverage.svg)
 
@@ -305,7 +305,6 @@ Use "fus [command] --help" for more information about a command.
 
 | 路径              | 能力                                                                                                                                         |
 |:----------------|:-------------------------------------------------------------------------------------------------------------------------------------------|
-| configor        | 主要由 gofusion 自己使用, 加载配置文件填充默认值                                                                                                             |
 | constant        | 常量, 包含: 反射类型, 常用符号, 时间 format                                                                                                              |
 | constraint      | 泛型约束                                                                                                                                       |
 | di              | 基于 uber dig 的依赖注入                                                                                                                          |

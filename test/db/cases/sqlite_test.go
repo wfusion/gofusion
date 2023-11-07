@@ -13,7 +13,7 @@ import (
 
 // TestSqlite sqlite lite test cases, it should run in serial mode because sessions are too easy to race
 func TestSqlite(t *testing.T) {
-	testingSuite := &Sqlite{Test: testDB.T}
+	testingSuite := &Sqlite{Test: new(testDB.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }

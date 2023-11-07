@@ -14,14 +14,14 @@ import (
 	"github.com/wfusion/gofusion/common/utils/serialize"
 	"github.com/wfusion/gofusion/routine"
 
-	millMsg "github.com/wfusion/gofusion/common/infra/watermill/message"
+	mw "github.com/wfusion/gofusion/common/infra/watermill/message"
 	fmkCtx "github.com/wfusion/gofusion/context"
-	pd "github.com/wfusion/gofusion/util/payload"
+	pd "github.com/wfusion/gofusion/internal/util/payload"
 )
 
 type abstractMQ struct {
-	pub millMsg.Publisher
-	sub millMsg.Subscriber
+	pub mw.Publisher
+	sub mw.Subscriber
 
 	appName string
 	ctx     context.Context
@@ -33,7 +33,7 @@ type abstractMQ struct {
 	serializeType serialize.Algorithm
 }
 
-func newPub(ctx context.Context, pub millMsg.Publisher, appName, name string,
+func newPub(ctx context.Context, pub mw.Publisher, appName, name string,
 	conf *Conf, logger watermill.LoggerAdapter) *abstractMQ {
 	mq := &abstractMQ{ctx: ctx, pub: pub, appName: appName, name: name, conf: clone.Slowly(conf), logger: logger}
 	mq.serializeType = serialize.ParseAlgorithm(conf.SerializeType)
@@ -41,7 +41,7 @@ func newPub(ctx context.Context, pub millMsg.Publisher, appName, name string,
 	return mq
 }
 
-func newSub(ctx context.Context, sub millMsg.Subscriber, appName, name string,
+func newSub(ctx context.Context, sub mw.Subscriber, appName, name string,
 	conf *Conf, logger watermill.LoggerAdapter) *abstractMQ {
 	mq := &abstractMQ{ctx: ctx, sub: sub, appName: appName, name: name, conf: clone.Slowly(conf), logger: logger}
 	mq.serializeType = serialize.ParseAlgorithm(conf.SerializeType)
@@ -76,7 +76,7 @@ func (a *abstractMQ) Publish(ctx context.Context, opts ...utils.OptionExtender) 
 	}
 
 	routine.Goc(ctx, func() {
-		idList := utils.SliceMapping(msgs, func(s *millMsg.Message) (id string) { return s.UUID })
+		idList := utils.SliceMapping(msgs, func(s *mw.Message) (id string) { return s.UUID })
 		idList = utils.NewSet(idList...).Items()
 		retryFunc := func(attempt uint) error {
 			if attempt > 1 {
@@ -100,7 +100,7 @@ func (a *abstractMQ) PublishRaw(ctx context.Context, opts ...utils.OptionExtende
 	opt := utils.ApplyOptions[pubOption](opts...)
 	msgs := opt.watermillMessages
 	for _, msg := range opt.messages {
-		wmsg := millMsg.NewMessage(msg.ID(), msg.Payload())
+		wmsg := mw.NewMessage(msg.ID(), msg.Payload())
 		wmsg.Metadata = fmkCtx.WatermillMetadata(ctx)
 		wmsg.SetContext(ctx)
 		msgs = append(msgs, wmsg)
@@ -115,7 +115,7 @@ func (a *abstractMQ) PublishRaw(ctx context.Context, opts ...utils.OptionExtende
 	}
 
 	routine.Goc(ctx, func() {
-		idList := utils.SliceMapping(msgs, func(s *millMsg.Message) (id string) { return s.UUID })
+		idList := utils.SliceMapping(msgs, func(s *mw.Message) (id string) { return s.UUID })
 		idList = utils.NewSet(idList...).Items()
 		retryFunc := func(attempt uint) error {
 			if attempt > 1 {
@@ -240,23 +240,23 @@ func (a *abstractMQ) Subscribe(ctx context.Context, opts ...utils.OptionExtender
 
 func (a *abstractMQ) close() error                             { panic(ErrNotImplement) }
 func (a *abstractMQ) topic() string                            { return a.conf.Topic }
-func (a *abstractMQ) watermillPublisher() millMsg.Publisher    { return a.pub }
-func (a *abstractMQ) watermillSubscriber() millMsg.Subscriber  { return a.sub }
+func (a *abstractMQ) watermillPublisher() mw.Publisher         { return a.pub }
+func (a *abstractMQ) watermillSubscriber() mw.Subscriber       { return a.sub }
 func (a *abstractMQ) watermillLogger() watermill.LoggerAdapter { return a.logger }
 
 func (a *abstractMQ) newMessage(ctx context.Context, src Message, _ *pubOption) (
-	msg *millMsg.Message, err error) {
+	msg *mw.Message, err error) {
 	payload, err := pd.Seal(src.Payload(), pd.Compress(a.compressType))
 	if err != nil {
 		return
 	}
-	msg = millMsg.NewMessage(src.ID(), payload)
+	msg = mw.NewMessage(src.ID(), payload)
 	msg.Metadata = fmkCtx.WatermillMetadata(ctx)
 	msg.SetContext(ctx)
 	return
 }
 func (a *abstractMQ) newObjectMessage(ctx context.Context, object any, opt *pubOption) (
-	msg *millMsg.Message, err error) {
+	msg *mw.Message, err error) {
 	payload, err := pd.Seal(object, pd.Compress(a.compressType), pd.Serialize(a.serializeType))
 	if err != nil {
 		return
@@ -267,22 +267,22 @@ func (a *abstractMQ) newObjectMessage(ctx context.Context, object any, opt *pubO
 		inParam := reflect.ValueOf(object).Convert(inType)
 		uuid = opt.objectUUIDGenFunc.Call([]reflect.Value{inParam})[0].Interface().(string)
 	}
-	msg = millMsg.NewMessage(uuid, payload)
+	msg = mw.NewMessage(uuid, payload)
 	msg.Metadata = fmkCtx.WatermillMetadata(ctx)
 	msg.SetContext(ctx)
 	return
 }
 
-func rawMessageConvertFrom(src *millMsg.Message) (dst Message) {
+func rawMessageConvertFrom(src *mw.Message) (dst Message) {
 	return &message{Message: src, payload: src.Payload}
 }
 
-func messageConvertTo(src Message) (dst *millMsg.Message) {
+func messageConvertTo(src Message) (dst *mw.Message) {
 	dst = src.(*message).Message
 	return
 }
 
-func messageConvertFrom(src *millMsg.Message,
+func messageConvertFrom(src *mw.Message,
 	serializeType serialize.Algorithm, compressType compress.Algorithm) (dst Message, err error) {
 	_, data, isRaw, err := pd.UnsealRaw(src.Payload, pd.Compress(compressType))
 	if err != nil {

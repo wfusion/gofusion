@@ -39,7 +39,7 @@ func (m *Metrics) SetPrecisionGaugeWithLabels(key []string, val float64, labels 
 	}
 	sink, ok := m.sink.(PrecisionGaugeMetricSink)
 	if !ok {
-		// Sink does not implement PrecisionGaugeMetricSink.
+		m.sink.SetGaugeWithLabels(key, float32(val), labels, opts...)
 	} else {
 		sink.SetPrecisionGaugeWithLabels(key, val, labels, opts...)
 	}
@@ -96,7 +96,7 @@ func (m *Metrics) AddPrecisionSampleWithLabels(key []string, val float64,
 	if sink, ok := m.sink.(PrecisionSampleMetricSink); ok {
 		sink.AddPrecisionSampleWithLabels(key, val, labels, opts...)
 	} else {
-		// Sink does not implement PrecisionSampleMetricSink.
+		m.sink.AddSampleWithLabels(key, float32(val), labels, opts...)
 	}
 }
 

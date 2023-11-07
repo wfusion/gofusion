@@ -101,19 +101,17 @@ base:
       # 远端连接配置
       endpoint:
         # 连接地址
-        addresses: [ localhost:29090 ]
+        addresses: [ prometheus:9091 ]
       # 所有打点默认添加 _service, _service_hostname, _service_ip labels
       enable_service_label: true
       # 自动采集上报 golang 程序数据打点, 包含:
-      # runtime_alloc_bytes
-      # runtime_sys_bytes
-      # runtime_malloc_count
-      # runtime_free_count
-      # runtime_heap_objects
-      # runtime_total_gc_pause_ns
-      # runtime_total_gc_runs
+      # runtime_alloc_bytes,runtime_sys_bytes,runtime_malloc_count,runtime_free_count,runtime_heap_objects,
+      # runtime_total_gc_pause_ns,runtime_total_gc_runs
       enable_runtime_metrics: true
-      # 自动采集上报各个组件的打点
+      # 自动采集上报各个组件的打点, 包含:
+      # redis_idle,redis_total,redis_stale,redis_hits,redis_misses,redis_latency
+      # mongo_idle,mongo_inuse,mongo_total,mongo_latency
+      # db_idle,db_total,db_inuse,db_wait_count,db_wait_duration,db_latency
       enable_internal_metrics: true
       # 日志配置, 对应 log 组件中的名称
       log_instance: default
@@ -174,9 +172,9 @@ base:
       # database 或 schema 名称
       db: mysql
       # 数据库地址
-      host: localhost
+      host: mysql
       # 数据库端口
-      port: 23306
+      port: 3306
       # 用户名
       user: root
       # 用户名密码, 本 demo 中为 crypto.config 中配置的对应加密密文
@@ -198,13 +196,13 @@ base:
       # 自动分表配置
       sharding:
         # 表名
-        - table: ""
+        - table: "user"
           # 自定义分表表名尾缀
           # 例如 user 表中, 配置为 az1_%02d, 则分表结果会是 user_az1_00, user_az1_01 等等
           # 默认尾缀为 user_0, user_1, 当 <number_of_shards> > 10 则为 user_00, user_01, 最大支持到 user_9999
           suffix: ""
           # 分表 key, 即根据表中哪些列进行分表, 支持多列
-          columns: []
+          columns: [ city ]
           # 分表 key 自定义表达式, 如根据 type 和 user_id 列分表, 则可以写 type << 8 | user_id
           # 表达式支持语法详见: github.com/PaesslerAG/gval, 数字会丢失精度, 因为会全部转换为 float64 进行计算
           # 默认分表表达式为: 按照 <columns> 配置先后顺序以大端序拼接后进行 crc32 哈希再对 number_of_shards 求余
@@ -244,8 +242,8 @@ base:
     write:
       driver: mysql
       db: mysql
-      host: localhost
-      port: 23306
+      host: mysql
+      port: 3306
       user: root
       password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
       timeout: 5s
@@ -267,12 +265,12 @@ base:
       # 用于认证的 database 名称
       auth_db: admin
       # 用户名
-      user: mongo
+      user: root
       # 用户名密码, 本 demo 中为 crypto.config 中配置的对应加密密文
       password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
       # 集群地址
       endpoints:
-        - localhost:27017
+        - mongo:27017
       timeout: 5s
       conn_timeout: 30s
       socket_timeout: 5s
@@ -311,7 +309,7 @@ base:
       cluster: false
       # server 地址
       endpoints:
-        - localhost:26379
+        - redis:6379
       dial_timeout: 5s
       # socket reads 超时时间, 除正常 time.Duration 的配置外, 还支持 -1(阻塞), -2(不设置 deadline) 配置
       read_timeout: 2s
@@ -370,7 +368,7 @@ base:
           instance: write
           # 非 instance 类型的连接地址
           addresses:
-            - localhost:25672
+            - rabbitmq:5672
           # 非 instance 类型的连接用户名
           # - type 为 kafka 时对应 SASL/PLAIN username
           # - type 为 pulsar 时对应 basic username

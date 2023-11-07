@@ -91,7 +91,7 @@ Use "fus [command] --help" for more information about a command.
 
 # Unit Testing
 
-> Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 57%
+> Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 56%
 
 ![go-cover-treemap](assets/coverage.svg)
 
@@ -363,7 +363,6 @@ mysql, postgres, sqlserver all passed tests.
 
 | Path            | Capability                                                                                                                                                                                                                                                                       |
 |:----------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| configor        | Mainly used by gofusion itself, loads configuration files and fills in default values                                                                                                                                                                                            |
 | constant        | Constants, includes: reflection types, common symbols, time format                                                                                                                                                                                                               |
 | constraint      | Generic constraints                                                                                                                                                                                                                                                              |
 | di              | Dependency Injection based on uber dig                                                                                                                                                                                                                                           |

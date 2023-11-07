@@ -26,8 +26,8 @@ base:
     default:
       driver: mysql
       db: mysql
-      host: localhost
-      port: 23306
+      host: mysql
+      port: 3306
       user: root
       password: ci
       timeout: 5s
@@ -47,7 +47,7 @@ base:
       password: ci
       cluster: false
       endpoints:
-        - localhost:26379
+        - redis:6379
       dial_timeout: 5s
       read_timeout: 2s
       write_timeout: 2s

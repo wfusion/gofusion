@@ -23,9 +23,9 @@ import (
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/routine"
 
-	millMsg "github.com/wfusion/gofusion/common/infra/watermill/message"
+	mw "github.com/wfusion/gofusion/common/infra/watermill/message"
 	fmkCtx "github.com/wfusion/gofusion/context"
-	pd "github.com/wfusion/gofusion/util/payload"
+	pd "github.com/wfusion/gofusion/internal/util/payload"
 )
 
 const (
@@ -33,7 +33,7 @@ const (
 )
 
 type router struct {
-	*millMsg.Router
+	*mw.Router
 
 	appName string
 
@@ -58,7 +58,7 @@ type handler struct {
 
 func newRouter(ctx context.Context, appName, name string, conf *Conf,
 	pub Publisher, sub Subscriber, logger watermill.LoggerAdapter) *router {
-	r := utils.Must(millMsg.NewRouter(millMsg.RouterConfig{CloseTimeout: 15 * time.Second}, logger))
+	r := utils.Must(mw.NewRouter(mw.RouterConfig{CloseTimeout: 15 * time.Second}, logger))
 	r.AddPlugin(plugin.SignalsHandler)
 	r.AddMiddleware(
 		middleware.Recoverer,
@@ -138,7 +138,7 @@ func newRouter(ctx context.Context, appName, name string, conf *Conf,
 				panic(errors.Errorf("unknown mq middleware: %s", mwsConf.Type))
 			}
 			mws := reflect.New(typ).Elem().Convert(watermillHandlerMiddlewareType).Interface()
-			r.AddMiddleware(mws.(millMsg.HandlerMiddleware))
+			r.AddMiddleware(mws.(mw.HandlerMiddleware))
 		}
 	}
 
@@ -203,7 +203,7 @@ func (r *router) run() (err error) {
 		return r.Router.RunHandlers(r.ctx)
 	}
 	if err = r.Router.Run(r.ctx); err != nil {
-		if errors.Is(err, millMsg.ErrRouterIsAlreadyRunning) {
+		if errors.Is(err, mw.ErrRouterIsAlreadyRunning) {
 			return r.Router.RunHandlers(r.ctx)
 		}
 	}
@@ -217,7 +217,7 @@ func (r *router) addHandler(handlerName, consumerName string, hdr any, opt *rout
 			consumerName,
 			r.sub.topic(),
 			r.sub.watermillSubscriber(),
-			func(wmsg *millMsg.Message) (err error) {
+			func(wmsg *mw.Message) (err error) {
 				msg, err := messageConvertFrom(wmsg, r.serializeType, r.compressType)
 				if err != nil {
 					return
@@ -225,14 +225,14 @@ func (r *router) addHandler(handlerName, consumerName string, hdr any, opt *rout
 				return fn(msg)
 			},
 		)
-	case millMsg.NoPublishHandlerFunc:
+	case mw.NoPublishHandlerFunc:
 		r.Router.AddNoPublisherHandler(
 			consumerName,
 			r.sub.topic(),
 			r.sub.watermillSubscriber(),
 			fn,
 		)
-	case millMsg.HandlerFunc:
+	case mw.HandlerFunc:
 		r.Router.AddHandler(
 			consumerName,
 			r.sub.topic(),
@@ -249,7 +249,7 @@ func (r *router) addHandler(handlerName, consumerName string, hdr any, opt *rout
 				consumerName,
 				r.sub.topic(),
 				r.sub.watermillSubscriber(),
-				func(msg *millMsg.Message) error {
+				func(msg *mw.Message) error {
 					rets := fnVal.Convert(watermillHandlerFuncType).Call(
 						[]reflect.Value{reflect.ValueOf(rawMessageConvertFrom(msg))},
 					)
@@ -261,7 +261,7 @@ func (r *router) addHandler(handlerName, consumerName string, hdr any, opt *rout
 				consumerName,
 				r.sub.topic(),
 				r.sub.watermillSubscriber(),
-				func(msg *millMsg.Message) error {
+				func(msg *mw.Message) error {
 					rets := fnVal.
 						Convert(watermillNoPublishHandlerFuncType).
 						Call([]reflect.Value{reflect.ValueOf(msg)})
@@ -275,13 +275,13 @@ func (r *router) addHandler(handlerName, consumerName string, hdr any, opt *rout
 				r.sub.watermillSubscriber(),
 				r.pub.topic(),
 				r.pub.watermillPublisher(),
-				func(wmsg *millMsg.Message) (msgs []*millMsg.Message, err error) {
+				func(wmsg *mw.Message) (msgs []*mw.Message, err error) {
 					msg, err := messageConvertFrom(wmsg, r.serializeType, r.compressType)
 					if err != nil {
 						return
 					}
 					rets := fnVal.Convert(handlerFuncType).Call([]reflect.Value{reflect.ValueOf(msg)})
-					msgs = utils.ParseVariadicFuncResult[[]*millMsg.Message](rets, 0)
+					msgs = utils.ParseVariadicFuncResult[[]*mw.Message](rets, 0)
 					err = utils.ParseVariadicFuncResult[error](rets, 0)
 					return
 				},
@@ -334,10 +334,10 @@ func (r *router) handleEvent(eventType string, fnVal reflect.Value, opt *routerO
 	}
 }
 
-func (r *router) handle(hdr any) millMsg.NoPublishHandlerFunc {
+func (r *router) handle(hdr any) mw.NoPublishHandlerFunc {
 	typ := wrapParams(hdr)
 	fn := utils.WrapFunc1[error](hdr)
-	return func(msg *millMsg.Message) (err error) {
+	return func(msg *mw.Message) (err error) {
 		_, data, _, err := pd.Unseal(msg.Payload,
 			pd.Serialize(r.serializeType), pd.Compress(r.compressType), pd.Type(typ))
 		if err != nil {
@@ -367,7 +367,7 @@ func (r *router) addEventDispatchHandler(consumerName string) {
 		r.sub.watermillSubscriber(),
 		r.pub.topic(),
 		r.pub.watermillPublisher(),
-		func(msg *millMsg.Message) (pubMsgs []*millMsg.Message, err error) {
+		func(msg *mw.Message) (pubMsgs []*mw.Message, err error) {
 			eventType := msg.Metadata[keyEventType]
 			r.locker.RLock()
 			hdr, ok1 := r.eventHandlers[eventType]
@@ -424,7 +424,7 @@ func (r *router) addEventDispatchHandler(consumerName string) {
 			}
 			wg.Wait()
 
-			pubMsgs = make([]*millMsg.Message, 0, len(handlers))
+			pubMsgs = make([]*mw.Message, 0, len(handlers))
 			for _, f := range futures {
 				msgsAny, msgErr := f.Get()
 				err = multierr.Append(err, msgErr)

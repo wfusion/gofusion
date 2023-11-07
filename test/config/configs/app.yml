@@ -108,19 +108,17 @@ base:
       # Remote connection configuration
       endpoint:
         # Connection address
-        addresses: [ localhost:29090 ]
+        addresses: [ prometheus:9091 ]
       # All metrics default to add _service, _service_hostname, _service_ip labels
       enable_service_label: true
       # Automatically collect and report golang program metrics, including:
-      # runtime_alloc_bytes
-      # runtime_sys_bytes
-      # runtime_malloc_count
-      # runtime_free_count
-      # runtime_heap_objects
-      # runtime_total_gc_pause_ns
-      # runtime_total_gc_runs
+      # runtime_alloc_bytes,runtime_sys_bytes,runtime_malloc_count,runtime_free_count,runtime_heap_objects,
+      # runtime_total_gc_pause_ns,runtime_total_gc_runs
       enable_runtime_metrics: true
       # Automatically collect and report metrics of each component
+      # redis_idle,redis_total,redis_stale,redis_hits,redis_misses,redis_latency
+      # mongo_idle,mongo_inuse,mongo_total,mongo_latency
+      # db_idle,db_total,db_inuse,db_wait_count,db_wait_duration,db_latency
       enable_internal_metrics: true
       # Log configuration, corresponding to the name in the log component
       log_instance: default
@@ -186,9 +184,9 @@ base:
       # Database or schema name
       db: mysql
       # Database address
-      host: localhost
+      host: mysql
       # Database port
-      port: 23306
+      port: 3306
       # Username
       user: root
       # User password, in this demo it's the corresponding encrypted text configured in crypto.config
@@ -213,7 +211,7 @@ base:
       # Automatic sharding configuration
       sharding:
         # Table name
-        - table: ""
+        - table: "user"
           # Custom sharding table name suffix
           #
           # For example, in user table, configured as az1_%02d,
@@ -223,7 +221,7 @@ base:
           # it becomes user_00, user_01, supports up to user_9999
           suffix: ""
           # Sharding key, which columns in the table are used for sharding, supports multiple columns
-          columns: []
+          columns: [ city ]
           # Custom sharding key expression,
           # e.g. sharding based on type and user_id columns, can be written as type << 8 | user_id
           #
@@ -283,8 +281,8 @@ base:
     write:
       driver: mysql
       db: mysql
-      host: localhost
-      port: 23306
+      host: mysql
+      port: 3306
       user: root
       password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
       timeout: 5s
@@ -306,12 +304,12 @@ base:
       # Name of database used for authentication
       auth_db: admin
       # username
-      user: mongo
+      user: root
       # password, the corresponding encrypted ciphertext configured in crypto.config in this demo
       password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
       # 集群地址
       endpoints:
-        - localhost:27017
+        - mongo:27017
       timeout: 5s
       conn_timeout: 30s
       socket_timeout: 5s
@@ -355,7 +353,7 @@ base:
       cluster: false
       # Server address
       endpoints:
-        - localhost:26379
+        - redis:6379
       dial_timeout: 5s
       # socket reads timeout duration, besides normal time.Duration configuration,
       # also supports -1 (blocking), -2 (no deadline set) configuration
@@ -423,7 +421,7 @@ base:
         instance: write
         # Connection address for non-instance type
         addresses:
-          - localhost:25672
+          - rabbitmq:5672
         # Connection username for non-instance type
         # - type is kafka corresponds to SASL/PLAIN username
         # - type is pulsar corresponds to basic username

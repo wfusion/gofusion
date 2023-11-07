@@ -12,7 +12,7 @@ import (
 	rdsDrv "github.com/redis/go-redis/v9"
 )
 
-func initAsynq(ctx context.Context, appName string, r IRouter, confs []*asynqConf) {
+func initAsynq(ctx context.Context, appName string, r IRouter, confs []asynqConf) {
 	if len(confs) == 0 || r == nil {
 		return
 	}

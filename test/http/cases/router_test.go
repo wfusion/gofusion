@@ -25,7 +25,7 @@ import (
 )
 
 func TestRouter(t *testing.T) {
-	testingSuite := &Router{Test: testHtp.T}
+	testingSuite := &Router{Test: new(testHtp.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -768,7 +768,8 @@ func (t *Router) TestExample13() {
 		writer := multipart.NewWriter(reqBody)
 
 		// write file
-		filePath := fmt.Sprintf("%s/configs/%s.app.yml", env.WorkDir, testHtp.Component)
+		files := t.ConfigFiles()
+		filePath := fmt.Sprintf("%s/configs/%s.%s", env.WorkDir, t.AppName(), files[len(files)-1])
 		part, err := writer.CreateFormFile("file", filePath)
 		t.Require().NoError(err)
 		file, err := os.Open(filePath)
@@ -1320,7 +1321,8 @@ func (t *Router) TestExample28() {
 		writer := multipart.NewWriter(reqBody)
 
 		// write file
-		filePath := fmt.Sprintf("%s/configs/%s.app.yml", env.WorkDir, testHtp.Component)
+		files := t.ConfigFiles()
+		filePath := fmt.Sprintf("%s/configs/%s.%s", env.WorkDir, t.AppName(), files[len(files)-1])
 		part, err := writer.CreateFormFile("file", filePath)
 		t.Require().NoError(err)
 		file, err := os.Open(filePath)

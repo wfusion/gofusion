@@ -65,6 +65,10 @@ func addRoutine(appName, name string) {
 func delRoutine(appName, name string) {
 	locker.Lock()
 	defer locker.Unlock()
+	if routines == nil || routines[appName] == nil {
+		return
+	}
+
 	if routines[appName][name]--; routines[appName][name] <= 0 {
 		delete(routines, name)
 	}

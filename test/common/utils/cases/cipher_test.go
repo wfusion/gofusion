@@ -22,7 +22,8 @@ import (
 )
 
 func TestCipher(t *testing.T) {
-	testingSuite := &Cipher{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Cipher{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

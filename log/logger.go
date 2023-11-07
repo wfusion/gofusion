@@ -22,8 +22,8 @@ import (
 var (
 	globalLogger = defaultLogger(false)
 
-	rwlock    = new(sync.RWMutex)
-	instances map[string]map[string]*logger
+	rwlock       = new(sync.RWMutex)
+	appInstances map[string]map[string]*logger
 )
 
 type logger struct {
@@ -47,7 +47,7 @@ func Use(name string, opts ...utils.OptionExtender) Logable {
 
 	rwlock.RLock()
 	defer rwlock.RUnlock()
-	instances, ok := instances[opt.appName]
+	instances, ok := appInstances[opt.appName]
 	if !ok {
 		panic(errors.Errorf("logger instance not found for app: %s", opt.appName))
 	}

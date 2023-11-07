@@ -19,7 +19,7 @@ import (
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/log"
 
-	pd "github.com/wfusion/gofusion/util/payload"
+	pd "github.com/wfusion/gofusion/internal/util/payload"
 )
 
 type provider interface {

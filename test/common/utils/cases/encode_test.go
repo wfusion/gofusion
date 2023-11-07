@@ -22,7 +22,8 @@ import (
 )
 
 func TestEncode(t *testing.T) {
-	testingSuite := &Encode{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Encode{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

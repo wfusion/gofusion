@@ -13,8 +13,8 @@ import (
 )
 
 var (
-	rwlock    = new(sync.RWMutex)
-	instances map[string]map[string]*instance
+	rwlock       = new(sync.RWMutex)
+	appInstances map[string]map[string]*instance
 )
 
 type instance struct {
@@ -46,7 +46,7 @@ func Use(ctx context.Context, name string, opts ...utils.OptionExtender) rdsDrv.
 
 	rwlock.RLock()
 	defer rwlock.RUnlock()
-	instances, ok := instances[opt.appName]
+	instances, ok := appInstances[opt.appName]
 	if !ok {
 		panic(errors.Errorf("redis instance not found for app: %s", opt.appName))
 	}

@@ -28,8 +28,8 @@ base:
     default:
       driver: mysql
       db: mysql
-      host: localhost
-      port: 23306
+      host: mysql
+      port: 3306
       user: root
       password: ci
       timeout: 5s
@@ -44,8 +44,8 @@ base:
     postgres:
       driver: postgres
       db: postgres
-      host: localhost
-      port: 25432
+      host: postgres
+      port: 5432
       user: postgres
       password: ci
       timeout: 5s
@@ -64,7 +64,7 @@ base:
       password: ci
       cluster: false
       endpoints:
-        - localhost:26379
+        - redis:6379
       dial_timeout: 5s
       read_timeout: 2s
       write_timeout: 2s
@@ -120,10 +120,10 @@ base:
       consumer_group: gofusion_consumer_group
       consumer_concurrency: 10
       endpoint:
-        user: guest
-        password: guest
+        user: root
+        password: ci
         addresses:
-          - localhost:25672
+          - rabbitmq:5672
       persistent: true
       serialize_type: json
       enable_logger: true
@@ -137,7 +137,7 @@ base:
       endpoint:
         version: 3.6.0
         addresses:
-          - localhost:9092
+          - kafka:9092
       persistent: true
       serialize_type: json
       enable_logger: true
@@ -150,7 +150,7 @@ base:
       consumer_concurrency: 10
       endpoint:
         addresses:
-          - localhost:26650
+          - pulsar:6650
       persistent: true
       serialize_type: json
       enable_logger: true
@@ -217,10 +217,10 @@ base:
       consumer_group: event_group
       consumer_concurrency: 10
       endpoint:
-        user: guest
-        password: guest
+        user: root
+        password: ci
         addresses:
-          - localhost:25672
+          - rabbitmq:5672
       persistent: true
       serialize_type: gob
       enable_logger: true
@@ -234,7 +234,7 @@ base:
       endpoint:
         version: 3.6.0
         addresses:
-          - localhost:9092
+          - kafka:9092
       persistent: true
       serialize_type: gob
       compress_type: zstd
@@ -248,7 +248,7 @@ base:
       consumer_concurrency: 10
       endpoint:
         addresses:
-          - localhost:26650
+          - pulsar:6650
       persistent: true
       serialize_type: gob
       compress_type: zstd

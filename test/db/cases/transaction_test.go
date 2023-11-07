@@ -13,7 +13,7 @@ import (
 )
 
 func TestTransaction(t *testing.T) {
-	testingSuite := &Transaction{Test: testDB.T}
+	testingSuite := &Transaction{Test: new(testDB.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -51,14 +51,10 @@ func (t *Transaction) TestSqlserver() {
 }
 
 func (t *Transaction) testDefault(read, write string) {
-	t.Run("WithTx", func() { t.testWithTx(read, write) })
-}
-
-func (t *Transaction) testWithTx(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		ctx = db.SetCtxGormDB(ctx, db.Use(ctx, read, db.AppName(testDB.Component)))
-		ctx = db.SetCtxGormDB(ctx, db.Use(ctx, write, db.AppName(testDB.Component)))
+		ctx = db.SetCtxGormDB(ctx, db.Use(ctx, read, db.AppName(t.AppName())))
+		ctx = db.SetCtxGormDB(ctx, db.Use(ctx, write, db.AppName(t.AppName())))
 		t.NoError(db.WithinTx(ctx,
 			func(ctx context.Context) (err error) { return },
 			db.TxUse(write),

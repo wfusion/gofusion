@@ -49,7 +49,7 @@ mode = "push"
 interval = "30s"
 labels = { "constant_key" = "constant_value" }
 endpoint.addresses = [
-    "localhost:29090"
+    "prometheus:9091"
 ]
 enable_service_label = true
 enable_runtime_metrics = true
@@ -79,8 +79,8 @@ shorter_filepath = true
 driver = "mysql"
 dialect = "mysql"
 db = "dev"
-host = "localhost"
-port = 23306
+host = "mysql"
+port = 3306
 user = "root"
 password = "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
 timeout = "5s"
@@ -98,9 +98,9 @@ logger_config.logger = "github.com/wfusion/gofusion/log/customlogger.gormLogger"
 logger_config.log_instance = "default"
 
 [[base.db.read.sharding]]
-table = ""
+table = "user"
 suffix = ""
-columns = []
+columns = [ "city" ]
 sharding_key_expr = ""
 sharding_key_by_raw_value = false
 sharding_keys_for_migrating = []
@@ -111,8 +111,8 @@ idgen = "github.com/wfusion/gofusion/common/infra/drivers/orm/idgen.NewSnowflake
 driver = "mysql"
 dialector = "mysql"
 db = "mysql"
-host = "localhost"
-port = 23306
+host = "mysql"
+port = 3306
 user = "root"
 password = "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
 timeout = "5s"
@@ -127,10 +127,10 @@ logger_config.slow_threshold = "500ms"
 [base.mongo.default]
 db = "admin"
 auth_db = "admin"
-user = "mongo"
+user = "root"
 password = "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
 endpoints = [
-    "localhost:27017"
+    "mongo:27017"
 ]
 timeout = "5s"
 conn_timeout = "30s"
@@ -162,7 +162,7 @@ user = ""
 password = "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
 cluster = false
 endpoints = [
-    "localhost:26379"
+    "redis:6379"
 ]
 dial_timeout = "5s"
 read_timeout = "2s"
@@ -193,9 +193,9 @@ consumer_concurrency = 10
 endpoint.instance_type = "db"
 endpoint.instance = "write"
 endpoint.addresses = [
-    "localhost:25672"
+    "rebbitmq:5672"
 ]
-endpoint.user = "rabbitmq"
+endpoint.user = "root"
 endpoint.password = "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
 endpoint.auth_type = ""
 endpoint.version = "3.6.0"

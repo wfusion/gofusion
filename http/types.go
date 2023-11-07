@@ -37,19 +37,19 @@ type IRouter interface {
 // Conf http configure
 //nolint: revive // struct field annotation issue
 type Conf struct {
-	Port            int          `yaml:"port" json:"port" toml:"port" default:"80"`
-	TLS             bool         `yaml:"tls" json:"tls" toml:"tls" default:"false"`
-	Cert            string       `yaml:"cert" json:"cert" toml:"cert"`
-	Key             string       `yaml:"key" json:"key" toml:"key"`
-	NextProtos      []string     `yaml:"next_protos" json:"next_protos" toml:"next_protos" default:"[http/1.1]"` // h2, http/1.1 is ok
-	SuccessCode     int          `yaml:"success_code" json:"success_code" toml:"success_code"`
-	Pprof           bool         `yaml:"pprof" json:"pprof" toml:"pprof"`
-	XSSWhiteURLList []string     `yaml:"xss_white_url_list" json:"xss_white_url_list" toml:"xss_white_url_list" default:"[]"`
-	ColorfulConsole bool         `yaml:"colorful_console" json:"colorful_console" toml:"colorful_console" default:"false"`
-	ReadTimeout     string       `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"10s"`
-	WriteTimeout    string       `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"10s"`
-	Asynq           []*asynqConf `yaml:"asynq" json:"asynq" toml:"asynq"`
-	LogInstance     string       `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
+	Port            int         `yaml:"port" json:"port" toml:"port" default:"80"`
+	TLS             bool        `yaml:"tls" json:"tls" toml:"tls" default:"false"`
+	Cert            string      `yaml:"cert" json:"cert" toml:"cert"`
+	Key             string      `yaml:"key" json:"key" toml:"key"`
+	NextProtos      []string    `yaml:"next_protos" json:"next_protos" toml:"next_protos" default:"[http/1.1]"` // h2, http/1.1 is ok
+	SuccessCode     int         `yaml:"success_code" json:"success_code" toml:"success_code"`
+	Pprof           bool        `yaml:"pprof" json:"pprof" toml:"pprof"`
+	XSSWhiteURLList []string    `yaml:"xss_white_url_list" json:"xss_white_url_list" toml:"xss_white_url_list" default:"[]"`
+	ColorfulConsole bool        `yaml:"colorful_console" json:"colorful_console" toml:"colorful_console" default:"false"`
+	ReadTimeout     string      `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"10s"`
+	WriteTimeout    string      `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"10s"`
+	Asynq           []asynqConf `yaml:"asynq" json:"asynq" toml:"asynq"`
+	LogInstance     string      `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
 }
 
 type asynqConf struct {
@@ -69,7 +69,7 @@ type OutputConf struct {
 	SuccessCode  int
 	ReadTimeout  time.Duration
 	WriteTimeout time.Duration
-	AsynqConf    []*asynqConf
+	AsynqConf    []asynqConf
 }
 
 type instanceType string

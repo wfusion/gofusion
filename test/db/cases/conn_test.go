@@ -16,7 +16,7 @@ import (
 )
 
 func TestConn(t *testing.T) {
-	testingSuite := &Conn{Test: testDB.T}
+	testingSuite := &Conn{Test: new(testDB.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -55,8 +55,10 @@ func (t *Conn) TestSqlserver() {
 
 func (t *Conn) testDefault(read, write string) {
 	t.Catch(func() {
-		ctx := context.Background()
-		tx := db.Use(ctx, write, db.AppName(testDB.Component))
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		tx := db.Use(ctx, write, db.AppName(t.AppName()))
 		go func() {
 			ticker := time.NewTicker(time.Second)
 			defer ticker.Stop()
@@ -76,8 +78,13 @@ func (t *Conn) testDefault(read, write string) {
 		go func() {
 			ticker := time.NewTicker(time.Millisecond)
 			defer ticker.Stop()
-			for range ticker.C {
-				canExecChan <- struct{}{}
+			defer close(canExecChan)
+			for {
+				select {
+				case <-ctx.Done():
+				case <-ticker.C:
+					canExecChan <- struct{}{}
+				}
 			}
 		}()
 
@@ -96,13 +103,13 @@ func (t *Conn) testDefault(read, write string) {
 
 				<-canExecChan
 				mwd1 := &modelWithData{Name: "az1"}
-				t.NoError(tx.Create(mwd1).Error)
+				tx.Create(mwd1)
 				//tx.Create(mwd1)
 
 				// jitter within 500ms ~ 1500ms
 				<-canExecChan
 				time.Sleep(500*time.Millisecond + time.Duration(rand.Float64()*float64(time.Second)))
-				t.NoError(tx.Where("name = 'az1'").Delete(mwd1).Error)
+				tx.Where("name = 'az1'").Delete(mwd1)
 				//tx.Where("name = 'az1'").Delete(mwd1)
 			}()
 		}

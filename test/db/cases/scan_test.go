@@ -13,7 +13,7 @@ import (
 )
 
 func TestScan(t *testing.T) {
-	testingSuite := &Scan{Test: testDB.T}
+	testingSuite := &Scan{Test: new(testDB.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -53,7 +53,7 @@ func (t *Scan) TestSqlserver() {
 func (t *Scan) testDefault(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
-		orm := db.Use(ctx, write, db.AppName(testDB.Component))
+		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 
 		t.NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
 		defer func() {
@@ -73,11 +73,11 @@ func (t *Scan) testDefault(read, write string) {
 			db.Scan[modelWithData, []*modelWithData](
 				ctx,
 				func(mList []*modelWithData) bool { actual = append(actual, mList...); return true },
-				db.ScanDAL[modelWithData, []*modelWithData](modelWithDataDAL(read, write)),
+				db.ScanDAL[modelWithData, []*modelWithData](modelWithDataDAL(read, write, t.AppName())),
 				db.ScanBatch(3),
 				db.ScanCursor("id > ?", []string{"id"}, 0),
 				db.ScanOrder("id ASC"),
-				db.AppName(testDB.Component),
+				db.AppName(t.AppName()),
 			),
 		)
 

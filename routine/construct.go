@@ -88,8 +88,8 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 					log.Printf("%v [Gofusion] %s %s exit with releasing pool %s failed because %s",
 						pid, app, config.ComponentGoroutinePool, name, err)
 				}
+				delete(pools[opt.AppName], name)
 			}
-			delete(pools, opt.AppName)
 		}
 
 		log.Printf("%v [Gofusion] %s %s pool routines are recycled", pid, app, config.ComponentGoroutinePool)

@@ -16,7 +16,8 @@ import (
 )
 
 func TestCmp(t *testing.T) {
-	testingSuite := &Cmp{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Cmp{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

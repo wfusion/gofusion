@@ -27,6 +27,9 @@ type Sink interface {
 	// MeasureSince A better way to add timer samples
 	MeasureSince(ctx context.Context, key []string, start time.Time, opts ...utils.OptionExtender)
 
+	// IsEnableServiceLabel check if enable service label
+	IsEnableServiceLabel() bool
+
 	getProxy() any
 	shutdown()
 }

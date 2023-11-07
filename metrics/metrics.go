@@ -27,9 +27,9 @@ const (
 )
 
 var (
-	rwlock    = new(sync.RWMutex)
-	instances map[string]map[string]map[string]Sink
-	cfgsMap   map[string]map[string]*cfg
+	rwlock       = new(sync.RWMutex)
+	appInstances map[string]map[string]map[string]Sink
+	cfgsMap      map[string]map[string]*cfg
 )
 
 type abstract struct {
@@ -148,6 +148,7 @@ func (a *abstract) AddSample(ctx context.Context, key []string, val float64, opt
 func (a *abstract) MeasureSince(ctx context.Context, key []string, start time.Time, opts ...utils.OptionExtender) {
 	a.send(ctx, "MeasureSince", key, start, opts...)
 }
+func (a *abstract) IsEnableServiceLabel() bool { return a.EnableServiceLabel }
 
 func (a *abstract) getProxy() any {
 	return inspect.GetField[metrics.MetricSink](a.Metrics, "sink")

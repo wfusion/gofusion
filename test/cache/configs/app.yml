@@ -32,11 +32,11 @@ base:
       password: ci
       cluster: false
       endpoints:
-        - localhost:26379
+        - redis:6379
       dial_timeout: 5s
       read_timeout: 2s
       write_timeout: 2s
-      enable_logger: true
+      enable_logger: false
       unlogable_commands: [echo,ping]
       hooks:
         - github.com/wfusion/gofusion/log/customlogger.redisLogger

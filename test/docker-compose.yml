@@ -4,7 +4,7 @@ services:
   kafka:
     image: docker.io/bitnami/kafka:3.6
     container_name: kafka
-    networks: [gofusion]
+    networks: [ gofusion ]
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -20,7 +20,7 @@ services:
   pulsar:
     image: apachepulsar/pulsar:3.1.0
     container_name: pulsar
-    networks: [gofusion]
+    networks: [ gofusion ]
     ports:
       - "26650:6650"
       - "28080:8080"
@@ -28,7 +28,7 @@ services:
   rabbitmq:
     image: 'rabbitmq:3.12.6-management-alpine'
     container_name: rabbitmq
-    networks: [gofusion]
+    networks: [ gofusion ]
     ports:
       - "15672:15672"
       - "25672:5672"
@@ -38,14 +38,14 @@ services:
   redis:
     image: redis:7.2.2-alpine
     container_name: redis
-    networks: [gofusion]
+    networks: [ gofusion ]
     ports:
       - "26379:6379"
     command: --requirepass "ci"
   mysql:
     image: mysql:latest
     container_name: mysql
-    networks: [gofusion]
+    networks: [ gofusion ]
     environment:
       - MYSQL_ROOT_PASSWORD=ci
     ports:
@@ -53,7 +53,7 @@ services:
   postgres:
     image: postgres:16.0-alpine3.18
     container_name: postgres
-    networks: [gofusion]
+    networks: [ gofusion ]
     ports:
       - "25432:5432"
     environment:
@@ -61,7 +61,7 @@ services:
   opengauss:
     image: enmotech/opengauss:3.1.0
     container_name: opengauss
-    networks: [gofusion]
+    networks: [ gofusion ]
     privileged: true
     environment:
       - GS_PASSWORD=openGauss@123
@@ -70,7 +70,7 @@ services:
   sqlserver:
     image: mcr.microsoft.com/azure-sql-edge
     container_name: sqlserver
-    networks: [gofusion]
+    networks: [ gofusion ]
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=MyPass@word
@@ -80,7 +80,7 @@ services:
   mongo:
     image: mongo:4.2
     container_name: mongo
-    networks: [gofusion]
+    networks: [ gofusion ]
     ports:
       - "27017:27017"
     environment:
@@ -90,7 +90,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.47.2
     container_name: prometheus
-    networks: [gofusion]
+    networks: [ gofusion ]
     volumes:
       - "./metrics/configs/prometheus.yml:/etc/prometheus/prometheus.yml"
     ports:
@@ -101,6 +101,30 @@ services:
     networks: [ gofusion ]
     ports:
       - "29091:9091"
+#  test:
+#    image: golang:1.18.10-bullseye
+#    container_name: test
+#    networks: [ gofusion ]
+#    volumes:
+#      - "../../gofusion:/gofusion"
+#      #- "${GOPATH}/pkg:/go/pkg:ro"
+#    command:
+#      - "/bin/sh"
+#      - "-c"
+#      - "cd /gofusion && ./ci-linux.sh"
+#    #command: ['/bin/sh', '-c', 'while true; do sleep 1000; done']
+#    depends_on:
+#      - kafka
+#      - pulsar
+#      - rabbitmq
+#      - redis
+#      - mysql
+#      - postgres
+#      - opengauss
+#      - sqlserver
+#      - mongo
+#      - prometheus
+#      - prometheus_push
 
 networks:
   gofusion:

@@ -13,16 +13,15 @@ import (
 	"github.com/stretchr/testify/suite"
 
 	"github.com/wfusion/gofusion/common/utils"
-	"github.com/wfusion/gofusion/metrics"
-	"github.com/wfusion/gofusion/test/mock"
-
 	"github.com/wfusion/gofusion/log"
+	"github.com/wfusion/gofusion/metrics"
+	"github.com/wfusion/gofusion/test/internal/mock"
 
 	testMetrics "github.com/wfusion/gofusion/test/metrics"
 )
 
 func TestPush(t *testing.T) {
-	testingSuite := &Push{Test: testMetrics.T}
+	testingSuite := &Push{Test: new(testMetrics.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -68,7 +67,7 @@ func (t *Push) testPush(name string) {
 		}
 
 		job := name + "TestPush"
-		sink := metrics.Use(name, job, metrics.AppName(testMetrics.Component))
+		sink := metrics.Use(name, job, metrics.AppName(t.AppName()))
 
 		// When
 		sink.SetGauge(ctx, []string{"gauge", "without", "labels"}, mock.GenObj[float64]())
@@ -135,7 +134,7 @@ func (t *Push) testConcurrency(name string) {
 		}
 
 		job := name + "TestConcurrency"
-		sink := metrics.Use(name, job, metrics.AppName(testMetrics.Component))
+		sink := metrics.Use(name, job, metrics.AppName(t.AppName()))
 
 		// When
 		wg := new(sync.WaitGroup)

@@ -15,7 +15,8 @@ type Dialect interface {
 }
 
 type newOption struct {
-	monitor *event.CommandMonitor
+	monitor     *event.CommandMonitor
+	poolMonitor *event.PoolMonitor
 }
 
 type Mongo struct {

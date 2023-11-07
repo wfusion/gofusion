@@ -67,7 +67,7 @@
                 },
                 "endpoint": {
                     "addresses": [
-                        "localhost:29090"
+                        "prometheus:9091"
                     ]
                 },
                 "enable_service_label": true,
@@ -106,8 +106,8 @@
                 "driver": "mysql",
                 "dialect": "mysql",
                 "db": "mysql",
-                "host": "localhost",
-                "port": 23306,
+                "host": "mysql",
+                "port": 3306,
                 "user": "root",
                 "password": "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8",
                 "timeout": "5s",
@@ -120,9 +120,11 @@
                 "auto_increment_increment": 0,
                 "sharding": [
                     {
-                        "table": "",
+                        "table": "user",
                         "suffix": "",
-                        "columns": [],
+                        "columns": [
+                            "city"
+                        ],
                         "sharding_key_expr": "",
                         "sharding_key_by_raw_value": false,
                         "sharding_keys_for_migrating": [],
@@ -142,8 +144,8 @@
                 "driver": "mysql",
                 "dialector": "mysql",
                 "db": "mysql",
-                "host": "localhost",
-                "port": 23306,
+                "host": "mysql",
+                "port": 3306,
                 "user": "root",
                 "password": "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8",
                 "timeout": "5s",
@@ -162,10 +164,10 @@
             "default": {
                 "db": "admin",
                 "auth_db": "admin",
-                "user": "mongo",
+                "user": "root",
                 "password": "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8",
                 "endpoints": [
-                    "localhost:27017"
+                    "mongo:27017"
                 ],
                 "timeout": "5s",
                 "conn_timeout": "30s",
@@ -201,7 +203,7 @@
                 "password": "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8",
                 "cluster": false,
                 "endpoints": [
-                    "localhost:26379"
+                    "redis:6379"
                 ],
                 "dial_timeout": "5s",
                 "read_timeout": "2s",
@@ -237,9 +239,9 @@
                     "instance_type": "db",
                     "instance": "write",
                     "addresses": [
-                        "localhost:25672"
+                        "rabbitmq:5672"
                     ],
-                    "user": "rabbitmq",
+                    "user": "root",
                     "password": "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8",
                     "auth_type": "",
                     "version": "3.6.0"

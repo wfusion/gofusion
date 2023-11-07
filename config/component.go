@@ -43,7 +43,6 @@ var (
 		ComponentDebug,
 		ComponentCrypto,
 		ComponentLog,
-		ComponentGoroutinePool,
 		ComponentMetrics,
 		ComponentRedis,
 		ComponentCache,
@@ -53,6 +52,7 @@ var (
 		ComponentLock,
 		ComponentMessageQueue,
 		ComponentAsync,
+		ComponentGoroutinePool,
 		ComponentCron,
 		ComponentHttp,
 	}

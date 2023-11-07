@@ -18,7 +18,7 @@ import (
 )
 
 func TestAsynq(t *testing.T) {
-	testingSuite := &Asynq{Test: testCron.T}
+	testingSuite := &Asynq{Test: new(testCron.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -48,13 +48,13 @@ func (t *Asynq) TestMultiCronWithoutLock() {
 		t.cleanByQueue(ctx, "gofusion:cron:default")
 		defer t.cleanByQueue(ctx, "gofusion:cron:default")
 
-		r1 := cron.Use(nameDefault, cron.AppName(testCron.Component))
+		r1 := cron.Use(nameDefault, cron.AppName(t.AppName()))
 		r1.Handle("test", func(ctx context.Context, task cron.Task) (err error) {
 			cnt.Add(1)
 			log.Info(ctx, "[1] we get cron task: %s", task.Name())
 			return
 		})
-		r2 := cron.Use(nameDefaultDup, cron.AppName(testCron.Component))
+		r2 := cron.Use(nameDefaultDup, cron.AppName(t.AppName()))
 		r2.Handle("test", func(ctx context.Context, task cron.Task) (err error) {
 			cnt.Add(1)
 			log.Info(ctx, "[2] we get cron task: %s", task.Name())
@@ -80,14 +80,14 @@ func (t *Asynq) TestMultiCronWithLock() {
 		t.cleanByQueue(ctx, "gofusion:cron:with_lock")
 		defer t.cleanByQueue(ctx, "gofusion:cron:with_lock")
 
-		r1 := cron.Use(nameWithLock, cron.AppName(testCron.Component))
+		r1 := cron.Use(nameWithLock, cron.AppName(t.AppName()))
 		r1.Handle("with_args", handleWithArgsFunc(nameWithLock))
 		r1.Handle("test", func(ctx context.Context, task cron.Task) (err error) {
 			cnt.Add(1)
 			log.Info(ctx, "[%s] we get cron task: %s", nameWithLock, task.Name())
 			return
 		})
-		r2 := cron.Use(nameWithLockDup, cron.AppName(testCron.Component))
+		r2 := cron.Use(nameWithLockDup, cron.AppName(t.AppName()))
 		r2.Handle("with_args", handleWithArgsFunc(nameWithLockDup))
 		r2.Handle("test", func(ctx context.Context, task cron.Task) (err error) {
 			cnt.Add(1)
@@ -108,10 +108,10 @@ func (t *Asynq) TestMultiCronWithLock() {
 func (t *Asynq) cleanByQueue(ctx context.Context, queue string) {
 	pattern := fmt.Sprintf("asynq:{%s}:*", queue)
 	if queue == "" {
-		pattern = fmt.Sprintf("asynq:{%s:cron}:*", config.Use(testCron.Component).AppName())
+		pattern = fmt.Sprintf("asynq:{%s:cron}:*", config.Use(t.AppName()).AppName())
 	}
 
-	rdsCli := redis.Use(ctx, "default", redis.AppName(testCron.Component))
+	rdsCli := redis.Use(ctx, "default", redis.AppName(t.AppName()))
 	keys, err := rdsCli.Keys(ctx, pattern).Result()
 	t.NoError(err)
 

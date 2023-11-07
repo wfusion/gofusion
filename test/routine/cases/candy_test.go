@@ -15,7 +15,7 @@ import (
 )
 
 func TestCandy(t *testing.T) {
-	testingSuite := &Candy{Test: testRoutine.T}
+	testingSuite := &Candy{Test: new(testRoutine.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -43,7 +43,7 @@ func (t *Candy) TestGo() {
 		wg.Add(1)
 		routine.Go(func() {
 			i += 1
-		}, routine.WaitGroup(wg), routine.AppName(testRoutine.Component))
+		}, routine.WaitGroup(wg), routine.AppName(t.AppName()))
 		wg.Wait()
 		t.EqualValues(1, i)
 	})
@@ -60,7 +60,7 @@ func (t *Candy) TestGoWithArgs() {
 			},
 			routine.Args(2, 3, 4, 5),
 			routine.WaitGroup(wg),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(2, i)
@@ -76,7 +76,7 @@ func (t *Candy) TestGoWithType() {
 			func(arg int) { i += arg },
 			routine.Args(2),
 			routine.WaitGroup(wg),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(2, i)
@@ -94,7 +94,7 @@ func (t *Candy) TestGoWithVariableArgs() {
 			},
 			routine.Args(2, "this is a string", 4, 5, 6),
 			routine.WaitGroup(wg),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(4, i)
@@ -113,7 +113,7 @@ func (t *Candy) TestGoWithError() {
 			},
 			routine.Args(2, "this is a string", 4, 5, 6),
 			routine.WaitGroup(wg),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(4, i)
@@ -132,7 +132,7 @@ func (t *Candy) TestGoWithResultAndError() {
 			},
 			routine.Args(2, "this is a string", 4, 5, 6),
 			routine.WaitGroup(wg),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(4, i)
@@ -152,7 +152,7 @@ func (t *Candy) TestGocWithResultAndError() {
 			},
 			routine.Args(2, "this is a string", 4, 5, 6),
 			routine.WaitGroup(wg),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(4, i)
@@ -172,7 +172,7 @@ func (t *Candy) TestGoWithChannel() {
 			routine.Args(2, 3, 4, 5),
 			routine.WaitGroup(wg),
 			routine.Channel(ch),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(2, i)
@@ -197,7 +197,7 @@ func (t *Candy) TestGoWithChannelResult() {
 			routine.Args(2, 3, 4, 5),
 			routine.WaitGroup(wg),
 			routine.Channel(ch),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(2, i)
@@ -222,7 +222,7 @@ func (t *Candy) TestGoWithChannelError() {
 			routine.Args(2, 3, 4, 5),
 			routine.WaitGroup(wg),
 			routine.Channel(ch),
-			routine.AppName(testRoutine.Component),
+			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
 		t.EqualValues(2, i)
@@ -242,7 +242,7 @@ func (t *Candy) TestLoop() {
 		routine.Loop(func() {
 			for i = 0; i < expected; i++ {
 			}
-		}, routine.WaitGroup(wg), routine.AppName(testRoutine.Component))
+		}, routine.WaitGroup(wg), routine.AppName(t.AppName()))
 		wg.Wait()
 		t.EqualValues(expected, i)
 	})
@@ -257,7 +257,7 @@ func (t *Candy) TestLoopWithArgs() {
 		routine.Loop(func(args ...any) {
 			for i := args[0].(*int); *i < expected; *i++ {
 			}
-		}, routine.Args(&i), routine.WaitGroup(wg), routine.AppName(testRoutine.Component))
+		}, routine.Args(&i), routine.WaitGroup(wg), routine.AppName(t.AppName()))
 		wg.Wait()
 		t.Equal(expected, i)
 	})

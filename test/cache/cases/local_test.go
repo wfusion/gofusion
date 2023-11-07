@@ -15,13 +15,13 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/serialize"
 	"github.com/wfusion/gofusion/log"
-	"github.com/wfusion/gofusion/test/mock"
+	"github.com/wfusion/gofusion/test/internal/mock"
 
 	testCache "github.com/wfusion/gofusion/test/cache"
 )
 
 func TestLocal(t *testing.T) {
-	testingSuite := &Local{Test: testCache.T}
+	testingSuite := &Local{Test: new(testCache.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -48,7 +48,7 @@ func (t *Local) TestLocal() {
 		num := 15
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(t.AppName()))
 		objList := mock.GenObjListBySerializeAlgo(algo, num).([]*mock.RandomObj)
 		stringObjMap := make(map[string]*mock.RandomObj, num)
 		for i := 0; i < num; i++ {
@@ -85,7 +85,7 @@ func (t *Local) TestLocalGetAll() {
 		num := 15
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(t.AppName()))
 		objList := mock.GenObjListBySerializeAlgo(algo, num).([]*mock.RandomObj)
 		stringObjMap := make(map[string]*mock.RandomObj, num)
 		for i := 0; i < num; i++ {
@@ -114,7 +114,7 @@ func (t *Local) TestLocalWithoutLog() {
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
 		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](localWithoutLog,
-			cache.AppName(testCache.Component))
+			cache.AppName(t.AppName()))
 		objList := mock.GenObjListBySerializeAlgo(algo, num).([]*mock.RandomObj)
 		stringObjMap := make(map[string]*mock.RandomObj, num)
 		for i := 0; i < num; i++ {
@@ -150,7 +150,7 @@ func (t *Local) TestClear() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{
 			"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
 			"2": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
@@ -177,7 +177,7 @@ func (t *Local) TestDel() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{
 			"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
 			"2": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
@@ -204,7 +204,7 @@ func (t *Local) TestDelWithFailureKeys() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{
 			"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
 			"2": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
@@ -229,7 +229,7 @@ func (t *Local) TestSetExpired() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj)}
 		defer instance.Clear(ctx)
 
@@ -249,7 +249,7 @@ func (t *Local) TestSetKeyExpired() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmUnknown
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](local, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj)}
 		defer instance.Clear(ctx)
 
@@ -269,7 +269,7 @@ func (t *Local) TestSetGetInParallel() {
 		// Given
 		ctx := context.Background()
 		instance := cache.New[string, *mock.CommonObj, []*mock.CommonObj](
-			localWithSerializeAndCompress, cache.AppName(testCache.Component))
+			localWithSerializeAndCompress, cache.AppName(t.AppName()))
 		defer instance.Clear(ctx)
 
 		wg := new(sync.WaitGroup)
@@ -294,7 +294,7 @@ func (t *Local) TestLocalWithCallback() {
 		// Given
 		ctx := context.Background()
 		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](
-			localWithCallback, cache.AppName(testCache.Component))
+			localWithCallback, cache.AppName(t.AppName()))
 		defer instance.Clear(ctx)
 
 		t.runInParallel(func() {
@@ -325,7 +325,7 @@ func (t *Local) TestLocalWithSerialize() {
 		// Given
 		ctx := context.Background()
 		instance := cache.New[string, *mock.CommonObj, []*mock.CommonObj](
-			localWithSerialize, cache.AppName(testCache.Component))
+			localWithSerialize, cache.AppName(t.AppName()))
 		defer instance.Clear(ctx)
 
 		t.runInParallel(func() {
@@ -356,7 +356,7 @@ func (t *Local) TestLocalWithSerializeAndCompress() {
 		// Given
 		ctx := context.Background()
 		instance := cache.New[string, *mock.CommonObj, []*mock.CommonObj](
-			localWithSerializeAndCompress, cache.AppName(testCache.Component))
+			localWithSerializeAndCompress, cache.AppName(t.AppName()))
 		defer instance.Clear(ctx)
 
 		t.runInParallel(func() {
@@ -418,7 +418,7 @@ func (t *Local) TestLocalWithCompress() {
 		algo := serialize.AlgorithmGob
 		for _, cs := range testCases {
 			instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](
-				cs.cacheName, cache.AppName(testCache.Component))
+				cs.cacheName, cache.AppName(t.AppName()))
 			t.Run(cs.name, func() {
 				defer instance.Clear(ctx)
 				t.runInParallel(func() {

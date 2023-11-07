@@ -14,7 +14,8 @@ import (
 )
 
 func TestTime(t *testing.T) {
-	testingSuite := &Time{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Time{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

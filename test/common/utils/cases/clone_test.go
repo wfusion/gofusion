@@ -15,7 +15,8 @@ import (
 )
 
 func TestClone(t *testing.T) {
-	testingSuite := &Clone{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Clone{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

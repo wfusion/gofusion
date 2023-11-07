@@ -14,7 +14,7 @@ import (
 )
 
 func TestPool(t *testing.T) {
-	testingSuite := &Pool{Test: testRoutine.T}
+	testingSuite := &Pool{Test: new(testRoutine.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -41,7 +41,7 @@ func (t *Pool) TestSubmit() {
 		i := 0
 		wg.Add(1)
 		pool := routine.NewPool("test_submit", 1,
-			routine.WithoutTimeout(), routine.AppName(testRoutine.Component))
+			routine.WithoutTimeout(), routine.AppName(t.AppName()))
 		defer pool.Release()
 
 		t.NoError(pool.Submit(func() { defer wg.Done(); i += 1 }))
@@ -57,7 +57,7 @@ func (t *Pool) TestSubmitWithArgs() {
 		i := 0
 		wg.Add(1)
 		pool := routine.NewPool("test_submit_with_args", 1,
-			routine.WithoutTimeout(), routine.AppName(testRoutine.Component))
+			routine.WithoutTimeout(), routine.AppName(t.AppName()))
 		defer pool.Release()
 
 		t.NoError(pool.Submit(func(delta int) { defer wg.Done(); i += delta }, routine.Args(2)))

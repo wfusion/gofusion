@@ -12,7 +12,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 
-	millMsg "github.com/wfusion/gofusion/common/infra/watermill/message"
+	mw "github.com/wfusion/gofusion/common/infra/watermill/message"
 )
 
 const (
@@ -78,7 +78,7 @@ type eventPublisher[T eventual] struct {
 func (e *eventPublisher[T]) PublishEvent(ctx context.Context, opts ...utils.OptionExtender) (err error) {
 	opt := utils.ApplyOptions[pubOption](opts...)
 	optT := utils.ApplyOptions[eventPubOption[T]](opts...)
-	msgs := make([]*millMsg.Message, 0, len(optT.events))
+	msgs := make([]*mw.Message, 0, len(optT.events))
 	for _, evt := range optT.events {
 		msg, err := e.abstractMQ.newObjectMessage(ctx, evt.(*event[T]).pd, opt)
 		if msg != nil {
@@ -148,7 +148,7 @@ func (e *eventSubscriber[T]) SubscribeEvent(ctx context.Context, opts ...utils.O
 			}
 
 			msgs = append(msgs,
-				&message{Message: &millMsg.Message{Metadata: millMsg.Metadata{watermill.MessageRouterAck: ""}}})
+				&message{Message: &mw.Message{Metadata: mw.Metadata{watermill.MessageRouterAck: ""}}})
 			return
 		}),
 		handleEventSubscriber(),

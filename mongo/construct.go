@@ -11,7 +11,6 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
-	"github.com/wfusion/gofusion/routine"
 
 	mgoEvt "go.mongodb.org/mongo-driver/event"
 	mgoDrv "go.mongodb.org/mongo-driver/mongo"
@@ -37,13 +36,13 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 
 		pid := syscall.Getpid()
 		app := config.Use(opt.AppName).AppName()
-		if instances != nil {
-			for _, instance := range instances[opt.AppName] {
+		if appInstances != nil {
+			for name, instance := range appInstances[opt.AppName] {
 				if err := instance.GetProxy().Disconnect(nil); err != nil {
 					log.Printf("%v [Gofusion] %s %s disconnect error: %s", pid, app, config.ComponentMongo, err)
 				}
+				delete(appInstances[opt.AppName], name)
 			}
-			delete(instances, opt.AppName)
 		}
 	}
 }
@@ -61,23 +60,25 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	}
 
 	// conf.Option.Password = config.CryptoDecryptFunc()(conf.Option.Password)
-	mgoCli, err := mongo.Default.New(ctx, conf.Option, mongo.WithMonitor(monitor))
+	mgoCli, err := mongo.Default.New(ctx, conf.Option,
+		mongo.WithMonitor(monitor),
+		mongo.WithPoolMonitor(&mgoEvt.PoolMonitor{Event: metricsPoolMonitor(opt.AppName, name)}))
 	if err != nil {
 		panic(err)
 	}
 
 	rwlock.Lock()
 	defer rwlock.Unlock()
-	if instances == nil {
-		instances = make(map[string]map[string]*instance)
+	if appInstances == nil {
+		appInstances = make(map[string]map[string]*instance)
 	}
-	if instances[opt.AppName] == nil {
-		instances[opt.AppName] = make(map[string]*instance)
+	if appInstances[opt.AppName] == nil {
+		appInstances[opt.AppName] = make(map[string]*instance)
 	}
-	if _, ok := instances[opt.AppName][name]; ok {
+	if _, ok := appInstances[opt.AppName][name]; ok {
 		panic(ErrDuplicatedName)
 	}
-	instances[opt.AppName][name] = &instance{mongo: mgoCli, name: name, database: conf.DB}
+	appInstances[opt.AppName][name] = &instance{mongo: mgoCli, name: name, database: conf.DB}
 
 	// ioc
 	if opt.DI != nil {
@@ -89,7 +90,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		)
 	}
 
-	routine.Loop(startDaemonRoutines, routine.Args(ctx, opt.AppName, name), routine.AppName(opt.AppName))
+	go startDaemonRoutines(ctx, opt.AppName, name, conf)
 }
 
 func init() {

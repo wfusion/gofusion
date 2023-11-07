@@ -14,7 +14,7 @@ import (
 )
 
 func TestConstruct(t *testing.T) {
-	testingSuite := &Construct{Test: testMq.T}
+	testingSuite := &Construct{Test: new(testMq.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -37,7 +37,8 @@ func (t *Construct) AfterTest(suiteName, testName string) {
 
 func (t *Construct) TestRaw() {
 	t.Catch(func() {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		name := "Construct_TestRaw"
 		confs := map[string]*mq.Conf{
 			name: {
@@ -55,14 +56,15 @@ func (t *Construct) TestRaw() {
 				Logger:              "",
 			},
 		}
-		mq.Construct(ctx, confs, config.AppName(testMq.Component))
+		mq.Construct(ctx, confs, config.AppName(t.AppName()))
 		(&Raw{Test: t.Test}).defaultTest(name)
 	})
 }
 
 func (t *Construct) TestEvent() {
 	t.Catch(func() {
-		ctx := context.Background()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		name := "Construct_TestEvent"
 		confs := map[string]*mq.Conf{
 			name: {
@@ -80,7 +82,7 @@ func (t *Construct) TestEvent() {
 				Logger:              "",
 			},
 		}
-		mq.Construct(ctx, confs, config.AppName(testMq.Component))
+		mq.Construct(ctx, confs, config.AppName(t.AppName()))
 		(&Event{Test: t.Test}).defaultTest(name)
 	})
 }

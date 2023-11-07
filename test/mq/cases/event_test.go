@@ -13,14 +13,14 @@ import (
 	"github.com/wfusion/gofusion/common/utils/serialize"
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/mq"
-	"github.com/wfusion/gofusion/test/mock"
+	"github.com/wfusion/gofusion/test/internal/mock"
 
 	fmkCtx "github.com/wfusion/gofusion/context"
 	testMq "github.com/wfusion/gofusion/test/mq"
 )
 
 func TestEvent(t *testing.T) {
-	testingSuite := &Event{Test: testMq.T}
+	testingSuite := &Event{Test: new(testMq.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -95,7 +95,7 @@ func (t *Event) testPubSubEvent(name string) {
 
 		// When
 		wg := new(sync.WaitGroup)
-		structSub := mq.NewEventSubscriber[*structCreated](name, mq.AppName(testMq.Component))
+		structSub := mq.NewEventSubscriber[*structCreated](name, mq.AppName(t.AppName()))
 		structMsgCh, err := structSub.SubscribeEvent(ctx, mq.ChannelLen(expected))
 		t.NoError(err)
 
@@ -122,7 +122,7 @@ func (t *Event) testPubSubEvent(name string) {
 				}
 			}
 		}()
-		<-mq.Use(name, mq.AppName(testMq.Component)).Running()
+		<-mq.Use(name, mq.AppName(t.AppName())).Running()
 		t.publishStruct(ctx, name, structObjList, wg)
 
 		// Then
@@ -151,7 +151,7 @@ func (t *Event) testPubHandlerEvent(name string) {
 
 		// When
 		wg := new(sync.WaitGroup)
-		r := mq.Use(name, mq.AppName(testMq.Component))
+		r := mq.Use(name, mq.AppName(t.AppName()))
 		r.Handle(randomEventType, mq.EventHandler(
 			func(ctx context.Context, event mq.Event[*mock.RandomObj]) (err error) {
 				// Then
@@ -188,7 +188,7 @@ func (t *Event) testPubHandlerEvent(name string) {
 
 func (t *Event) publishRandom(ctx context.Context, name string, objList []*mock.RandomObj, wg *sync.WaitGroup) {
 	// publisher
-	p := mq.NewEventPublisher[*mock.RandomObj](name, mq.AppName(testMq.Component))
+	p := mq.NewEventPublisher[*mock.RandomObj](name, mq.AppName(t.AppName()))
 
 	for i := 0; i < len(objList); i++ {
 		event := mq.UntimedEvent(objList[i].Str, objList[i])
@@ -202,7 +202,7 @@ func (t *Event) publishRandom(ctx context.Context, name string, objList []*mock.
 
 func (t *Event) publishStruct(ctx context.Context, name string, objList []*structCreated, wg *sync.WaitGroup) {
 	// publisher
-	p := mq.NewEventPublisher[*structCreated](name, mq.AppName(testMq.Component))
+	p := mq.NewEventPublisher[*structCreated](name, mq.AppName(t.AppName()))
 
 	for i := 0; i < len(objList); i++ {
 		event := mq.UntimedEvent(objList[i].ID, objList[i])

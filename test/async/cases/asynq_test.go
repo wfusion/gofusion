@@ -16,14 +16,14 @@ import (
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/redis"
-	"github.com/wfusion/gofusion/test/mock"
+	"github.com/wfusion/gofusion/test/internal/mock"
 
 	fmkCtx "github.com/wfusion/gofusion/context"
 	testAsync "github.com/wfusion/gofusion/test/async"
 )
 
 func TestAsynq(t *testing.T) {
-	testingSuite := &Asynq{Test: testAsync.T}
+	testingSuite := &Asynq{Test: new(testAsync.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -48,8 +48,8 @@ func (t *Asynq) TestDefault() {
 	t.Catch(func() {
 		// Given
 		times := 2
-		c := async.C(nameDefault, async.AppName(testAsync.Component))
-		p := async.P(nameDefault, async.AppName(testAsync.Component))
+		c := async.C(nameDefault, async.AppName(t.AppName()))
+		p := async.P(nameDefault, async.AppName(t.AppName()))
 		ctx := fmkCtx.SetTraceID(context.Background(), utils.NginxID())
 		t.cleanByQueue(ctx, "")
 		defer t.cleanByQueue(ctx, "")
@@ -166,8 +166,8 @@ func (t *Asynq) TestWithQueue() {
 		obj3 := mock.GenObjBySerializeAlgo(serialize.AlgorithmGob)
 		obj4 := 10
 
-		c := async.C(nameWithQueue, async.AppName(testAsync.Component))
-		p := async.P(nameWithQueue, async.AppName(testAsync.Component))
+		c := async.C(nameWithQueue, async.AppName(t.AppName()))
+		p := async.P(nameWithQueue, async.AppName(t.AppName()))
 		hdr := func(ctx context.Context, a1, a2, a3 *mock.RandomObj, a4 int) (err error) {
 			cnt.Add(1)
 			deadline, ok := ctx.Deadline()
@@ -201,10 +201,10 @@ func (t *Asynq) TestWithQueue() {
 func (t *Asynq) cleanByQueue(ctx context.Context, queue string) {
 	pattern := fmt.Sprintf("asynq:{%s}:*", queue)
 	if queue == "" {
-		pattern = fmt.Sprintf("asynq:{%s:async}:*", config.Use(testAsync.Component).AppName())
+		pattern = fmt.Sprintf("asynq:{%s:async}:*", config.Use(t.AppName()).AppName())
 	}
 
-	rdsCli := redis.Use(ctx, "default", redis.AppName(testAsync.Component))
+	rdsCli := redis.Use(ctx, "default", redis.AppName(t.AppName()))
 	keys, err := rdsCli.Keys(ctx, pattern).Result()
 	t.NoError(err)
 

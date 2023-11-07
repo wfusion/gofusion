@@ -31,8 +31,8 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		addInstance(ctx, name, conf, opt)
 	}
 
-	if opt.AppName == "" && instances[opt.AppName] != nil {
-		if conf, ok := instances[opt.AppName][config.DefaultInstanceKey]; !ok || conf == nil {
+	if opt.AppName == "" && appInstances[opt.AppName] != nil {
+		if conf, ok := appInstances[opt.AppName][config.DefaultInstanceKey]; !ok || conf == nil {
 			panic(ErrDefaultLoggerNotFound)
 		}
 	}
@@ -40,11 +40,11 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 	return func() {
 		rwlock.Lock()
 		defer rwlock.Unlock()
-		if instances != nil {
-			for _, instance := range instances[opt.AppName] {
+		if appInstances != nil {
+			for name, instance := range appInstances[opt.AppName] {
 				instance.flush()
+				delete(appInstances[opt.AppName], name)
 			}
-			delete(instances, opt.AppName)
 		}
 
 		// there maybe some locally logging, avoid some NPE crash as possible as we can do
@@ -137,16 +137,16 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 
 	rwlock.Lock()
 	defer rwlock.Unlock()
-	if instances == nil {
-		instances = make(map[string]map[string]*logger)
+	if appInstances == nil {
+		appInstances = make(map[string]map[string]*logger)
 	}
-	if instances[opt.AppName] == nil {
-		instances[opt.AppName] = make(map[string]*logger)
+	if appInstances[opt.AppName] == nil {
+		appInstances[opt.AppName] = make(map[string]*logger)
 	}
-	if _, ok := instances[opt.AppName][name]; ok {
+	if _, ok := appInstances[opt.AppName][name]; ok {
 		panic(ErrDuplicatedName)
 	}
-	instances[opt.AppName][name] = fmkLogger
+	appInstances[opt.AppName][name] = fmkLogger
 
 	if name == config.DefaultInstanceKey {
 		globalLogger = fmkLogger

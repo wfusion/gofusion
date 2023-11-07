@@ -14,7 +14,7 @@ import (
 )
 
 func TestRedis(t *testing.T) {
-	testingSuite := &Redis{Test: testRedis.T}
+	testingSuite := &Redis{Test: new(testRedis.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -41,7 +41,7 @@ func (t *Redis) TestGetSet() {
 		key := "test:getset:key"
 		val := "this is a value"
 		ctx := context.Background()
-		rdsCli := redis.Use(ctx, nameDefault, redis.AppName(testRedis.Component))
+		rdsCli := redis.Use(ctx, nameDefault, redis.AppName(t.AppName()))
 
 		// When
 		t.NoError(rdsCli.Set(ctx, key, val, time.Second).Err())
@@ -58,7 +58,7 @@ func (t *Redis) TestSubscribe() {
 	t.Catch(func() {
 		// Given
 		ctx := context.Background()
-		rdsCli := redis.Use(ctx, nameDefault, redis.AppName(testRedis.Component))
+		rdsCli := redis.Use(ctx, nameDefault, redis.AppName(t.AppName()))
 
 		// When
 		pubsub := rdsCli.Subscribe(ctx, "asynq:cancel")

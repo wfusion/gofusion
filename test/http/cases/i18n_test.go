@@ -16,7 +16,7 @@ import (
 )
 
 func TestI18n(t *testing.T) {
-	testingSuite := &I18n{Test: testHtp.T}
+	testingSuite := &I18n{Test: new(testHtp.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -39,7 +39,7 @@ func (t *I18n) AfterTest(suiteName, testName string) {
 
 func (t *I18n) TestCase() {
 	t.Catch(func() {
-		config.Use(testHtp.Component).DI().MustInvoke(func(b i18n.Localizable[fmkHtp.Errcode]) {
+		config.Use(t.AppName()).DI().MustInvoke(func(b i18n.Localizable[fmkHtp.Errcode]) {
 			b.AddMessages(fmkHtp.Errcode(1), map[language.Tag]*i18n.Message{})
 		})
 	})

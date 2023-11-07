@@ -13,7 +13,8 @@ import (
 )
 
 func TestString(t *testing.T) {
-	testingSuite := &String{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &String{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

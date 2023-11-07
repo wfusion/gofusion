@@ -9,9 +9,9 @@ import (
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
-	"github.com/wfusion/gofusion/common/configor"
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/internal/configor"
 )
 
 type loader struct {

@@ -7,12 +7,8 @@ import (
 	"github.com/wfusion/gofusion/test"
 )
 
-var (
-	T = &Test{Suite: test.S}
-)
-
 type Test struct {
-	*test.Suite
+	test.Suite
 }
 
 func (t *Test) SetupTest() {

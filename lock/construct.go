@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	instances map[string]map[string]Lockable
-	rwlock    sync.RWMutex
+	appInstances map[string]map[string]Lockable
+	rwlock       sync.RWMutex
 )
 
 func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {
@@ -31,8 +31,10 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 	return func() {
 		rwlock.Lock()
 		defer rwlock.Unlock()
-		if instances != nil {
-			delete(instances, opt.AppName)
+		if appInstances != nil {
+			for name := range appInstances[opt.AppName] {
+				delete(appInstances[opt.AppName], name)
+			}
 		}
 	}
 }
@@ -40,30 +42,30 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) {
 	rwlock.Lock()
 	defer rwlock.Unlock()
-	if instances == nil {
-		instances = make(map[string]map[string]Lockable)
+	if appInstances == nil {
+		appInstances = make(map[string]map[string]Lockable)
 	}
-	if instances[opt.AppName] == nil {
-		instances[opt.AppName] = make(map[string]Lockable)
+	if appInstances[opt.AppName] == nil {
+		appInstances[opt.AppName] = make(map[string]Lockable)
 	}
 
-	if _, ok := instances[opt.AppName][name]; ok {
+	if _, ok := appInstances[opt.AppName][name]; ok {
 		panic(ErrDuplicatedName)
 	}
 
 	switch conf.Type {
 	case lockTypeRedisLua:
 		redis.Use(ctx, conf.Instance, redis.AppName(opt.AppName)) // check if instance exists
-		instances[opt.AppName][name] = newRedisLuaLocker(ctx, opt.AppName, conf.Instance)
+		appInstances[opt.AppName][name] = newRedisLuaLocker(ctx, opt.AppName, conf.Instance)
 	case lockTypeRedisNX:
 		redis.Use(ctx, conf.Instance, redis.AppName(opt.AppName)) // check if instance exists
-		instances[opt.AppName][name] = newRedisNXLocker(ctx, opt.AppName, conf.Instance)
+		appInstances[opt.AppName][name] = newRedisNXLocker(ctx, opt.AppName, conf.Instance)
 	case lockTypeMySQL:
 		db.Use(ctx, conf.Instance, db.AppName(opt.AppName)) // check if instance exists
-		instances[opt.AppName][name] = newMysqlLocker(ctx, opt.AppName, conf.Instance)
+		appInstances[opt.AppName][name] = newMysqlLocker(ctx, opt.AppName, conf.Instance)
 	case lockTypeMariaDB:
 		db.Use(ctx, conf.Instance, db.AppName(opt.AppName)) // check if instance exists
-		instances[opt.AppName][name] = newMysqlLocker(ctx, opt.AppName, conf.Instance)
+		appInstances[opt.AppName][name] = newMysqlLocker(ctx, opt.AppName, conf.Instance)
 	default:
 		panic(ErrUnsupportedLockType)
 	}
@@ -71,7 +73,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	// ioc
 	if opt.DI != nil {
 		opt.DI.MustProvide(func() Lockable { return Use(name, AppName(opt.AppName)) }, di.Name(name))
-		if _, ok := instances[opt.AppName][name].(ReentrantLockable); ok {
+		if _, ok := appInstances[opt.AppName][name].(ReentrantLockable); ok {
 			opt.DI.MustProvide(
 				func() ReentrantLockable { return UseReentrant(ctx, name, AppName(opt.AppName)) },
 				di.Name(name),
@@ -95,7 +97,7 @@ func Use(name string, opts ...utils.OptionExtender) Lockable {
 
 	rwlock.RLock()
 	defer rwlock.RUnlock()
-	instances, ok := instances[opt.appName]
+	instances, ok := appInstances[opt.appName]
 	if !ok {
 		panic(errors.Errorf("locker instance not found for app: %s", opt.appName))
 	}
@@ -111,7 +113,7 @@ func UseReentrant(ctx context.Context, name string, opts ...utils.OptionExtender
 
 	rwlock.RLock()
 	defer rwlock.RUnlock()
-	instances, ok := instances[opt.appName]
+	instances, ok := appInstances[opt.appName]
 	if !ok {
 		panic(errors.Errorf("reentrant locker instance not found for app: %s", opt.appName))
 	}

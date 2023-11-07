@@ -22,7 +22,7 @@ import (
 )
 
 func TestFile(t *testing.T) {
-	testingSuite := &File{Test: testHtp.T}
+	testingSuite := &File{Test: new(testHtp.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -46,7 +46,8 @@ func (t *File) AfterTest(suiteName, testName string) {
 func (t *File) TestStatic() {
 	t.Catch(func() {
 		// Given
-		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.app.yml", testHtp.Component))
+		files := t.ConfigFiles()
+		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.%s", t.AppName(), files[len(files)-1]))
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/TestStatic.yml", nil)
 		t.NoError(err)
@@ -64,7 +65,8 @@ func (t *File) TestStatic() {
 func (t *File) TestStaticZeroCopy() {
 	t.Catch(func() {
 		// Given
-		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.app.yml", testHtp.Component))
+		files := t.ConfigFiles()
+		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.%s", t.AppName(), files[len(files)-1]))
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/TestStaticZeroCopy.yml", nil)
 		t.NoError(err)
@@ -83,7 +85,8 @@ func (t *File) TestStaticZeroCopy() {
 func (t *File) TestContentZeroCopy() {
 	t.Catch(func() {
 		// Given
-		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.app.yml", testHtp.Component))
+		files := t.ConfigFiles()
+		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.%s", t.AppName(), files[len(files)-1]))
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/TestContentZeroCopy.yml", nil)
 		t.NoError(err)

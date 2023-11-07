@@ -10,7 +10,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/log"
 
-	millMsg "github.com/wfusion/gofusion/common/infra/watermill/message"
+	mw "github.com/wfusion/gofusion/common/infra/watermill/message"
 )
 
 const (
@@ -23,9 +23,9 @@ const (
 
 var (
 	handlerFuncType                   = reflect.TypeOf((*HandlerFunc)(nil)).Elem()
-	watermillHandlerFuncType          = reflect.TypeOf((*millMsg.HandlerFunc)(nil)).Elem()
-	watermillNoPublishHandlerFuncType = reflect.TypeOf((*millMsg.NoPublishHandlerFunc)(nil)).Elem()
-	watermillHandlerMiddlewareType    = reflect.TypeOf((*millMsg.HandlerMiddleware)(nil)).Elem()
+	watermillHandlerFuncType          = reflect.TypeOf((*mw.HandlerFunc)(nil)).Elem()
+	watermillNoPublishHandlerFuncType = reflect.TypeOf((*mw.NoPublishHandlerFunc)(nil)).Elem()
+	watermillHandlerMiddlewareType    = reflect.TypeOf((*mw.HandlerMiddleware)(nil)).Elem()
 	customLoggerType                  = reflect.TypeOf((*customLogger)(nil)).Elem()
 	watermillLoggerType               = reflect.TypeOf((*watermill.LoggerAdapter)(nil)).Elem()
 
@@ -67,7 +67,7 @@ type Publisher interface {
 	// close should flush unsent messages, if publisher is async.
 	close() error
 	topic() string
-	watermillPublisher() millMsg.Publisher
+	watermillPublisher() mw.Publisher
 }
 type EventPublisher[T eventual] interface {
 	// PublishEvent publishes provided messages to given topic.
@@ -108,7 +108,7 @@ type Subscriber interface {
 	close() error
 	topic() string
 	watermillLogger() watermill.LoggerAdapter
-	watermillSubscriber() millMsg.Subscriber
+	watermillSubscriber() mw.Subscriber
 }
 
 type EventSubscriber[T eventual] interface {
@@ -134,7 +134,7 @@ type Message interface {
 
 type pubOption struct {
 	messages          []Message
-	watermillMessages millMsg.Messages
+	watermillMessages mw.Messages
 
 	async           bool
 	asyncStrategies []strategy.Strategy
@@ -157,7 +157,7 @@ func Objects[T any](objectUUIDGenFunc func(T) string, objects ...any) utils.Opti
 func Messages(messages ...Message) utils.OptionFunc[pubOption] {
 	return func(o *pubOption) { o.messages = messages }
 }
-func messages(messages ...*millMsg.Message) utils.OptionFunc[pubOption] {
+func messages(messages ...*mw.Message) utils.OptionFunc[pubOption] {
 	return func(o *pubOption) {
 		o.watermillMessages = messages
 	}
@@ -195,14 +195,14 @@ func handleEventSubscriber() utils.OptionFunc[routerOption] {
 }
 
 type message struct {
-	*millMsg.Message
+	*mw.Message
 
 	payload []byte
 	obj     any
 }
 
 func NewMessage(uuid string, payload []byte) Message {
-	return &message{Message: millMsg.NewMessage(uuid, payload), payload: payload}
+	return &message{Message: mw.NewMessage(uuid, payload), payload: payload}
 }
 func (m *message) ID() string      { return m.Message.UUID }
 func (m *message) Payload() []byte { return m.payload }

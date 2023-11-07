@@ -6,14 +6,12 @@ import (
 	"reflect"
 	"syscall"
 
+	rdsDrv "github.com/redis/go-redis/v9"
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/infra/drivers/redis"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
-	"github.com/wfusion/gofusion/routine"
-
-	rdsDrv "github.com/redis/go-redis/v9"
 
 	fmkLog "github.com/wfusion/gofusion/log"
 
@@ -36,13 +34,13 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 
 		pid := syscall.Getpid()
 		app := config.Use(opt.AppName).AppName()
-		if instances != nil {
-			for _, instance := range instances[opt.AppName] {
+		if appInstances != nil {
+			for name, instance := range appInstances[opt.AppName] {
 				if err := instance.GetProxy().Close(); err != nil {
 					log.Printf("%v [Gofusion] %s %s close error: %s", pid, app, config.ComponentRedis, err)
 				}
+				delete(appInstances[opt.AppName], name)
 			}
-			delete(instances, opt.AppName)
 		}
 	}
 }
@@ -69,22 +67,22 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 
 	rwlock.Lock()
 	defer rwlock.Unlock()
-	if instances == nil {
-		instances = make(map[string]map[string]*instance)
+	if appInstances == nil {
+		appInstances = make(map[string]map[string]*instance)
 	}
-	if instances[opt.AppName] == nil {
-		instances[opt.AppName] = make(map[string]*instance)
+	if appInstances[opt.AppName] == nil {
+		appInstances[opt.AppName] = make(map[string]*instance)
 	}
-	if _, ok := instances[opt.AppName][name]; ok {
+	if _, ok := appInstances[opt.AppName][name]; ok {
 		panic(ErrDuplicatedName)
 	}
-	instances[opt.AppName][name] = &instance{name: name, redis: rdsCli}
+	appInstances[opt.AppName][name] = &instance{name: name, redis: rdsCli}
 
 	if opt.DI != nil {
 		opt.DI.MustProvide(func() rdsDrv.UniversalClient { return Use(ctx, name, AppName(opt.AppName)) }, di.Name(name))
 	}
 
-	routine.Loop(startDaemonRoutines, routine.Args(ctx, opt.AppName, name), routine.AppName(opt.AppName))
+	go startDaemonRoutines(ctx, opt.AppName, name, conf)
 }
 
 func init() {

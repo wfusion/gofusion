@@ -15,13 +15,13 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/serialize"
 	"github.com/wfusion/gofusion/log"
-	"github.com/wfusion/gofusion/test/mock"
+	"github.com/wfusion/gofusion/test/internal/mock"
 
 	testCache "github.com/wfusion/gofusion/test/cache"
 )
 
 func TestRedis(t *testing.T) {
-	testingSuite := &Redis{Test: testCache.T}
+	testingSuite := &Redis{Test: new(testCache.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -48,7 +48,7 @@ func (t *Redis) TestRedis() {
 		num := 15
 		ctx := context.Background()
 		algo := serialize.AlgorithmGob
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(t.AppName()))
 		objList := mock.GenObjListBySerializeAlgo(algo, num).([]*mock.RandomObj)
 		stringObjMap := make(map[string]*mock.RandomObj, num)
 		for i := 0; i < num; i++ {
@@ -84,7 +84,7 @@ func (t *Redis) TestClear() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmGob
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{
 			"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
 			"2": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
@@ -111,7 +111,7 @@ func (t *Redis) TestDel() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmGob
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{
 			"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
 			"2": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
@@ -138,7 +138,7 @@ func (t *Redis) TestDelWithFailureKeys() {
 		// Given
 		ctx := context.Background()
 		algo := serialize.AlgorithmGob
-		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](redis, cache.AppName(t.AppName()))
 		stringObjMap := map[string]*mock.RandomObj{
 			"1": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
 			"2": mock.GenObjBySerializeAlgo(algo).(*mock.RandomObj),
@@ -162,7 +162,7 @@ func (t *Redis) TestSetGetInParallel() {
 	t.Catch(func() {
 		// Given
 		ctx := context.Background()
-		instance := cache.New[string, *mock.CommonObj, []*mock.CommonObj](redisJson, cache.AppName(testCache.Component))
+		instance := cache.New[string, *mock.CommonObj, []*mock.CommonObj](redisJson, cache.AppName(t.AppName()))
 		defer instance.Clear(ctx)
 
 		wg := new(sync.WaitGroup)
@@ -217,7 +217,7 @@ func (t *Redis) TestLocalWithCompress() {
 		algo := serialize.AlgorithmGob
 		for _, cs := range testCases {
 			instance := cache.New[string, *mock.RandomObj, []*mock.RandomObj](
-				cs.cacheName, cache.AppName(testCache.Component))
+				cs.cacheName, cache.AppName(t.AppName()))
 			t.Run(cs.name, func() {
 				defer instance.Clear(ctx)
 				t.runInParallel(func() {

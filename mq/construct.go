@@ -55,8 +55,8 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 					log.Printf("%v [Gofusion] %s %s %s router exit failed: %s",
 						pid, app, config.ComponentMessageQueue, name, err)
 				}
+				delete(routers[opt.AppName], name)
 			}
-			delete(routers, opt.AppName)
 		}
 
 		if publishers != nil {
@@ -70,8 +70,8 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 					log.Printf("%v [Gofusion] %s %s %s publisher exit failed: %s",
 						pid, app, config.ComponentMessageQueue, name, err)
 				}
+				delete(publishers[opt.AppName], name)
 			}
-			delete(publishers, opt.AppName)
 		}
 
 		if subscribers != nil {
@@ -85,8 +85,8 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 					log.Printf("%v [Gofusion] %s %s %s subscriber exit failed: %s",
 						pid, app, config.ComponentMessageQueue, name, err)
 				}
+				delete(subscribers[opt.AppName], name)
 			}
-			delete(subscribers, opt.AppName)
 		}
 	}
 }

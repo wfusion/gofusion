@@ -7,17 +7,17 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/suite"
+	"github.com/wfusion/gofusion/test/internal/mock"
 
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/serialize"
 	"github.com/wfusion/gofusion/log"
-	"github.com/wfusion/gofusion/test/mock"
-
 	testUtl "github.com/wfusion/gofusion/test/common/utils"
 )
 
 func TestSerialize(t *testing.T) {
-	testingSuite := &Serialize{Test: testUtl.T}
+	t.Parallel()
+	testingSuite := &Serialize{Test: new(testUtl.Test)}
 	suite.Run(t, testingSuite)
 }
 

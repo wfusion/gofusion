@@ -22,8 +22,6 @@ import (
 	"github.com/wfusion/gofusion/db/callbacks"
 	"github.com/wfusion/gofusion/db/plugins"
 	"github.com/wfusion/gofusion/db/softdelete"
-	"github.com/wfusion/gofusion/routine"
-
 	fmkLog "github.com/wfusion/gofusion/log"
 
 	_ "github.com/wfusion/gofusion/log/customlogger"
@@ -49,17 +47,17 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 
 		pid := syscall.Getpid()
 		app := config.Use(opt.AppName).AppName()
-		if instances != nil {
-			for _, instance := range instances[opt.AppName] {
+		if appInstances != nil {
+			for name, instance := range appInstances[opt.AppName] {
 				if sqlDB, err := instance.GetProxy().DB(); err == nil {
 					if err := sqlDB.Close(); err != nil {
 						log.Printf("%v [Gofusion] %s %s close error: %s", pid, app, config.ComponentDB, err)
 					}
 				}
+				delete(appInstances[opt.AppName], name)
 			}
-			delete(instances, opt.AppName)
 		}
-		if len(instances) == 0 {
+		if len(appInstances) == 0 {
 			for _, patch := range patches {
 				if patch != nil {
 					patch.Reset()
@@ -125,16 +123,16 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 
 	rwlock.Lock()
 	defer rwlock.Unlock()
-	if instances == nil {
-		instances = make(map[string]map[string]*Instance)
+	if appInstances == nil {
+		appInstances = make(map[string]map[string]*Instance)
 	}
-	if instances[opt.AppName] == nil {
-		instances[opt.AppName] = make(map[string]*Instance)
+	if appInstances[opt.AppName] == nil {
+		appInstances[opt.AppName] = make(map[string]*Instance)
 	}
-	if _, ok := instances[opt.AppName][name]; ok {
+	if _, ok := appInstances[opt.AppName][name]; ok {
 		panic(ErrDuplicatedName)
 	}
-	instances[opt.AppName][name] = &Instance{db: db, name: name, tableShardingPlugins: tablePluginMap}
+	appInstances[opt.AppName][name] = &Instance{db: db, name: name, tableShardingPlugins: tablePluginMap}
 
 	// ioc
 	if opt.DI != nil {
@@ -142,13 +140,13 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			func() *gorm.DB {
 				rwlock.RLock()
 				defer rwlock.RUnlock()
-				return instances[opt.AppName][name].GetProxy()
+				return appInstances[opt.AppName][name].GetProxy()
 			},
 			di.Name(name),
 		)
 	}
 
-	routine.Loop(startDaemonRoutines, routine.Args(ctx, opt.AppName, name), routine.AppName(opt.AppName))
+	go startDaemonRoutines(ctx, opt.AppName, name, conf)
 }
 
 // adaptAutoIncrementIncrement patch gorm schema parse method to enable changing autoIncrementIncrement in runtime

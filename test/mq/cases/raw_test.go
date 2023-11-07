@@ -14,14 +14,14 @@ import (
 	"github.com/wfusion/gofusion/common/utils/serialize"
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/mq"
-	"github.com/wfusion/gofusion/test/mock"
+	"github.com/wfusion/gofusion/test/internal/mock"
 
 	fmkCtx "github.com/wfusion/gofusion/context"
 	testMq "github.com/wfusion/gofusion/test/mq"
 )
 
 func TestRaw(t *testing.T) {
-	testingSuite := &Raw{Test: testMq.T}
+	testingSuite := &Raw{Test: new(testMq.Test)}
 	testingSuite.Init(testingSuite)
 	suite.Run(t, testingSuite)
 }
@@ -95,7 +95,7 @@ func (t *Raw) testPubSubRaw(name string) {
 		objMap := utils.SliceToMap(objList, func(v *mock.CommonObj) string { return v.Str })
 
 		// When
-		sub := mq.Sub(name, mq.AppName(testMq.Component))
+		sub := mq.Sub(name, mq.AppName(t.AppName()))
 		msgCh, err := sub.SubscribeRaw(ctx, mq.ChannelLen(expected))
 		t.NoError(err)
 
@@ -156,7 +156,7 @@ func (t *Raw) testPubHandleRaw(name string) {
 
 		// When
 		wg := new(sync.WaitGroup)
-		r := mq.Use(name, mq.AppName(testMq.Component))
+		r := mq.Use(name, mq.AppName(t.AppName()))
 		r.Handle(fmt.Sprintf("%s_raw_message_handler", name), func(msg mq.Message) (err error) {
 			cnt.Add(1)
 
@@ -189,7 +189,7 @@ func (t *Raw) testPubHandleRaw(name string) {
 
 func (t *Raw) publishAsMessage(ctx context.Context, name string, objList []*mock.CommonObj, wg *sync.WaitGroup) {
 	// publisher
-	p := mq.Pub(name, mq.AppName(testMq.Component))
+	p := mq.Pub(name, mq.AppName(t.AppName()))
 
 	for i := 0; i < len(objList); i++ {
 		msg := mq.NewMessage(objList[i].Str, utils.MustJsonMarshal(objList[i]))

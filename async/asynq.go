@@ -21,7 +21,7 @@ import (
 
 	rdsDrv "github.com/redis/go-redis/v9"
 
-	pd "github.com/wfusion/gofusion/util/payload"
+	pd "github.com/wfusion/gofusion/internal/util/payload"
 )
 
 const (

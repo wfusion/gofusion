@@ -6,51 +6,145 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/spf13/cast"
+
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
-	"github.com/wfusion/gofusion/routine"
+	"github.com/wfusion/gofusion/metrics"
 )
 
-func startDaemonRoutines(ctx context.Context, appName, name string) {
+var (
+	metricsPoolIdleKey    = []string{"redis", "idle"}
+	metricsPoolTotalKey   = []string{"redis", "total"}
+	metricsPoolStaleKey   = []string{"redis", "stale"}
+	metricsPoolHitsKey    = []string{"redis", "hits"}
+	metricsPoolMissesKey  = []string{"redis", "misses"}
+	metricsLatencyKey     = []string{"redis", "latency"}
+	metricsLatencyBuckets = []float64{
+		.1, .25, .5, .75, .90, .95, .99,
+		1, 2.5, 5, 7.5, 9, 9.5, 9.9,
+		10, 25, 50, 75, 90, 95, 99,
+	}
+)
+
+func startDaemonRoutines(ctx context.Context, appName, name string, conf *Conf) {
 	ticker := time.Tick(time.Second * 5)
+	app := config.Use(appName).AppName()
+	labels := []metrics.Label{
+		{Key: "config", Value: name},
+		{Key: "database", Value: cast.ToString(conf.DB)},
+	}
+
 	for {
-		app := config.Use(appName).AppName()
 		select {
 		case <-ctx.Done():
 			log.Printf("%v [Gofusion] %s %s %s metrics exited",
 				syscall.Getpid(), app, config.ComponentRedis, name)
 			return
 		case <-ticker:
-			routine.Loop(metricMongoConn, routine.Args(ctx, appName, name), routine.AppName(appName))
-			routine.Loop(metricMongoLatency, routine.Args(ctx, appName, name), routine.Args(appName))
+			go metricRedisStats(ctx, appName, name, labels)
+			go metricRedisLatency(ctx, appName, name, labels)
 		}
 	}
 }
 
-func metricMongoConn(ctx context.Context, appName, name string) {
+func metricRedisStats(ctx context.Context, appName, name string, labels []metrics.Label) {
+	select {
+	case <-ctx.Done():
+		return
+	default:
+
+	}
+
 	_, _ = utils.Catch(func() {
 		rwlock.RLock()
 		defer rwlock.RUnlock()
-		_ = instances[appName][name].GetProxy()
+		_ = appInstances[appName][name].GetProxy()
+		instances, ok := appInstances[appName]
+		if !ok {
+			return
+		}
+		instance, ok := instances[name]
+		if !ok {
+			return
+		}
 
-		// TODO: emit metrics
-		// rds.PoolStats().TotalConns
-		// rds.PoolStats().IdleConns
-		// rds.PoolStats().StaleConns
-		// rds.PoolStats().Hits
-		// rds.PoolStats().Misses
+		idleKey := append([]string{appName}, metricsPoolIdleKey...)
+		staleKey := append([]string{appName}, metricsPoolStaleKey...)
+		totalKey := append([]string{appName}, metricsPoolTotalKey...)
+		hitsKey := append([]string{appName}, metricsPoolHitsKey...)
+		missesKey := append([]string{appName}, metricsPoolMissesKey...)
+
+		rdsCli := instance.GetProxy()
+		stats := rdsCli.PoolStats()
+		for _, m := range metrics.Internal(metrics.AppName(appName)) {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if m.IsEnableServiceLabel() {
+					m.SetGauge(ctx, idleKey, float64(stats.IdleConns), metrics.Labels(labels))
+					m.SetGauge(ctx, staleKey, float64(stats.StaleConns), metrics.Labels(labels))
+					m.SetGauge(ctx, totalKey, float64(stats.TotalConns), metrics.Labels(labels))
+					m.SetGauge(ctx, hitsKey, float64(stats.Hits), metrics.Labels(labels))
+					m.SetGauge(ctx, missesKey, float64(stats.Misses), metrics.Labels(labels))
+				} else {
+					m.SetGauge(ctx, metricsPoolIdleKey, float64(stats.IdleConns), metrics.Labels(labels))
+					m.SetGauge(ctx, metricsPoolStaleKey, float64(stats.StaleConns), metrics.Labels(labels))
+					m.SetGauge(ctx, metricsPoolTotalKey, float64(stats.TotalConns), metrics.Labels(labels))
+					m.SetGauge(ctx, metricsPoolHitsKey, float64(stats.Hits), metrics.Labels(labels))
+					m.SetGauge(ctx, metricsPoolMissesKey, float64(stats.Misses), metrics.Labels(labels))
+				}
+			}
+		}
 	})
 }
 
-func metricMongoLatency(ctx context.Context, appName, name string) {
+func metricRedisLatency(ctx context.Context, appName, name string, labels []metrics.Label) {
+	select {
+	case <-ctx.Done():
+		return
+	default:
+
+	}
+
 	_, _ = utils.Catch(func() {
 		rwlock.RLock()
 		defer rwlock.RUnlock()
-		rds := instances[appName][name].GetProxy()
+		instances, ok := appInstances[appName]
+		if !ok {
+			return
+		}
+		instance, ok := instances[name]
+		if !ok {
+			return
+		}
 
-		// begin := time.Now()
-		if err := rds.Ping(ctx); err == nil {
-			// TODO: emit metrics
+		rdsCli := instance.GetProxy()
+		begin := time.Now()
+		if err := rdsCli.Ping(ctx); err != nil {
+			return
+		}
+
+		latency := float64(time.Since(begin)) / float64(time.Millisecond)
+		latencyKey := append([]string{appName}, metricsLatencyKey...)
+		for _, m := range metrics.Internal(metrics.AppName(appName)) {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if m.IsEnableServiceLabel() {
+					m.AddSample(ctx, latencyKey, latency,
+						metrics.Labels(labels),
+						metrics.PrometheusBuckets(metricsLatencyBuckets),
+					)
+				} else {
+					m.AddSample(ctx, metricsLatencyKey, latency,
+						metrics.Labels(labels),
+						metrics.PrometheusBuckets(metricsLatencyBuckets),
+					)
+				}
+			}
 		}
 	})
 }

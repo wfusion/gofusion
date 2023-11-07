@@ -28,8 +28,8 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 
 		pid := syscall.Getpid()
 		app := config.Use(opt.AppName).AppName()
-		if instances != nil {
-			for _, sinks := range instances[opt.AppName] {
+		if appInstances != nil {
+			for name, sinks := range appInstances[opt.AppName] {
 				for name, sink := range sinks {
 					log.Printf("%v [Gofusion] %s %s %s router exiting...",
 						pid, app, config.ComponentMetrics, name)
@@ -37,9 +37,12 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 					log.Printf("%v [Gofusion] %s %s %s router exited",
 						pid, app, config.ComponentMetrics, name)
 				}
+				delete(appInstances[opt.AppName], name)
 			}
-			delete(instances, opt.AppName)
-			delete(cfgsMap, opt.AppName)
+		}
+
+		if cfgsMap != nil {
+			cfgsMap[opt.AppName] = make(map[string]*cfg)
 		}
 	}
 }
@@ -105,19 +108,19 @@ func Use(name, job string, opts ...utils.OptionExtender) Sink {
 }
 
 func use(job string, conf *cfg) (sink Sink) {
-	if instances == nil {
-		instances = make(map[string]map[string]map[string]Sink)
+	if appInstances == nil {
+		appInstances = make(map[string]map[string]map[string]Sink)
 	}
-	appInstances, ok := instances[conf.appName]
+	instances, ok := appInstances[conf.appName]
 	if !ok {
-		appInstances = make(map[string]map[string]Sink)
-		instances[conf.appName] = appInstances
+		instances = make(map[string]map[string]Sink)
+		appInstances[conf.appName] = instances
 	}
 
-	jobs, ok := appInstances[conf.name]
+	jobs, ok := instances[conf.name]
 	if !ok {
 		jobs = make(map[string]Sink)
-		appInstances[conf.name] = jobs
+		instances[conf.name] = jobs
 	}
 	sink, ok = jobs[job]
 	if ok {
@@ -141,6 +144,23 @@ func use(job string, conf *cfg) (sink Sink) {
 	}
 
 	jobs[job] = sink
+	return
+}
+
+func Internal(opts ...utils.OptionExtender) (sinks []Sink) {
+	opt := utils.ApplyOptions[useOption](opts...)
+	appName := config.Use(opt.appName).AppName()
+	rwlock.Lock()
+	defer rwlock.Unlock()
+	cfgs, ok := cfgsMap[opt.appName]
+	if !ok {
+		return
+	}
+	for _, cfg := range cfgs {
+		if cfg.c.EnableRuntimeMetrics {
+			sinks = append(sinks, use(appName, cfg))
+		}
+	}
 	return
 }
 

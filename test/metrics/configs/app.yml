@@ -34,7 +34,8 @@ base:
       labels:
         key1: value1
       endpoint:
-        addresses: [ localhost:29091 ]
+        addresses: [ prometheus:9091 ]
       enable_service_label: true
       enable_runtime_metrics: true
+      enable_internal_metrics: true
       log_instance: default

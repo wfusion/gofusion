@@ -4,10 +4,9 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/wfusion/gofusion/common/utils/serialize"
-	"github.com/wfusion/gofusion/test/mock"
-
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/common/utils/serialize"
+	"github.com/wfusion/gofusion/test/internal/mock"
 )
 
 var (

@@ -141,6 +141,9 @@ func allocate(appName string, size int, o *NewPoolOption, opts ...utils.OptionEx
 func release(appName string, p *pool, opts ...utils.OptionExtender) {
 	o := utils.ApplyOptions[internalOption](opts...)
 	capacity := int64(1)
+	if pools == nil || pools[appName] == nil || allocated == nil || allocated[appName] == nil {
+		return
+	}
 
 	if p != nil {
 		if !o.ignoreMutex {
