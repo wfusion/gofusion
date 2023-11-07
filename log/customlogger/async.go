@@ -50,7 +50,11 @@ func (a *asyncLogger) Debug(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	a.log.Debug(ctx, format, args...)
+	if a.log != nil {
+		a.log.Debug(ctx, format, args...)
+	} else {
+		log.Debug(ctx, format, args...)
+	}
 }
 
 // Info logs a message at Info level.
@@ -59,7 +63,11 @@ func (a *asyncLogger) Info(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	a.log.Info(ctx, format, args...)
+	if a.log != nil {
+		a.log.Info(ctx, format, args...)
+	} else {
+		log.Info(ctx, format, args...)
+	}
 }
 
 // Warn logs a message at Warning level.
@@ -68,7 +76,11 @@ func (a *asyncLogger) Warn(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	a.log.Warn(ctx, format, args...)
+	if a.log != nil {
+		a.log.Warn(ctx, format, args...)
+	} else {
+		log.Warn(ctx, format, args...)
+	}
 }
 
 // Error logs a message at Error level.
@@ -77,7 +89,11 @@ func (a *asyncLogger) Error(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	a.log.Error(ctx, format, args...)
+	if a.log != nil {
+		a.log.Error(ctx, format, args...)
+	} else {
+		log.Error(ctx, format, args...)
+	}
 }
 
 // Fatal logs a message at Fatal level
@@ -87,7 +103,11 @@ func (a *asyncLogger) Fatal(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	a.log.Fatal(ctx, format, args...)
+	if a.log != nil {
+		a.log.Fatal(ctx, format, args...)
+	} else {
+		log.Fatal(ctx, format, args...)
+	}
 }
 
 // parseArgs support (ctx, format, args...) log format

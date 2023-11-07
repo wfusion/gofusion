@@ -78,7 +78,7 @@ Use "fus [command] --help" for more information about a command.
 
 # 单元测试
 
-> 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 56%
+> 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 57%
 
 ![go-cover-treemap](assets/coverage.svg)
 

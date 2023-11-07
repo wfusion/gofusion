@@ -69,7 +69,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 	}
 	maxReleaseTime := utils.Must(time.ParseDuration(conf.MaxReleaseTimePerPool))
 
-	// TODO: monitor & emit goroutine metrics
+	go startDaemonRoutines(ctx, opt.AppName, &conf)
 
 	return func() {
 		rwlock.Lock()

@@ -49,12 +49,17 @@ func Use(name string, opts ...utils.OptionExtender) Logable {
 	defer rwlock.RUnlock()
 	instances, ok := appInstances[opt.appName]
 	if !ok {
-		panic(errors.Errorf("logger instance not found for app: %s", opt.appName))
+		globalLogger.Debug(context.Background(), "%v [Gofusion] %s instance not found for app: %s",
+			syscall.Getpid(), config.ComponentLog, opt.appName)
+		return globalLogger
 	}
 	instance, ok := instances[name]
 	if !ok {
-		panic(errors.Errorf("logger instance not found for name: %s", name))
+		globalLogger.Debug(context.Background(), "%v [Gofusion] %s instance not found for name: %s",
+			syscall.Getpid(), config.ComponentLog, name)
+		return globalLogger
 	}
+
 	return instance
 }
 

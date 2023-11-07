@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
-	"github.com/wfusion/gofusion/cron"
 
 	"github.com/wfusion/gofusion/async"
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/cron"
 	"github.com/wfusion/gofusion/db"
 	"github.com/wfusion/gofusion/internal/configor"
 	"github.com/wfusion/gofusion/lock"
@@ -23,6 +24,7 @@ import (
 	"github.com/wfusion/gofusion/mongo"
 	"github.com/wfusion/gofusion/mq"
 	"github.com/wfusion/gofusion/redis"
+	"github.com/wfusion/gofusion/routine"
 	"github.com/wfusion/gofusion/test/config"
 
 	fmkCfg "github.com/wfusion/gofusion/config"
@@ -30,7 +32,6 @@ import (
 	_ "github.com/wfusion/gofusion/cache"
 	_ "github.com/wfusion/gofusion/http"
 	_ "github.com/wfusion/gofusion/i18n"
-	_ "github.com/wfusion/gofusion/routine"
 )
 
 func TestExample(t *testing.T) {
@@ -67,6 +68,54 @@ func (t *Example) TestDefault() {
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
 		log.Info(context.Background(), "get app name: %s", fmkCfg.Registry.AppName())
 		log.Info(context.Background(), "get debug: %+v", fmkCfg.Registry.Debug())
+	})
+}
+
+func (t *Example) TestRequired() {
+	t.Catch(func() {
+		files := []string{
+			"app.required.local.yml",
+			"app.required.yml",
+		}
+		defer t.RawCopy(files, 1)()
+
+		for i := 0; i < len(files); i++ {
+			files[i] = filepath.Join(env.WorkDir, "configs/", files[i])
+		}
+
+		appSetting := new(appConf)
+		defer fmkCfg.Registry.Init(&appSetting, fmkCfg.Files(files))()
+		allConfigs := fmkCfg.Registry.GetAllConfigs()
+		log.Info(context.Background(), "get all configs: %+v", allConfigs)
+		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
+		log.Info(context.Background(), "get app name: %s", fmkCfg.Registry.AppName())
+		log.Info(context.Background(), "get debug: %+v", fmkCfg.Registry.Debug())
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		lock.Use("default")
+		db.Use(ctx, "default")
+		mongo.Use("default")
+		redis.Use(ctx, "default")
+		log.Use("default")
+		mq.Use("default")
+		async.C("default")
+		async.P("default")
+		cron.Use("default")
+		metrics.Use("prometheus", "test_config_required")
+	})
+}
+
+func (t *Example) TestWithoutFiles() {
+	t.Catch(func() {
+		appSetting := new(appConf)
+		defer fmkCfg.Registry.Init(&appSetting, fmkCfg.Files(nil))()
+		allConfigs := fmkCfg.Registry.GetAllConfigs()
+		log.Info(context.Background(), "get all configs: %+v", allConfigs)
+		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
+		log.Info(context.Background(), "get app name: %s", fmkCfg.Registry.AppName())
+		log.Info(context.Background(), "get debug: %+v", fmkCfg.Registry.Debug())
+		routine.Go(func() {})
 	})
 }
 

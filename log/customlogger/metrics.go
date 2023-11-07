@@ -45,7 +45,11 @@ func (m *metricsLogger) Debug(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	m.log.Debug(ctx, format, args...)
+	if m.log != nil {
+		m.log.Debug(ctx, format, args...)
+	} else {
+		log.Debug(ctx, format, args...)
+	}
 }
 
 // Info logs a message at Info level.
@@ -54,7 +58,11 @@ func (m *metricsLogger) Info(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	m.log.Info(ctx, format, args...)
+	if m.log != nil {
+		m.log.Info(ctx, format, args...)
+	} else {
+		log.Info(ctx, format, args...)
+	}
 }
 
 // Warn logs a message at Warning level.
@@ -63,7 +71,11 @@ func (m *metricsLogger) Warn(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	m.log.Warn(ctx, format, args...)
+	if m.log != nil {
+		m.log.Warn(ctx, format, args...)
+	} else {
+		log.Warn(ctx, format, args...)
+	}
 }
 
 // Error logs a message at Error level.
@@ -72,7 +84,11 @@ func (m *metricsLogger) Error(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	m.log.Error(ctx, format, args...)
+	if m.log != nil {
+		m.log.Error(ctx, format, args...)
+	} else {
+		log.Error(ctx, format, args...)
+	}
 }
 
 // Fatal logs a message at Fatal level
@@ -82,7 +98,11 @@ func (m *metricsLogger) Fatal(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	m.log.Fatal(ctx, format, args...)
+	if m.log != nil {
+		m.log.Fatal(ctx, format, args...)
+	} else {
+		log.Fatal(ctx, format, args...)
+	}
 }
 
 // parseArgs support (ctx, format, args...) log format

@@ -48,13 +48,23 @@ func (r *redisLogger) ProcessHook(next rdsDrv.ProcessHook) rdsDrv.ProcessHook {
 
 		begin := time.Now()
 		if err = next(ctx, cmd); err != nil {
-			r.log.Warn(ctx, "[redis] %s failed [command[%s]]", cmd.FullName(), cmd.String(),
-				log.Fields{"latency": time.Since(begin).Milliseconds()})
+			if r.log != nil {
+				r.log.Warn(ctx, "[redis] %s failed [command[%s]]", cmd.FullName(), cmd.String(),
+					log.Fields{"latency": time.Since(begin).Milliseconds()})
+			} else {
+				log.Warn(ctx, "[redis] %s failed [command[%s]]", cmd.FullName(), cmd.String(),
+					log.Fields{"latency": time.Since(begin).Milliseconds()})
+			}
 			return
 		}
 
-		r.log.Info(ctx, "[redis] %s succeeded [command[%s]]", cmd.FullName(), cmd.String(),
-			log.Fields{"latency": time.Since(begin).Milliseconds()})
+		if r.log != nil {
+			r.log.Info(ctx, "[redis] %s succeeded [command[%s]]", cmd.FullName(), cmd.String(),
+				log.Fields{"latency": time.Since(begin).Milliseconds()})
+		} else {
+			log.Info(ctx, "[redis] %s succeeded [command[%s]]", cmd.FullName(), cmd.String(),
+				log.Fields{"latency": time.Since(begin).Milliseconds()})
+		}
 		return
 	}
 }
@@ -71,13 +81,23 @@ func (r *redisLogger) ProcessPipelineHook(next rdsDrv.ProcessPipelineHook) rdsDr
 		}
 
 		if err = next(ctx, cmds); err != nil {
-			r.log.Warn(ctx, "[redis] %s failed", fullNameSb.String(),
-				log.Fields{"latency": time.Since(begin).Milliseconds()})
+			if r.log != nil {
+				r.log.Warn(ctx, "[redis] %s failed", fullNameSb.String(),
+					log.Fields{"latency": time.Since(begin).Milliseconds()})
+			} else {
+				log.Warn(ctx, "[redis] %s failed", fullNameSb.String(),
+					log.Fields{"latency": time.Since(begin).Milliseconds()})
+			}
 			return
 		}
 
-		r.log.Info(ctx, "[redis] %s succeeded", fullNameSb.String(),
-			log.Fields{"latency": time.Since(begin).Milliseconds()})
+		if r.log != nil {
+			r.log.Info(ctx, "[redis] %s succeeded", fullNameSb.String(),
+				log.Fields{"latency": time.Since(begin).Milliseconds()})
+		} else {
+			log.Info(ctx, "[redis] %s succeeded", fullNameSb.String(),
+				log.Fields{"latency": time.Since(begin).Milliseconds()})
+		}
 		return
 	}
 }

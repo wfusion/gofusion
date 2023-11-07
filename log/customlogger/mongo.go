@@ -95,18 +95,30 @@ func (m *mongoLogger) succeeded(ctx context.Context, evt *event.CommandSucceeded
 	if !m.isLoggableCommandName(evt.CommandName) {
 		return
 	}
-	m.log.Info(ctx, "[mongodb] %s succeeded [request[%v] command[%s]]",
-		evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
-		log.Fields{"latency": evt.DurationNanos / int64(time.Millisecond)})
+	if m.log != nil {
+		m.log.Info(ctx, "[mongodb] %s succeeded [request[%v] command[%s]]",
+			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
+	} else {
+		log.Info(ctx, "[mongodb] %s succeeded [request[%v] command[%s]]",
+			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
+	}
 }
 
 func (m *mongoLogger) failed(ctx context.Context, evt *event.CommandFailedEvent) {
 	if !m.isLoggableCommandName(evt.CommandName) {
 		return
 	}
-	m.log.Warn(ctx, "[mongodb] %s failed [request[%v] command[%s]]",
-		evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
-		log.Fields{"latency": evt.DurationNanos / int64(time.Millisecond)})
+	if m.log != nil {
+		m.log.Warn(ctx, "[mongodb] %s failed [request[%v] command[%s]]",
+			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
+	} else {
+		log.Warn(ctx, "[mongodb] %s failed [request[%v] command[%s]]",
+			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
+	}
 }
 
 func (m *mongoLogger) pushCommandString(requestID int64, commandString string) {

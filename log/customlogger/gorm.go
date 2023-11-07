@@ -53,7 +53,11 @@ func (g *gormLogger) Info(ctx context.Context, msg string, data ...any) {
 		return
 	}
 	if g.logLevel >= logger.Info {
-		g.log.Info(ctx, msg, data...)
+		if g.log != nil {
+			g.log.Info(ctx, msg, data...)
+		} else {
+			log.Info(ctx, msg, data...)
+		}
 	}
 }
 
@@ -64,7 +68,11 @@ func (g *gormLogger) Warn(ctx context.Context, msg string, data ...any) {
 		return
 	}
 	if g.logLevel >= logger.Warn {
-		g.log.Warn(ctx, msg, data...)
+		if g.log != nil {
+			g.log.Warn(ctx, msg, data...)
+		} else {
+			log.Warn(ctx, msg, data...)
+		}
 	}
 }
 
@@ -75,7 +83,11 @@ func (g *gormLogger) Error(ctx context.Context, msg string, data ...any) {
 		return
 	}
 	if g.logLevel >= logger.Error {
-		g.log.Error(ctx, msg, data...)
+		if g.log != nil {
+			g.log.Error(ctx, msg, data...)
+		} else {
+			log.Error(ctx, msg, data...)
+		}
 	}
 }
 
@@ -96,25 +108,49 @@ func (g *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 		sql, rows := fc()
 		sql = fmt.Sprintf("err[%%s] %s", g.format(sql))
 		if rows == -1 {
-			g.log.Info(ctx, sql, err.Error(), log.Fields{"latency": elapsed.Milliseconds()})
+			if g.log != nil {
+				g.log.Info(ctx, sql, err.Error(), log.Fields{"latency": elapsed.Milliseconds()})
+			} else {
+				log.Info(ctx, sql, err.Error(), log.Fields{"latency": elapsed.Milliseconds()})
+			}
 		} else {
-			g.log.Info(ctx, sql, err.Error(), log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			if g.log != nil {
+				g.log.Info(ctx, sql, err.Error(), log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			} else {
+				log.Info(ctx, sql, err.Error(), log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			}
 		}
 	case elapsed > g.slowThreshold && g.slowThreshold != 0 && g.logLevel >= logger.Warn:
 		sql, rows := fc()
 		slowLog := fmt.Sprintf("SLOW SQL >= %v %s", g.slowThreshold, g.format(sql))
 		if rows == -1 {
-			g.log.Info(ctx, slowLog, log.Fields{"latency": elapsed.Milliseconds()})
+			if g.log != nil {
+				g.log.Info(ctx, slowLog, log.Fields{"latency": elapsed.Milliseconds()})
+			} else {
+				log.Info(ctx, slowLog, log.Fields{"latency": elapsed.Milliseconds()})
+			}
 		} else {
-			g.log.Info(ctx, slowLog, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			if g.log != nil {
+				g.log.Info(ctx, slowLog, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			} else {
+				log.Info(ctx, slowLog, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			}
 		}
 	case g.logLevel == logger.Info:
 		sql, rows := fc()
 		sql = g.format(sql)
 		if rows == -1 {
-			g.log.Info(ctx, sql, log.Fields{"latency": elapsed.Milliseconds()})
+			if g.log != nil {
+				g.log.Info(ctx, sql, log.Fields{"latency": elapsed.Milliseconds()})
+			} else {
+				log.Info(ctx, sql, log.Fields{"latency": elapsed.Milliseconds()})
+			}
 		} else {
-			g.log.Info(ctx, sql, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			if g.log != nil {
+				g.log.Info(ctx, sql, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			} else {
+				log.Info(ctx, sql, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
+			}
 		}
 	}
 }

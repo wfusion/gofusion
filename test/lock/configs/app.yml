@@ -36,7 +36,7 @@ base:
       max_idle_conns: 10
       max_open_conns: 200
       conn_max_life_time: 1000s
-      enable_logger: true
+      enable_logger: false
       logger_config:
         log_level: info
         slow_threshold: 500ms

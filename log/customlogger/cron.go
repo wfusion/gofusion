@@ -49,7 +49,11 @@ func (c *cronLogger) Debug(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	c.log.Debug(ctx, format, args...)
+	if c.log != nil {
+		c.log.Debug(ctx, format, args...)
+	} else {
+		log.Debug(ctx, format, args...)
+	}
 }
 
 // Info logs a message at Info level.
@@ -58,7 +62,11 @@ func (c *cronLogger) Info(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	c.log.Info(ctx, format, args...)
+	if c.log != nil {
+		c.log.Info(ctx, format, args...)
+	} else {
+		log.Info(ctx, format, args...)
+	}
 }
 
 // Warn logs a message at Warning level.
@@ -67,7 +75,11 @@ func (c *cronLogger) Warn(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	c.log.Warn(ctx, format, args...)
+	if c.log != nil {
+		c.log.Warn(ctx, format, args...)
+	} else {
+		log.Warn(ctx, format, args...)
+	}
 }
 
 // Error logs a message at Error level.
@@ -76,7 +88,11 @@ func (c *cronLogger) Error(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	c.log.Error(ctx, format, args...)
+	if c.log != nil {
+		c.log.Error(ctx, format, args...)
+	} else {
+		log.Error(ctx, format, args...)
+	}
 }
 
 // Fatal logs a message at Fatal level
@@ -86,7 +102,11 @@ func (c *cronLogger) Fatal(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	c.log.Fatal(ctx, format, args...)
+	if c.log != nil {
+		c.log.Fatal(ctx, format, args...)
+	} else {
+		log.Fatal(ctx, format, args...)
+	}
 }
 
 // parseArgs support (ctx, format, args...) log format

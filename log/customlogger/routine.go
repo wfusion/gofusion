@@ -37,7 +37,11 @@ func (r *routineLogger) Init(log log.Logable, appName string) {
 func (r *routineLogger) Printf(format string, args ...any) {
 	if r.reloadConfig(); r.enabled {
 		ctx := context.Background()
-		r.log.Info(ctx, format, args...)
+		if r.log != nil {
+			r.log.Info(ctx, format, args...)
+		} else {
+			log.Info(ctx, format, args...)
+		}
 	}
 }
 

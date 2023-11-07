@@ -16,7 +16,7 @@ base:
       file_output_option:
         layout: json
         path: .
-        name: framework.log
+        name: gofusion.log
         rotation_time: 24
         rotation_count: 10
         rotation_size: 1000

@@ -44,9 +44,17 @@ func (m *mqLogger) Error(msg string, err error, fields watermill.LogFields) {
 	}
 	ctx, fs := m.parseLogFields(fields)
 	if err != nil {
-		m.log.Error(ctx, msg+": %s", err, fs)
+		if m.log != nil {
+			m.log.Error(ctx, msg+": %s", err, fs)
+		} else {
+			log.Error(ctx, msg+": %s", err, fs)
+		}
 	} else {
-		m.log.Error(ctx, msg, err, fs)
+		if m.log != nil {
+			m.log.Error(ctx, msg, err, fs)
+		} else {
+			log.Error(ctx, msg, err, fs)
+		}
 	}
 }
 
@@ -56,7 +64,11 @@ func (m *mqLogger) Info(msg string, fields watermill.LogFields) {
 		return
 	}
 	ctx, fs := m.parseLogFields(fields)
-	m.log.Info(ctx, msg, fs)
+	if m.log != nil {
+		m.log.Info(ctx, msg, fs)
+	} else {
+		log.Info(ctx, msg, fs)
+	}
 }
 
 // Debug writes debug log with message and some fields.
@@ -65,7 +77,11 @@ func (m *mqLogger) Debug(msg string, fields watermill.LogFields) {
 		return
 	}
 	ctx, fs := m.parseLogFields(fields)
-	m.log.Debug(ctx, msg, fs)
+	if m.log != nil {
+		m.log.Debug(ctx, msg, fs)
+	} else {
+		log.Debug(ctx, msg, fs)
+	}
 }
 
 // Trace writes debug log instead of trace log because zap does not support trace level logging.
@@ -74,7 +90,11 @@ func (m *mqLogger) Trace(msg string, fields watermill.LogFields) {
 		return
 	}
 	ctx, fs := m.parseLogFields(fields)
-	m.log.Debug(ctx, msg, fs)
+	if m.log != nil {
+		m.log.Debug(ctx, msg, fs)
+	} else {
+		log.Debug(ctx, msg, fs)
+	}
 }
 
 // With returns new LoggerAdapter with passed fields.

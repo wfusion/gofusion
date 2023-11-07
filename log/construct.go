@@ -41,10 +41,10 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		rwlock.Lock()
 		defer rwlock.Unlock()
 		if appInstances != nil {
-			for name, instance := range appInstances[opt.AppName] {
+			for _, instance := range appInstances[opt.AppName] {
 				instance.flush()
-				delete(appInstances[opt.AppName], name)
 			}
+			delete(appInstances, opt.AppName)
 		}
 
 		// there maybe some locally logging, avoid some NPE crash as possible as we can do

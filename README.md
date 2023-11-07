@@ -91,7 +91,7 @@ Use "fus [command] --help" for more information about a command.
 
 # Unit Testing
 
-> Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 56%
+> Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 57%
 
 ![go-cover-treemap](assets/coverage.svg)
 
