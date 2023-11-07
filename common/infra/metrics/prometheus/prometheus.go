@@ -37,9 +37,9 @@ var (
 	defaultBuckets = []float64{
 		// .0005, .0009, .00095, .00099,
 		// .001, .0025, .0050, .0075, .0090, .0095, .0099,
-		// .01, .025, .050, .075, .090, .095, .099,
+		.01, .025, .050, .075, .090, .095, .099,
 		.1, .25, .50, .75, .90, .95, .99,
-		// 1, 2.5, 5, 7.5, 9, 9.5, 9.9,
+		1, 2.5, 5, 7.5, 9, 9.5, 9.9,
 		10, 25, 50, 75, 90, 95, 99,
 		100, 250, 500, 750, 900, 950, 990,
 		1000, 2500, 5000, 7500, 9000, 9500, 9900,
@@ -99,6 +99,7 @@ type PrometheusSink struct {
 	expiration time.Duration
 	help       map[string]string
 	name       string
+	logger     metrics.Logger
 
 	Registry prometheus.Registerer
 }
@@ -512,8 +513,13 @@ func (p *PrometheusSink) IncrCounterWithLabels(parts []string, val float32, labe
 	// Prometheus Counter.Add() panics if val < 0. We don't want this to
 	// cause applications to crash, so log an error instead.
 	if val < 0 {
-		log.Printf("[Common] metrics prometheus attempting to "+
-			"increment prometheus counter %v with value negative value %v", key, val)
+		if p.logger != nil {
+			p.logger.Warn("[Common] metrics prometheus attempting to "+
+				"increment prometheus counter %v with value negative value %v", key, val)
+		} else {
+			log.Printf("[Common] metrics prometheus attempting to "+
+				"increment prometheus counter %v with value negative value %v", key, val)
+		}
 		return
 	}
 
@@ -557,8 +563,8 @@ type PrometheusPushSink struct {
 }
 
 // NewPrometheusPushSink creates a PrometheusPushSink by taking an address, interval, and destination name.
-func NewPrometheusPushSink(
-	ctx context.Context, address string, pushInterval time.Duration, name string) (*PrometheusPushSink, error) {
+func NewPrometheusPushSink(ctx context.Context, address string, pushInterval time.Duration,
+	name string, logger metrics.Logger) (*PrometheusPushSink, error) {
 	promSink := &PrometheusSink{
 		gauges:     sync.Map{},
 		summaries:  sync.Map{},
@@ -566,6 +572,7 @@ func NewPrometheusPushSink(
 		counters:   sync.Map{},
 		expiration: 60 * time.Second,
 		name:       "default_prometheus_sink",
+		logger:     logger,
 	}
 	pusher := push.New(address, name).Collector(promSink)
 
@@ -592,11 +599,19 @@ func (s *PrometheusPushSink) flushMetrics(ctx context.Context) {
 					case <-ticker.C:
 						err := s.pusher.PushContext(ctx)
 						if err != nil {
-							log.Printf("[Common] metrics prometheus pushing to prometheus err: %s", err)
+							if s.logger != nil {
+								s.logger.Warn(ctx, "[Common] metrics prometheus pushing to prometheus err: %s", err)
+							} else {
+								log.Printf("[Common] metrics prometheus pushing to prometheus err: %s", err)
+							}
 						}
 					case <-s.stopChan:
 						ticker.Stop()
-						log.Printf("[Common] metrics prometheus push cycle exited")
+						if s.logger != nil {
+							s.logger.Warn(ctx, "[Common] metrics prometheus push cycle exited")
+						} else {
+							log.Printf("[Common] metrics prometheus push cycle exited")
+						}
 						return
 					}
 				}
@@ -610,7 +625,11 @@ func (s *PrometheusPushSink) flushMetrics(ctx context.Context) {
 			),
 		)
 		if err != nil {
-			log.Printf("[Common] metrics prometheus exit unexpectedly: %s", err)
+			if s.logger != nil {
+				s.logger.Warn(ctx, "[Common] metrics prometheus exit unexpectedly: %s", err)
+			} else {
+				log.Printf("[Common] metrics prometheus exit unexpectedly: %s", err)
+			}
 		}
 	}()
 }

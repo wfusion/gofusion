@@ -13,16 +13,15 @@ import (
 
 // Config is used to configure metrics settings
 type Config struct {
-	ServiceName          string        // Prefixed with keys to separate services
-	HostName             string        // Hostname to use. If not provided and EnableHostname, it will be os.Hostname
-	EnableHostname       bool          // Enable prefixing gauge values with hostname
-	EnableHostnameLabel  bool          // Enable adding hostname to labels
-	EnableServiceLabel   bool          // Enable adding service to labels
-	EnableClientIPLabel  bool          // Enable adding service ip to labels
-	EnableRuntimeMetrics bool          // Enables profiling of runtime metrics (GC, Goroutines, Memory)
-	EnableTypePrefix     bool          // Prefixes key with a type ("counter", "gauge", "timer")
-	TimerGranularity     time.Duration // Granularity of timers.
-	ProfileInterval      time.Duration // Interval to profile runtime metrics
+	ServiceName         string        // Prefixed with keys to separate services
+	HostName            string        // Hostname to use. If not provided and EnableHostname, it will be os.Hostname
+	EnableHostname      bool          // Enable prefixing gauge values with hostname
+	EnableHostnameLabel bool          // Enable adding hostname to labels
+	EnableServiceLabel  bool          // Enable adding service to labels
+	EnableClientIPLabel bool          // Enable adding service ip to labels
+	EnableTypePrefix    bool          // Prefixes key with a type ("counter", "gauge", "timer")
+	TimerGranularity    time.Duration // Granularity of timers.
+	ProfileInterval     time.Duration // Interval to profile runtime metrics
 
 	AllowedPrefixes []string // A list of metric prefixes to allow, with '.' as the separator
 	BlockedPrefixes []string // A list of metric prefixes to block, with '.' as the separator
@@ -35,13 +34,11 @@ type Config struct {
 // be used to emit
 type Metrics struct {
 	Config
-	lastNumGC     uint32
 	sink          MetricSink
 	filter        *iradix.Tree
 	allowedLabels map[string]bool
 	blockedLabels map[string]bool
 	filterLock    sync.RWMutex // Lock filters and allowedLabels/blockedLabels access
-	logger        Logger
 }
 
 // Shared global metrics instance
@@ -60,14 +57,13 @@ func Default() *Metrics {
 // DefaultConfig provides a sane default configuration
 func DefaultConfig(serviceName string) *Config {
 	c := &Config{
-		ServiceName:          serviceName, // Use client provided service
-		HostName:             "",
-		EnableHostname:       true,             // Enable hostname prefix
-		EnableRuntimeMetrics: true,             // Enable runtime profiling
-		EnableTypePrefix:     false,            // Disable type prefix
-		TimerGranularity:     time.Millisecond, // Timers are in milliseconds
-		ProfileInterval:      time.Second,      // Poll runtime every second
-		FilterDefault:        true,             // Don't filter metrics by default
+		ServiceName:      serviceName, // Use client provided service
+		HostName:         "",
+		EnableHostname:   true,             // Enable hostname prefix
+		EnableTypePrefix: false,            // Disable type prefix
+		TimerGranularity: time.Millisecond, // Timers are in milliseconds
+		ProfileInterval:  time.Second,      // Poll runtime every second
+		FilterDefault:    true,             // Don't filter metrics by default
 	}
 
 	// Try to get the hostname
@@ -83,10 +79,6 @@ func New(conf *Config, sink MetricSink, opts ...utils.OptionExtender) (*Metrics,
 	met.sink = sink
 	met.UpdateFilterAndLabels(conf.AllowedPrefixes, conf.BlockedPrefixes, conf.AllowedLabels, conf.BlockedLabels)
 
-	// Start the runtime collector
-	if conf.EnableRuntimeMetrics {
-		go met.collectStats(opts...)
-	}
 	return met, nil
 }
 

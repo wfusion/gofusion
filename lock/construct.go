@@ -32,9 +32,7 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		rwlock.Lock()
 		defer rwlock.Unlock()
 		if appInstances != nil {
-			for name := range appInstances[opt.AppName] {
-				delete(appInstances[opt.AppName], name)
-			}
+			delete(appInstances, opt.AppName)
 		}
 	}
 }

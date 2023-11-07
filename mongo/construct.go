@@ -39,10 +39,11 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		if appInstances != nil {
 			for name, instance := range appInstances[opt.AppName] {
 				if err := instance.GetProxy().Disconnect(nil); err != nil {
-					log.Printf("%v [Gofusion] %s %s disconnect error: %s", pid, app, config.ComponentMongo, err)
+					log.Printf("%v [Gofusion] %s %s %s disconnect error: %s",
+						pid, app, config.ComponentMongo, name, err)
 				}
-				delete(appInstances[opt.AppName], name)
 			}
+			delete(appInstances, opt.AppName)
 		}
 	}
 }
@@ -84,7 +85,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	if opt.DI != nil {
 		opt.DI.MustProvide(
 			func() *mgoDrv.Database {
-				return Use(ctx, name, AppName(opt.AppName)).Database
+				return Use(name, AppName(opt.AppName)).Database
 			},
 			di.Name(name),
 		)

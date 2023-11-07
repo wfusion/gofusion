@@ -120,8 +120,6 @@ base:
       # mongo_idle,mongo_inuse,mongo_total,mongo_latency
       # db_idle,db_total,db_inuse,db_wait_count,db_wait_duration,db_latency
       enable_internal_metrics: true
-      # Log configuration, corresponding to the name in the log component
-      log_instance: default
       # Limit on metrics queue length, limiting memory usage due to high concurrency metrics, default is 16384
       #
       # When reaching the limit, metrics are discarded by default, metrics.WithTimeout can hang to ensure metrics,
@@ -130,6 +128,18 @@ base:
       # Concurrency of metrics queue processing, limiting CPU usage due to high concurrency metrics,
       # defaults to runtime.NumCPU()
       queue_concurrency: 0
+      # Enable logging, can be switched in real-time during program run
+      enable_logger: true
+      # Log configuration, corresponding to the name in the log component
+      log_instance: default
+      # Can configure a custom implementation of metrics.logger.Interface interface for logging
+      #
+      # Default configuration of logger object can print logs to log.<log_instance> configured logs
+      #
+      # Custom configuration might not find the object due to no direct references,
+      # so business configuration needs to define corresponding objects or functions in
+      # global reflect.Type to avoid compiler omission.
+      logger: github.com/wfusion/gofusion/log/customlogger.metricsLogger
 
   # Log configuration
   log:
@@ -269,7 +279,7 @@ base:
             slow_threshold: 500ms
             # Can configure a custom implementation of gorm.logger.Interface interface for logging
             #
-            # Default configuration of logger object can print logs to log.default configured logs
+            # Default configuration of logger object can print logs to log.<log_instance> configured logs
             #
             # Custom configuration might not find the object due to no direct references,
             # so business configuration needs to define corresponding objects or functions in
@@ -329,7 +339,7 @@ base:
         logable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
         # Configurable custom log object that implements the gofusion/mongo.logger interface
         #
-        # The default configured log object can print logs to logs configured in log.default
+        # The default configured log object can print logs to logs configured in log.<log_instance>
         #
         # Custom configuration may not find the object because there is no direct reference,
         # so the global reflect. Type type of the corresponding object or function needs to be defined during
@@ -383,7 +393,7 @@ base:
       log_instance: default
       # Can configure custom implementation of github.com/redis/go-redis/v9/redis.Hook interface
       #
-      # Default configuration of the object can print logs to log.default configured logs
+      # Default configuration of the object can print logs to log.<log_instance> configured logs
       #
       # Custom configuration might not find the object due to no direct references,
       # so business configuration needs to define corresponding objects or functions
@@ -453,7 +463,7 @@ base:
       # Can configure custom implementation of github.com/wfusion/gofusion/common/infra/watermill.LoggerAdapter
       # interface logger object
       #
-      # Default configuration of logger object can print logs to log.default configured logs
+      # Default configuration of logger object can print logs to log.<log_instance> configured logs
       # Custom configuration might not find the object due to no direct references,
       # so business configuration needs to define corresponding objects or functions in
       # global reflect.Type to avoid compiler omission.
@@ -595,7 +605,7 @@ base:
       # Logger object, can configure custom implementation of interface object
       # - When type is asynq, interface is: gofusion/common/infra/asynq.Logger
       #
-      # Default configured object can print logs to log.default configured logs
+      # Default configured object can print logs to log.<log_instance> configured logs
       #
       # Custom configuration might not find the object due to no direct references,
       # so business configuration needs to define corresponding objects or functions
@@ -638,7 +648,7 @@ base:
       # Logger object, can configure custom implementation of interface object
       # - When type is asynq, interface is: gofusion/common/infra/asynq.Logger
       #
-      # Default configured object can print logs to log.default configured logs
+      # Default configured object can print logs to log.<log_instance> configured logs
       #
       # Custom configuration might not find the object due to no direct references,
       # so business configuration needs to define corresponding objects or functions

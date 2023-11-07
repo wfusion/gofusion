@@ -1,4 +1,4 @@
-package metrics
+package mongo
 
 import (
 	"context"
@@ -12,12 +12,10 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/test"
-
-	_ "github.com/wfusion/gofusion/routine"
 )
 
 var (
-	component = "metrics"
+	component = "mongo"
 )
 
 type Test struct {

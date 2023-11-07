@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"math"
-	"runtime"
 	"strings"
 	"time"
 
@@ -252,54 +251,6 @@ func (m *Metrics) allowMetric(key []string, labels []Label) ([]Label, bool) {
 	}
 
 	return m.filterLabels(labels), allowed.(bool)
-}
-
-// Periodically collects runtime stats to publish
-func (m *Metrics) collectStats(opts ...utils.OptionExtender) {
-	for {
-		time.Sleep(m.ProfileInterval)
-		m.EmitRuntimeStats(opts...)
-	}
-}
-
-// EmitRuntimeStats various runtime statsitics
-func (m *Metrics) EmitRuntimeStats(opts ...utils.OptionExtender) {
-	// avoid panic
-	_, _ = utils.Catch(func() {
-		// Export number of Goroutines
-		numRoutines := runtime.NumGoroutine()
-		m.SetGauge([]string{"runtime", "num_goroutines"}, float32(numRoutines))
-
-		// Export memory stats
-		var stats runtime.MemStats
-		runtime.ReadMemStats(&stats)
-		m.SetGauge([]string{"runtime", "alloc_bytes"}, float32(stats.Alloc), opts...)
-		m.SetGauge([]string{"runtime", "sys_bytes"}, float32(stats.Sys), opts...)
-		m.SetGauge([]string{"runtime", "malloc_count"}, float32(stats.Mallocs), opts...)
-		m.SetGauge([]string{"runtime", "free_count"}, float32(stats.Frees), opts...)
-		m.SetGauge([]string{"runtime", "heap_objects"}, float32(stats.HeapObjects), opts...)
-		m.SetGauge([]string{"runtime", "total_gc_pause_ns"}, float32(stats.PauseTotalNs), opts...)
-		m.SetGauge([]string{"runtime", "total_gc_runs"}, float32(stats.NumGC), opts...)
-
-		// Export info about the last few GC runs
-		num := stats.NumGC
-
-		// Handle wrap around
-		if num < m.lastNumGC {
-			m.lastNumGC = 0
-		}
-
-		// Ensure we don't scan more than 256
-		if num-m.lastNumGC >= 256 {
-			m.lastNumGC = num - 255
-		}
-
-		for i := m.lastNumGC; i < num; i++ {
-			pause := stats.PauseNs[i%256]
-			m.AddSample([]string{"runtime", "gc_pause_ns"}, float32(pause))
-		}
-		m.lastNumGC = num
-	})
 }
 
 // Creates a new slice with the provided string value as the first element

@@ -1,6 +1,7 @@
 base:
   debug: false
   app: gofusion
+
   goroutine_pool:
     max_routine_amount: -1
 
@@ -15,11 +16,13 @@ base:
       file_output_option:
         layout: json
         path: .
-        name: gofusion.log
+        name: framework.log
         rotation_time: 24
         rotation_count: 10
         rotation_size: 1000
         compress: false
+      skip_callers: [ ]
+      shorter_filepath: true
 
   metrics:
     prometheus_push:
@@ -27,23 +30,33 @@ base:
       mode: push
       interval: 1s
       endpoint:
-        addresses: [ localhost:29091 ]
+        addresses: [ prometheus:9091 ]
       enable_service_label: true
       enable_internal_metrics: true
       enable_logger: true
       log_instance: default
 
-  redis:
+  mongo:
     default:
-      db: 0
+      db: admin
+      auth_db: admin
+      user: root
       password: ci
-      cluster: false
       endpoints:
-        - redis:6379
-      dial_timeout: 5s
-      read_timeout: 2s
-      write_timeout: 2s
-      min_idle_conns: 100
-      max_idle_conns: 10000
-      enable_logger: false
-      unlogable_commands: [echo,ping]
+        - mongo:27017
+      timeout: 5s
+      conn_timeout: 30s
+      socket_timeout: 5s
+      heartbeat_interval: 10s
+      max_connecting: 2
+      min_pool_size: 0
+      max_pool_size: 100
+      max_conn_idle_time: 10s
+      retry_writes: true
+      retry_reads: true
+      enable_logger: true
+      logger_config:
+        logable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
+        logger: github.com/wfusion/gofusion/log/customlogger.mongoLogger
+        log_instance: default
+

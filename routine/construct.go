@@ -48,11 +48,11 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 	if ignored[opt.AppName] == nil {
 		ignored[opt.AppName] = atomic.NewInt64(0)
 	}
-	if allocated == nil {
-		allocated = make(map[string]*atomic.Int64)
+	if idle == nil {
+		idle = make(map[string]*atomic.Int64)
 	}
-	if allocated[opt.AppName] == nil {
-		allocated[opt.AppName] = atomic.NewInt64(int64(conf.MaxRoutineAmount))
+	if idle[opt.AppName] == nil {
+		idle[opt.AppName] = atomic.NewInt64(int64(conf.MaxRoutineAmount))
 	}
 	if utils.IsStrNotBlank(conf.Logger) {
 		if defaultLogger == nil {
@@ -78,7 +78,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 		pid := syscall.Getpid()
 		app := config.Use(opt.AppName).AppName()
 		allExited := func() bool {
-			return allocated[opt.AppName].Load() == int64(conf.MaxRoutineAmount)-ignored[opt.AppName].Load()
+			return idle[opt.AppName].Load() == int64(conf.MaxRoutineAmount)-ignored[opt.AppName].Load()
 		}
 
 		// waiting for pool
@@ -104,7 +104,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 		}
 
 		delete(ignored, opt.AppName)
-		delete(allocated, opt.AppName)
+		delete(idle, opt.AppName)
 		delete(routines, opt.AppName)
 	}
 }

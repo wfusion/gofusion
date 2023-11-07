@@ -1,7 +1,6 @@
 package mongo
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
@@ -101,7 +100,7 @@ func Registry(registry *bsoncodec.Registry) utils.OptionFunc[useOption] {
 	}
 }
 
-func Use(ctx context.Context, name string, opts ...utils.OptionExtender) *Mongo {
+func Use(name string, opts ...utils.OptionExtender) *Mongo {
 	opt := utils.ApplyOptions[useOption](opts...)
 	dbOpt := options.
 		Database().

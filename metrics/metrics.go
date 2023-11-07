@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Rican7/retry"
+	"github.com/Rican7/retry/strategy"
+	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
 
 	"github.com/wfusion/gofusion/common/constant"
@@ -17,13 +20,10 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
-	"github.com/wfusion/gofusion/log"
-	"github.com/wfusion/gofusion/routine"
 )
 
 const (
-	defaultQueueLimit            = 16 * 1024
-	defaultMetricsPoolNameFormat = "base:metrics:%s:%s:%s"
+	defaultQueueLimit = 16 * 1024
 )
 
 var (
@@ -39,12 +39,12 @@ type abstract struct {
 	job         string
 	name        string
 	appName     string
-	log         log.Logable
+	log         metrics.Logger
 	constLabels []metrics.Label
 
 	stop      chan struct{}
 	queue     chan *task
-	queuePool routine.Pool
+	queuePool *ants.Pool
 
 	dispatcher map[string]func(...any)
 }
@@ -67,14 +67,9 @@ func (t *task) String() string {
 	return fmt.Sprintf("%s:%s:%+v(%+v)", t.method, strings.Join(t.key, constant.Dot), t.val, label)
 }
 
-func newMetrics(ctx context.Context, appName, name, job string, sink metrics.MetricSink, conf *Conf) *abstract {
+func newMetrics(ctx context.Context, appName, name, job string, sink metrics.MetricSink, conf *cfg) *abstract {
 	metricsConfig := metrics.DefaultConfig(appName)
-	if conf.EnableRuntimeMetrics {
-		metricsConfig.EnableRuntimeMetrics = true
-	} else {
-		metricsConfig.EnableRuntimeMetrics = false
-	}
-	if conf.EnableServiceLabel {
+	if conf.c.EnableServiceLabel {
 		metricsConfig.EnableHostname = true
 		metricsConfig.EnableHostnameLabel = true
 		metricsConfig.EnableServiceLabel = true
@@ -91,21 +86,16 @@ func newMetrics(ctx context.Context, appName, name, job string, sink metrics.Met
 		panic(errors.Errorf("initialize metrics failed: %s", err))
 	}
 
-	var logger log.Logable
-	if utils.IsStrNotBlank(conf.LogInstance) {
-		logger = log.Use(conf.LogInstance, log.AppName(appName))
-	}
-
 	limit := defaultQueueLimit
-	if conf.QueueLimit > 0 {
-		limit = conf.QueueLimit
+	if conf.c.QueueLimit > 0 {
+		limit = conf.c.QueueLimit
 	}
-	if conf.QueueConcurrency == 0 {
-		conf.QueueConcurrency = runtime.NumCPU()
+	if conf.c.QueueConcurrency == 0 {
+		conf.c.QueueConcurrency = runtime.NumCPU()
 	}
 
-	constLabels := make([]metrics.Label, 0, len(conf.Labels))
-	for k, v := range conf.Labels {
+	constLabels := make([]metrics.Label, 0, len(conf.c.Labels))
+	for k, v := range conf.c.Labels {
 		constLabels = append(constLabels, metrics.Label{Name: k, Value: v})
 	}
 
@@ -117,11 +107,10 @@ func newMetrics(ctx context.Context, appName, name, job string, sink metrics.Met
 		job:         job,
 		name:        name,
 		appName:     appName,
-		log:         logger,
+		log:         conf.logger,
 		stop:        make(chan struct{}),
 		queue:       make(chan *task, limit),
-		queuePool: routine.NewPool(fmt.Sprintf(defaultMetricsPoolNameFormat, appName, name, job), conf.QueueConcurrency,
-			routine.AppName(appName), routine.WithoutTimeout()),
+		queuePool:   utils.Must(ants.NewPool(conf.c.QueueConcurrency)),
 	}
 
 	a.dispatcher = map[string]func(...any){
@@ -131,7 +120,7 @@ func newMetrics(ctx context.Context, appName, name, job string, sink metrics.Met
 		"MeasureSince": utils.WrapFunc(a.measureSinceWithLabels),
 	}
 
-	a.serve()
+	a.start()
 
 	return a
 }
@@ -248,30 +237,40 @@ func (a *abstract) send(ctx context.Context, method string, key []string, val an
 		}
 	}
 }
-func (a *abstract) serve() {
-	routine.Loop(func() {
-		for {
-			select {
-			case <-a.ctx.Done():
-				if a.log != nil {
-					a.log.Info(a.ctx, "%v [Gofusion] %s %s %s process exited due to context done",
-						syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
-					return
-				}
-			case task, ok := <-a.queue:
-				if !ok {
-					a.log.Info(a.ctx, "%v [Gofusion] %s %s %s process exited due to queue closed",
-						syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
-					return
-				}
+func (a *abstract) start() {
+	go func() {
+		appName := config.Use(a.appName).AppName()
+		_ = retry.Retry(func(attempt uint) (err error) {
+			_, err = utils.Catch(func() {
+				for {
+					select {
+					case <-a.ctx.Done():
+						if a.log != nil {
+							a.log.Info(a.ctx, "%v [Gofusion] %s %s %s process exited due to context done",
+								syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
+							return
+						}
+					case task, ok := <-a.queue:
+						if !ok {
+							a.log.Info(a.ctx, "%v [Gofusion] %s %s %s process exited due to queue closed",
+								syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
+							return
+						}
 
-				if err := a.queuePool.Submit(a.process, routine.Args(task)); err != nil && a.log != nil {
-					a.log.Error(task.ctx, "%v [Gofusion] %s %s %s submit process %s error: %s",
-						syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name, task, err)
+						if err := a.queuePool.Submit(func() { _ = a.process(task) }); err != nil && a.log != nil {
+							a.log.Error(task.ctx, "%v [Gofusion] %s %s %s submit process %s error: %s",
+								syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name, task, err)
+						}
+					}
 				}
+			})
+			if err != nil {
+				a.log.Warn(a.ctx, "%v [Gofusion] %s %s %s dispatcher exited with error: %s",
+					syscall.Getpid(), appName, config.ComponentMetrics, a.name, err)
 			}
-		}
-	}, routine.AppName(a.appName))
+			return
+		}, strategy.Limit(10000))
+	}()
 }
 func (a *abstract) process(task *task) (err error) {
 	_, err = utils.Catch(func() (err error) {

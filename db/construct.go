@@ -48,14 +48,14 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		pid := syscall.Getpid()
 		app := config.Use(opt.AppName).AppName()
 		if appInstances != nil {
-			for name, instance := range appInstances[opt.AppName] {
+			for _, instance := range appInstances[opt.AppName] {
 				if sqlDB, err := instance.GetProxy().DB(); err == nil {
 					if err := sqlDB.Close(); err != nil {
 						log.Printf("%v [Gofusion] %s %s close error: %s", pid, app, config.ComponentDB, err)
 					}
 				}
-				delete(appInstances[opt.AppName], name)
 			}
+			delete(appInstances, opt.AppName)
 		}
 		if len(appInstances) == 0 {
 			for _, patch := range patches {

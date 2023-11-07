@@ -149,7 +149,7 @@ func (t *Example) TestConcurrency() {
 			lock.Use("default", lock.AppName(appName))
 			db.Use(ctx, "read", db.AppName(appName))
 			db.Use(ctx, "write", db.AppName(appName))
-			mongo.Use(ctx, "default", mongo.AppName(appName))
+			mongo.Use("default", mongo.AppName(appName))
 			redis.Use(ctx, "default", redis.AppName(appName))
 			log.Use("default", log.AppName(appName))
 			mq.Use("mysql", mq.AppName(appName))

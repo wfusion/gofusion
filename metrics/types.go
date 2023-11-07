@@ -2,14 +2,22 @@ package metrics
 
 import (
 	"context"
+	"reflect"
 	"time"
 
+	"github.com/wfusion/gofusion/common/infra/metrics"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
+	"github.com/wfusion/gofusion/log"
 )
 
 const (
 	ErrDuplicatedName utils.Error = "duplicated metrics name"
+)
+
+var (
+	customLoggerType  = reflect.TypeOf((*customLogger)(nil)).Elem()
+	metricsLoggerType = reflect.TypeOf((*metrics.Logger)(nil)).Elem()
 )
 
 // The Sink interface is used to transmit metrics information
@@ -47,11 +55,12 @@ type Conf struct {
 	Endpoint              *endpointConf     `yaml:"endpoint" json:"endpoint" toml:"endpoint"`
 	Labels                map[string]string `yaml:"labels" json:"labels" toml:"labels"`
 	EnableServiceLabel    bool              `yaml:"enable_service_label" json:"enable_service_label" toml:"enable_service_label"`
-	EnableRuntimeMetrics  bool              `yaml:"enable_runtime_metrics" json:"enable_runtime_metrics" toml:"enable_runtime_metrics"`
 	EnableInternalMetrics bool              `yaml:"enable_internal_metrics" json:"enable_internal_metrics" toml:"enable_internal_metrics"`
-	LogInstance           string            `yaml:"log_instance" json:"log_instance" toml:"log_instance"`
 	QueueLimit            int               `yaml:"queue_limit" json:"queue_limit" toml:"queue_limit" default:"16384"`
 	QueueConcurrency      int               `yaml:"queue_concurrency" json:"queue_concurrency" toml:"queue_concurrency"`
+	Logger                string            `yaml:"logger" json:"logger" toml:"logger" default:"github.com/wfusion/gofusion/log/customlogger.metricsLogger"`
+	LogInstance           string            `yaml:"log_instance" json:"log_instance" toml:"log_instance"`
+	EnableLogger          bool              `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger" default:"false"`
 }
 
 type endpointConf struct {
@@ -78,6 +87,7 @@ type cfg struct {
 	appName    string
 	interval   time.Duration
 	initOption *config.InitOption
+	logger     metrics.Logger
 }
 
 type option struct {
@@ -113,6 +123,10 @@ func WithoutTimeout() utils.OptionFunc[option] {
 
 func Labels(labels []Label) utils.OptionFunc[option] {
 	return func(o *option) {
-
+		o.labels = labels
 	}
+}
+
+type customLogger interface {
+	Init(log log.Logable, appName, name string)
 }

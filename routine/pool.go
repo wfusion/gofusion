@@ -20,7 +20,7 @@ var (
 	pools         map[string]map[string]Pool
 	rwlock        sync.RWMutex
 	ignored       map[string]*atomic.Int64
-	allocated     map[string]*atomic.Int64
+	idle          map[string]*atomic.Int64
 	defaultLogger map[string]ants.Logger
 )
 
@@ -109,7 +109,7 @@ func allocate(appName string, size int, o *NewPoolOption, opts ...utils.OptionEx
 	demands := int64(size)
 	rwlock.RLock()
 	defer rwlock.RUnlock()
-	if allocated[appName].Load()-demands < 0 && o.ApplyTimeout == 0 {
+	if idle[appName].Load()-demands < 0 && o.ApplyTimeout == 0 {
 		panic(ErrPoolOverload)
 	}
 
@@ -123,10 +123,10 @@ func allocate(appName string, size int, o *NewPoolOption, opts ...utils.OptionEx
 		case <-t.C:
 			panic(ErrTimeout)
 		default:
-			minuend := allocated[appName].Load()
+			minuend := idle[appName].Load()
 			diff := minuend - demands
 			// main thread is a goroutine as well, so diff should be greater than 0
-			if diff <= 0 || !allocated[appName].CompareAndSwap(minuend, diff) {
+			if diff <= 0 || !idle[appName].CompareAndSwap(minuend, diff) {
 				continue
 			}
 			if oo.ignoreRecycled {
@@ -141,7 +141,7 @@ func allocate(appName string, size int, o *NewPoolOption, opts ...utils.OptionEx
 func release(appName string, p *pool, opts ...utils.OptionExtender) {
 	o := utils.ApplyOptions[internalOption](opts...)
 	capacity := int64(1)
-	if pools == nil || pools[appName] == nil || allocated == nil || allocated[appName] == nil {
+	if pools == nil || pools[appName] == nil || idle == nil || idle[appName] == nil {
 		return
 	}
 
@@ -154,7 +154,7 @@ func release(appName string, p *pool, opts ...utils.OptionExtender) {
 		capacity = int64(p.pool.Cap())
 	}
 
-	alloc := allocated[appName]
+	alloc := idle[appName]
 	if alloc == nil {
 		return
 	}

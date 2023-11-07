@@ -37,10 +37,11 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		if appInstances != nil {
 			for name, instance := range appInstances[opt.AppName] {
 				if err := instance.GetProxy().Close(); err != nil {
-					log.Printf("%v [Gofusion] %s %s close error: %s", pid, app, config.ComponentRedis, err)
+					log.Printf("%v [Gofusion] %s %s %s close error: %s",
+						pid, app, config.ComponentRedis, name, err)
 				}
-				delete(appInstances[opt.AppName], name)
 			}
+			delete(appInstances, opt.AppName)
 		}
 	}
 }

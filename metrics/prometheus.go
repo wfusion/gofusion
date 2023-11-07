@@ -21,15 +21,15 @@ type _Prometheus struct {
 	*abstract
 }
 
-func newPrometheusPush(ctx context.Context, appName, name, job string, interval time.Duration, conf *Conf) Sink {
-	sink, err := prometheus.NewPrometheusPushSink(ctx, conf.Endpoint.Addresses[0], interval, job)
+func newPrometheusPush(ctx context.Context, appName, name, job string, interval time.Duration, conf *cfg) Sink {
+	sink, err := prometheus.NewPrometheusPushSink(ctx, conf.c.Endpoint.Addresses[0], interval, job, conf.logger)
 	if err != nil {
 		panic(errors.Errorf("initialize metrics component push mode prometheus failed: %s", err))
 	}
 	return &_Prometheus{abstract: newMetrics(ctx, appName, name, job, sink, conf)}
 }
 
-func newPrometheusPull(ctx context.Context, appName, name, job string, conf *Conf) Sink {
+func newPrometheusPull(ctx context.Context, appName, name, job string, conf *cfg) Sink {
 	prometheusRWLocker.Lock()
 	if _, ok := prometheusRegisters[appName]; !ok {
 		prometheusRegisters[appName] = proDrv.NewRegistry()

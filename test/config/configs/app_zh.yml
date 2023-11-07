@@ -78,7 +78,7 @@ base:
     # Pool 是否开启日志记录
     enabled_logger: false
     # 可配置自定义的实现 ants.Logger 接口的日志对象
-    # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+    # 默认配置的日志对象可打印日志到 log.<log_instance> 中配置的日志中
     # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
     logger: github.com/wfusion/gofusion/log/customlogger.routineLogger
     # 日志配置, 对应 log 组件中的名称
@@ -113,13 +113,19 @@ base:
       # mongo_idle,mongo_inuse,mongo_total,mongo_latency
       # db_idle,db_total,db_inuse,db_wait_count,db_wait_duration,db_latency
       enable_internal_metrics: true
-      # 日志配置, 对应 log 组件中的名称
-      log_instance: default
       # 打点队列长度限制, 限制因为高并发打点所占用的内存大小, 默认为 16384
       # 到达限制时默认丢弃打点, 可通过 metrics.WithTimeout hang 住保证打点, 或 metrics.Timeout 选项设置业务容忍时间
       queue_limit: 16384
       # 打点队列处理并发度, 限制因为高并发打点所占用的 cpu, 默认取 runtime.NumCPU()
       queue_concurrency: 0
+      # 是否开启日志, 可在程序运行时实时切换生效
+      enable_logger: true
+      # 日志配置, 对应 log 组件中的名称
+      log_instance: default
+      # 可配置自定义的实现 metrics.logger.Interface 接口的日志对象
+      # 默认配置的日志对象可打印日志到 log.<log_instance> 中配置的日志中
+      # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
+      logger: work.ctyun.cn/git/phecda_lab/framework/log/customlogger.metricsLogger
 
   # 日志配置
   log:
@@ -233,7 +239,7 @@ base:
         # 当日志级别低于 error 时可打印超过此耗时的 sql 日志
         slow_threshold: 500ms
         # 可配置自定义的实现 gorm.logger.Interface 接口的日志对象
-        # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+        # 默认配置的日志对象可打印日志到 log.<log_instance> 中配置的日志中
         # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
         logger: github.com/wfusion/gofusion/log/customlogger.gormLogger
         # 日志配置, 对应 log 组件中的名称
@@ -289,7 +295,7 @@ base:
         # 配置需要打印的 mongo 命令
         logable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
         # 可配置自定义的实现 gofusion/mongo.logger 接口的日志对象
-        # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+        # 默认配置的日志对象可打印日志到 log.<log_instance> 中配置的日志中
         # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
         logger: github.com/wfusion/gofusion/log/customlogger.mongoLogger
         # 日志配置, 对应 log 组件中的名称
@@ -336,7 +342,7 @@ base:
       # 日志配置, 对应 log 组件中的名称
       log_instance: default
       # 可配置自定义的实现 github.com/redis/go-redis/v9/redis.Hook 接口的对象
-      # 默认配置的对象可打印日志到 log.default 中配置的日志中
+      # 默认配置的对象可打印日志到 log.<log_instance> 中配置的日志中
       # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
       hooks:
         - github.com/wfusion/gofusion/log/customlogger.redisLogger
@@ -394,7 +400,7 @@ base:
       # 是否开启日志, 可在程序运行时实时切换生效
       enable_logger: true
       # 可配置自定义的实现 github.com/wfusion/gofusion/common/infra/watermill.LoggerAdapter 接口的日志对象
-      # 默认配置的日志对象可打印日志到 log.default 中配置的日志中
+      # 默认配置的日志对象可打印日志到 log.<log_instance> 中配置的日志中
       # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
       logger: github.com/wfusion/gofusion/log/customlogger.mqLogger
       # 日志配置, 对应 log 组件中的名称
@@ -513,7 +519,7 @@ base:
       enable_logger: true
       # 日志对象, 可配置自定义的实现接口的对象
       # - type 为 asynq 时接口为: gofusion/common/infra/asynq.Logger
-      # 默认配置的对象可打印日志到 log.default 中配置的日志中
+      # 默认配置的对象可打印日志到 log.<log_instance> 中配置的日志中
       # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
       logger: github.com/wfusion/gofusion/log/customlogger.asyncLogger
       # 日志配置, 对应 log 组件中的名称
@@ -551,7 +557,7 @@ base:
       enable_logger: true
       # 日志对象, 可配置自定义的实现接口的对象
       # - type 为 asynq 时接口为: gofusion/common/infra/asynq.Logger
-      # 默认配置的对象可打印日志到 log.default 中配置的日志中
+      # 默认配置的对象可打印日志到 log.<log_instance> 中配置的日志中
       # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
       logger: github.com/wfusion/gofusion/log/customlogger.cronLogger
       # 日志配置, 对应 log 组件中的名称

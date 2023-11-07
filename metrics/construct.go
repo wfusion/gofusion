@@ -3,13 +3,18 @@ package metrics
 import (
 	"context"
 	"log"
+	"reflect"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/wfusion/gofusion/common/infra/metrics"
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
+
+	fmkLog "github.com/wfusion/gofusion/log"
 )
 
 func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {
@@ -29,7 +34,7 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		pid := syscall.Getpid()
 		app := config.Use(opt.AppName).AppName()
 		if appInstances != nil {
-			for name, sinks := range appInstances[opt.AppName] {
+			for _, sinks := range appInstances[opt.AppName] {
 				for name, sink := range sinks {
 					log.Printf("%v [Gofusion] %s %s %s router exiting...",
 						pid, app, config.ComponentMetrics, name)
@@ -37,12 +42,12 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 					log.Printf("%v [Gofusion] %s %s %s router exited",
 						pid, app, config.ComponentMetrics, name)
 				}
-				delete(appInstances[opt.AppName], name)
 			}
+			delete(appInstances, opt.AppName)
 		}
 
 		if cfgsMap != nil {
-			cfgsMap[opt.AppName] = make(map[string]*cfg)
+			delete(cfgsMap, opt.AppName)
 		}
 	}
 }
@@ -65,6 +70,17 @@ func addConfig(ctx context.Context, name string, conf *Conf, opt *config.InitOpt
 		panic(ErrDuplicatedName)
 	}
 
+	var logger metrics.Logger
+	if utils.IsStrNotBlank(conf.Logger) {
+		loggerType := inspect.TypeOf(conf.Logger)
+		loggerValue := reflect.New(loggerType)
+		if loggerValue.Type().Implements(customLoggerType) {
+			logger := fmkLog.Use(conf.LogInstance, fmkLog.AppName(opt.AppName))
+			loggerValue.Interface().(customLogger).Init(logger, opt.AppName, name)
+		}
+		logger = loggerValue.Convert(metricsLoggerType).Interface().(metrics.Logger)
+	}
+
 	cfgsMap[opt.AppName][name] = &cfg{
 		c:          conf,
 		ctx:        ctx,
@@ -72,6 +88,7 @@ func addConfig(ctx context.Context, name string, conf *Conf, opt *config.InitOpt
 		appName:    opt.AppName,
 		interval:   interval,
 		initOption: opt,
+		logger:     logger,
 	}
 }
 
@@ -131,9 +148,9 @@ func use(job string, conf *cfg) (sink Sink) {
 	case metricsTypePrometheus:
 		switch conf.c.Mode {
 		case modePull:
-			sink = newPrometheusPull(conf.ctx, conf.appName, conf.name, job, conf.c)
+			sink = newPrometheusPull(conf.ctx, conf.appName, conf.name, job, conf)
 		case modePush:
-			sink = newPrometheusPush(conf.ctx, conf.appName, conf.name, job, conf.interval, conf.c)
+			sink = newPrometheusPush(conf.ctx, conf.appName, conf.name, job, conf.interval, conf)
 		}
 	default:
 		panic(errors.Errorf("unknown metrics type: %s", conf.c.Type))
@@ -157,7 +174,7 @@ func Internal(opts ...utils.OptionExtender) (sinks []Sink) {
 		return
 	}
 	for _, cfg := range cfgs {
-		if cfg.c.EnableRuntimeMetrics {
+		if cfg.c.EnableInternalMetrics {
 			sinks = append(sinks, use(appName, cfg))
 		}
 	}

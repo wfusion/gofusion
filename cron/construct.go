@@ -42,8 +42,8 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 				} else {
 					log.Printf("%v [Gofusion] %s %s %s exit failed: %s", pid, app, config.ComponentCron, name, err)
 				}
-				delete(routers[opt.AppName], name)
 			}
+			delete(routers, opt.AppName)
 		}
 	}
 }
