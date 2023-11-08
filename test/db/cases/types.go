@@ -68,7 +68,7 @@ func (*modelBizWithSoftDeleted) TableName() string {
 
 type modelWithBusinessAndUser struct {
 	db.Business
-	db.UserBase
+	UserBase
 	Name string `gorm:"column:name"`
 }
 
@@ -78,7 +78,7 @@ func (*modelWithBusinessAndUser) TableName() string {
 
 type modelWithSharding struct {
 	db.Business
-	db.AZBase
+	AZBase
 	gorm.DeletedAt
 
 	Name string `gorm:"column:name"`
@@ -92,7 +92,7 @@ func (modelWithSharding) TableName() string {
 
 type modelWithShardingPtr struct {
 	db.Business
-	db.AZBase
+	AZBase
 	Name string `gorm:"column:name"`
 	Age  int    `gorm:"column:age"`
 }
@@ -103,7 +103,7 @@ func (*modelWithShardingPtr) TableName() string {
 
 type modelWithShardingExtend struct {
 	db.Data
-	db.AZBase
+	AZBase
 
 	ModelID   uint64 `gorm:"column:model_id"`
 	OtherName string `gorm:"column:other_name"`
@@ -115,7 +115,7 @@ func (*modelWithShardingExtend) TableName() string {
 
 type modelWithShardingEmbed struct {
 	db.Data
-	db.AZBase
+	AZBase
 
 	ModelID   uint64 `gorm:"column:model_id"`
 	OtherName string `gorm:"column:other_name"`
@@ -127,11 +127,83 @@ func (*modelWithShardingEmbed) TableName() string {
 
 type modelWithShardingByRawValue struct {
 	db.Business
-	db.AZBase
+	AZBase
 	Name string `gorm:"column:name"`
 	Age  int    `gorm:"column:age"`
 }
 
 func (*modelWithShardingByRawValue) TableName() string {
 	return "model_with_sharding_by_raw_value"
+}
+
+type RegionBase struct {
+	RegionID string `gorm:"column:region_id;type:varchar(64);index:,composite:base" json:"regionID"`
+}
+
+func (r *RegionBase) Clone() *RegionBase {
+	if r == nil {
+		return nil
+	}
+	return &RegionBase{
+		RegionID: r.RegionID,
+	}
+}
+func (r *RegionBase) Equals(o *RegionBase) bool {
+	if r == nil && o == nil {
+		return true
+	}
+	if r == nil || o == nil {
+		return false
+	}
+	return r.RegionID == o.RegionID
+}
+
+type AZBase struct {
+	RegionBase
+	AZName string `gorm:"column:az_name;type:varchar(64);index:,composite:base" json:"azName"`
+}
+
+func (a *AZBase) Clone() *AZBase {
+	if a == nil {
+		return nil
+	}
+	return &AZBase{
+		RegionBase: *a.RegionBase.Clone(),
+		AZName:     a.AZName,
+	}
+}
+func (a *AZBase) Equals(o *AZBase) bool {
+	if a == nil && o == nil {
+		return true
+	}
+	if a == nil || o == nil {
+		return false
+	}
+	return a.RegionBase.Equals(&o.RegionBase) &&
+		a.AZName == o.AZName
+}
+
+type UserBase struct {
+	AZBase
+	UserID string `gorm:"column:user_id;type:varchar(64);index:,composite:base" json:"userID"`
+}
+
+func (u *UserBase) Clone() *UserBase {
+	if u == nil {
+		return nil
+	}
+	return &UserBase{
+		AZBase: *u.AZBase.Clone(),
+		UserID: u.UserID,
+	}
+}
+func (u *UserBase) Equals(o *UserBase) bool {
+	if u == nil && o == nil {
+		return true
+	}
+	if u == nil || o == nil {
+		return false
+	}
+	return u.AZBase.Equals(&o.AZBase) &&
+		u.UserID == o.UserID
 }

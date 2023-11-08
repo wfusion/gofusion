@@ -15,6 +15,7 @@ import (
 var (
 	// CronLoggerType FIXME: should not be deleted to avoid compiler optimized
 	CronLoggerType = reflect.TypeOf(cronLogger{})
+	cronFields     = log.Fields{"component": strings.ToLower(config.ComponentCron)}
 )
 
 func DefaultCronLogger() interface{ Printf(string, ...any) } {
@@ -40,7 +41,10 @@ func (c *cronLogger) Init(log log.Logable, appName, name string) {
 }
 
 func (c *cronLogger) Printf(format string, args ...any) {
-	c.log.Info(context.Background(), format, args...)
+	if !c.isLoggable() {
+		return
+	}
+	c.logger().Info(context.Background(), format, append(args, cronFields)...)
 }
 
 // Debug logs a message at Debug level.
@@ -49,11 +53,7 @@ func (c *cronLogger) Debug(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	if c.log != nil {
-		c.log.Debug(ctx, format, args...)
-	} else {
-		log.Debug(ctx, format, args...)
-	}
+	c.logger().Debug(ctx, format, args...)
 }
 
 // Info logs a message at Info level.
@@ -62,11 +62,7 @@ func (c *cronLogger) Info(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	if c.log != nil {
-		c.log.Info(ctx, format, args...)
-	} else {
-		log.Info(ctx, format, args...)
-	}
+	c.logger().Info(ctx, format, args...)
 }
 
 // Warn logs a message at Warning level.
@@ -75,11 +71,7 @@ func (c *cronLogger) Warn(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	if c.log != nil {
-		c.log.Warn(ctx, format, args...)
-	} else {
-		log.Warn(ctx, format, args...)
-	}
+	c.logger().Warn(ctx, format, args...)
 }
 
 // Error logs a message at Error level.
@@ -88,11 +80,7 @@ func (c *cronLogger) Error(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
-	if c.log != nil {
-		c.log.Error(ctx, format, args...)
-	} else {
-		log.Error(ctx, format, args...)
-	}
+	c.logger().Error(ctx, format, args...)
 }
 
 // Fatal logs a message at Fatal level
@@ -102,11 +90,14 @@ func (c *cronLogger) Fatal(args ...any) {
 		return
 	}
 	ctx, format, args := c.parseArgs(args...)
+	c.logger().Fatal(ctx, format, args...)
+}
+
+func (c *cronLogger) logger() log.Logable {
 	if c.log != nil {
-		c.log.Fatal(ctx, format, args...)
-	} else {
-		log.Fatal(ctx, format, args...)
+		return c.log
 	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(c.appName))
 }
 
 // parseArgs support (ctx, format, args...) log format
@@ -114,9 +105,10 @@ func (c *cronLogger) parseArgs(args ...any) (ctx context.Context, format string,
 	var ok bool
 
 	if len(args) == 0 {
-		return context.Background(), "", nil
+		return context.Background(), "", []any{cronFields}
 	}
 	if len(args) == 1 {
+		args = append(args, cronFields)
 		return context.Background(), "%+v", args
 	}
 
@@ -141,10 +133,17 @@ func (c *cronLogger) parseArgs(args ...any) (ctx context.Context, format string,
 		ctx = context.Background()
 	}
 
+	params = append(params, cronFields)
 	return
 }
 
-func (c *cronLogger) isLoggable() bool { c.reloadConfig(); return c.enabled }
+func (c *cronLogger) isLoggable() bool {
+	if c.confName == "" {
+		return true
+	}
+	c.reloadConfig()
+	return c.enabled
+}
 
 func (c *cronLogger) reloadConfig() {
 	var cfgs map[string]map[string]any

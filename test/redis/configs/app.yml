@@ -45,5 +45,5 @@ base:
       write_timeout: 2s
       min_idle_conns: 100
       max_idle_conns: 10000
-      enable_logger: false
+      enable_logger: true
       unlogable_commands: [echo,ping]

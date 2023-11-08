@@ -81,12 +81,14 @@ base:
       instance_type: redis
       producer: true
       consumer: true
+      enable_logger: true
     with_queues:
       type: asynq
       instance: default
       instance_type: redis
       producer: true
       consumer: true
+      enable_logger: true
       server_concurrency: 0
       message_serialize_type: gob
       message_compress_type: zstd

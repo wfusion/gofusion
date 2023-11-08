@@ -3,10 +3,12 @@ package customlogger
 import (
 	"context"
 	"reflect"
+	"strings"
 
 	"github.com/spf13/cast"
 
 	"github.com/wfusion/gofusion/common/infra/watermill"
+	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/log"
 )
@@ -14,6 +16,7 @@ import (
 var (
 	// MQLogger FIXME: should not be deleted to avoid compiler optimized
 	MQLogger = reflect.TypeOf(mqLogger{})
+	mqFields = log.Fields{"component": strings.ToLower(config.ComponentMessageQueue)}
 )
 
 // mqLogger implements watermill.LoggerAdapter with *zap.Logger.
@@ -44,17 +47,9 @@ func (m *mqLogger) Error(msg string, err error, fields watermill.LogFields) {
 	}
 	ctx, fs := m.parseLogFields(fields)
 	if err != nil {
-		if m.log != nil {
-			m.log.Error(ctx, msg+": %s", err, fs)
-		} else {
-			log.Error(ctx, msg+": %s", err, fs)
-		}
+		m.logger().Error(ctx, msg+": %s", err, fs)
 	} else {
-		if m.log != nil {
-			m.log.Error(ctx, msg, err, fs)
-		} else {
-			log.Error(ctx, msg, err, fs)
-		}
+		m.logger().Error(ctx, msg, err, fs)
 	}
 }
 
@@ -64,11 +59,7 @@ func (m *mqLogger) Info(msg string, fields watermill.LogFields) {
 		return
 	}
 	ctx, fs := m.parseLogFields(fields)
-	if m.log != nil {
-		m.log.Info(ctx, msg, fs)
-	} else {
-		log.Info(ctx, msg, fs)
-	}
+	m.logger().Info(ctx, msg, fs)
 }
 
 // Debug writes debug log with message and some fields.
@@ -77,11 +68,7 @@ func (m *mqLogger) Debug(msg string, fields watermill.LogFields) {
 		return
 	}
 	ctx, fs := m.parseLogFields(fields)
-	if m.log != nil {
-		m.log.Debug(ctx, msg, fs)
-	} else {
-		log.Debug(ctx, msg, fs)
-	}
+	m.logger().Debug(ctx, msg, fs)
 }
 
 // Trace writes debug log instead of trace log because zap does not support trace level logging.
@@ -90,16 +77,19 @@ func (m *mqLogger) Trace(msg string, fields watermill.LogFields) {
 		return
 	}
 	ctx, fs := m.parseLogFields(fields)
-	if m.log != nil {
-		m.log.Debug(ctx, msg, fs)
-	} else {
-		log.Debug(ctx, msg, fs)
-	}
+	m.logger().Debug(ctx, msg, fs)
 }
 
 // With returns new LoggerAdapter with passed fields.
 func (m *mqLogger) With(fields watermill.LogFields) watermill.LoggerAdapter {
 	return &mqLogger{fields: m.fields.Add(fields)}
+}
+
+func (m *mqLogger) logger() log.Logable {
+	if m.log != nil {
+		return m.log
+	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(m.appName))
 }
 
 func (m *mqLogger) parseLogFields(fields watermill.LogFields) (ctx context.Context, fs log.Fields) {
@@ -114,10 +104,18 @@ func (m *mqLogger) parseLogFields(fields watermill.LogFields) (ctx context.Conte
 		}
 		fs[k] = v
 	}
+	fs = utils.MapMerge(fs, mqFields)
 	return
 }
 
-func (m *mqLogger) isLoggable() bool { m.reloadConfig(); return m.enabled }
+func (m *mqLogger) isLoggable() bool {
+	if m.confName == "" {
+		return true
+	}
+
+	m.reloadConfig()
+	return m.enabled
+}
 
 func (m *mqLogger) reloadConfig() {
 	var cfgs map[string]map[string]any

@@ -15,6 +15,7 @@ import (
 var (
 	// MetricsLoggerType FIXME: should not be deleted to avoid compiler optimized
 	MetricsLoggerType = reflect.TypeOf(metricsLogger{})
+	metricsFields     = log.Fields{"component": strings.ToLower(config.ComponentMetrics)}
 )
 
 func DefaultMetricsLogger() metrics.Logger {
@@ -36,7 +37,10 @@ func (m *metricsLogger) Init(log log.Logable, appName, name string) {
 }
 
 func (m *metricsLogger) Printf(format string, args ...any) {
-	m.log.Info(context.Background(), format, args...)
+	if !m.isLoggable() {
+		return
+	}
+	m.logger().Info(context.Background(), format, append(args, metricsFields)...)
 }
 
 // Debug logs a message at Debug level.
@@ -45,11 +49,7 @@ func (m *metricsLogger) Debug(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	if m.log != nil {
-		m.log.Debug(ctx, format, args...)
-	} else {
-		log.Debug(ctx, format, args...)
-	}
+	m.logger().Debug(ctx, format, args...)
 }
 
 // Info logs a message at Info level.
@@ -58,11 +58,7 @@ func (m *metricsLogger) Info(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	if m.log != nil {
-		m.log.Info(ctx, format, args...)
-	} else {
-		log.Info(ctx, format, args...)
-	}
+	m.logger().Info(ctx, format, args...)
 }
 
 // Warn logs a message at Warning level.
@@ -71,11 +67,7 @@ func (m *metricsLogger) Warn(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	if m.log != nil {
-		m.log.Warn(ctx, format, args...)
-	} else {
-		log.Warn(ctx, format, args...)
-	}
+	m.logger().Warn(ctx, format, args...)
 }
 
 // Error logs a message at Error level.
@@ -84,11 +76,7 @@ func (m *metricsLogger) Error(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
-	if m.log != nil {
-		m.log.Error(ctx, format, args...)
-	} else {
-		log.Error(ctx, format, args...)
-	}
+	m.logger().Error(ctx, format, args...)
 }
 
 // Fatal logs a message at Fatal level
@@ -98,11 +86,14 @@ func (m *metricsLogger) Fatal(args ...any) {
 		return
 	}
 	ctx, format, args := m.parseArgs(args...)
+	m.logger().Fatal(ctx, format, args...)
+}
+
+func (m *metricsLogger) logger() log.Logable {
 	if m.log != nil {
-		m.log.Fatal(ctx, format, args...)
-	} else {
-		log.Fatal(ctx, format, args...)
+		return m.log
 	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(m.appName))
 }
 
 // parseArgs support (ctx, format, args...) log format
@@ -110,9 +101,10 @@ func (m *metricsLogger) parseArgs(args ...any) (ctx context.Context, format stri
 	var ok bool
 
 	if len(args) == 0 {
-		return context.Background(), "", nil
+		return context.Background(), "", []any{metricsFields}
 	}
 	if len(args) == 1 {
+		args = append(args, metricsFields)
 		return context.Background(), "%+v", args
 	}
 
@@ -137,10 +129,17 @@ func (m *metricsLogger) parseArgs(args ...any) (ctx context.Context, format stri
 		ctx = context.Background()
 	}
 
+	params = append(params, metricsFields)
 	return
 }
 
-func (m *metricsLogger) isLoggable() bool { m.reloadConfig(); return m.enabled }
+func (m *metricsLogger) isLoggable() bool {
+	if m.confName == "" {
+		return true
+	}
+	m.reloadConfig()
+	return m.enabled
+}
 
 func (m *metricsLogger) reloadConfig() {
 	var cfgs map[string]map[string]any

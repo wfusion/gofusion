@@ -97,7 +97,7 @@ func (t *TableSharding) testInsert(read, write string) {
 		}()
 
 		m1 := &modelWithSharding{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 		}
 		t.NoError(orm.Create(m1).Error)
@@ -124,19 +124,19 @@ func (t *TableSharding) testInsertNested(read, write string) {
 		}()
 
 		mws := &modelWithSharding{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 			EmbedList: []*modelWithShardingEmbed{
 				{
-					AZBase:    db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+					AZBase:    AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 					OtherName: "other1",
 				},
 				{
-					AZBase:    db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+					AZBase:    AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 					OtherName: "other2",
 				},
 				{
-					AZBase:    db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+					AZBase:    AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 					OtherName: "other3",
 				},
 			},
@@ -166,15 +166,15 @@ func (t *TableSharding) testBatchInsert(read, write string) {
 		}()
 		mList1 := []*modelWithSharding{
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding1",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding2",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding3",
 			},
 		}
@@ -217,15 +217,15 @@ func (t *TableSharding) testBatchInInsert(read, write string) {
 		}()
 		mList1 := []*modelWithSharding{
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding1",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding2",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding3",
 			},
 		}
@@ -269,15 +269,15 @@ func (t *TableSharding) testQuery(read, write string) {
 		}()
 		mList1 := []*modelWithSharding{
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding1",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding2",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding3",
 			},
 		}
@@ -325,19 +325,19 @@ func (t *TableSharding) testQueryNested(read, write string) {
 			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
 		}()
 		mws := &modelWithSharding{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 			EmbedList: []*modelWithShardingEmbed{
 				{
-					AZBase:    db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+					AZBase:    AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 					OtherName: "other1",
 				},
 				{
-					AZBase:    db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+					AZBase:    AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 					OtherName: "other2",
 				},
 				{
-					AZBase:    db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+					AZBase:    AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 					OtherName: "other3",
 				},
 			},
@@ -375,7 +375,7 @@ func (t *TableSharding) testDelete(read, write string) {
 			t.NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
 		}()
 		m1 := &modelWithSharding{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 		}
 		t.NoError(orm.Create(m1).Error)
@@ -407,15 +407,15 @@ func (t *TableSharding) testDAL(read, write string) {
 
 		mList1 := []*modelWithSharding{
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding1",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding2",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az2"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az2"},
 				Name:   "sharding3",
 			},
 		}
@@ -472,15 +472,15 @@ func (t *TableSharding) testDALQueryWithDeletedAt(read, write string) {
 
 		expected := []*modelWithSharding{
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding1",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding2",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az2"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az2"},
 				Name:   "sharding3",
 			},
 		}
@@ -515,7 +515,7 @@ func (t *TableSharding) testJoins(read, write string) {
 		}()
 
 		mws := &modelWithSharding{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 		}
 		t.NoError(mwsDAL.InsertOne(ctx, mws))
@@ -523,7 +523,7 @@ func (t *TableSharding) testJoins(read, write string) {
 		mwsTblName := mws.TableName()
 
 		mwse := &modelWithShardingExtend{
-			AZBase:    db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+			AZBase:    AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			OtherName: "sharding1",
 			ModelID:   mws.ID,
 		}
@@ -553,23 +553,23 @@ func (t *TableSharding) testDALFindAndCount(read, write string) {
 		}()
 		mList := []*modelWithSharding{
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding1",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az2"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az2"},
 				Name:   "sharding2",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az3"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az3"},
 				Name:   "sharding3",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 				Name:   "sharding4",
 			},
 			{
-				AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az2"},
+				AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az2"},
 				Name:   "sharding5",
 			},
 		}
@@ -601,7 +601,7 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 		}()
 
 		m1 := &modelWithShardingByRawValue{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az1"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}
@@ -611,7 +611,7 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 		}()
 
 		m2 := &modelWithShardingByRawValue{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az2"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az2"},
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}
@@ -621,7 +621,7 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 		}()
 
 		m3 := &modelWithShardingByRawValue{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az3"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az3"},
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}
@@ -631,7 +631,7 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 		}()
 
 		m4 := &modelWithShardingByRawValue{
-			AZBase: db.AZBase{RegionBase: db.RegionBase{RegionID: "12345"}, AZName: "az4"},
+			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az4"},
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}

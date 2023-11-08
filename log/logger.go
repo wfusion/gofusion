@@ -50,13 +50,19 @@ func Use(name string, opts ...utils.OptionExtender) Logable {
 	instances, ok := appInstances[opt.appName]
 	if !ok {
 		globalLogger.Debug(context.Background(), "%v [Gofusion] %s instance not found for app: %s",
-			syscall.Getpid(), config.ComponentLog, opt.appName)
+			syscall.Getpid(), config.ComponentLog, opt.appName, Fields{"component": "log"})
 		return globalLogger
 	}
 	instance, ok := instances[name]
 	if !ok {
+		instance, ok = instances[config.DefaultInstanceKey]
+		if ok {
+			instance.Debug(context.Background(), "%v [Gofusion] %s instance not found for name: %s",
+				syscall.Getpid(), config.ComponentLog, name, Fields{"component": "log"})
+			return instance
+		}
 		globalLogger.Debug(context.Background(), "%v [Gofusion] %s instance not found for name: %s",
-			syscall.Getpid(), config.ComponentLog, name)
+			syscall.Getpid(), config.ComponentLog, name, Fields{"component": "log"})
 		return globalLogger
 	}
 

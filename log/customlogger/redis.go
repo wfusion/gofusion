@@ -19,6 +19,7 @@ import (
 var (
 	// RedisLoggerType FIXME: should not be deleted to avoid compiler optimized
 	RedisLoggerType = reflect.TypeOf(redisLogger{})
+	redisFields     = log.Fields{"component": strings.ToLower(config.ComponentRedis)}
 )
 
 type redisLogger struct {
@@ -48,23 +49,13 @@ func (r *redisLogger) ProcessHook(next rdsDrv.ProcessHook) rdsDrv.ProcessHook {
 
 		begin := time.Now()
 		if err = next(ctx, cmd); err != nil {
-			if r.log != nil {
-				r.log.Warn(ctx, "[redis] %s failed [command[%s]]", cmd.FullName(), cmd.String(),
-					log.Fields{"latency": time.Since(begin).Milliseconds()})
-			} else {
-				log.Warn(ctx, "[redis] %s failed [command[%s]]", cmd.FullName(), cmd.String(),
-					log.Fields{"latency": time.Since(begin).Milliseconds()})
-			}
+			r.logger().Warn(ctx, "%s failed [command[%s]]", cmd.FullName(), cmd.String(),
+				r.fields(log.Fields{"latency": time.Since(begin).Milliseconds()}))
 			return
 		}
 
-		if r.log != nil {
-			r.log.Info(ctx, "[redis] %s succeeded [command[%s]]", cmd.FullName(), cmd.String(),
-				log.Fields{"latency": time.Since(begin).Milliseconds()})
-		} else {
-			log.Info(ctx, "[redis] %s succeeded [command[%s]]", cmd.FullName(), cmd.String(),
-				log.Fields{"latency": time.Since(begin).Milliseconds()})
-		}
+		r.logger().Info(ctx, "%s succeeded [command[%s]]", cmd.FullName(), cmd.String(),
+			r.fields(log.Fields{"latency": time.Since(begin).Milliseconds()}))
 		return
 	}
 }
@@ -81,28 +72,33 @@ func (r *redisLogger) ProcessPipelineHook(next rdsDrv.ProcessPipelineHook) rdsDr
 		}
 
 		if err = next(ctx, cmds); err != nil {
-			if r.log != nil {
-				r.log.Warn(ctx, "[redis] %s failed", fullNameSb.String(),
-					log.Fields{"latency": time.Since(begin).Milliseconds()})
-			} else {
-				log.Warn(ctx, "[redis] %s failed", fullNameSb.String(),
-					log.Fields{"latency": time.Since(begin).Milliseconds()})
-			}
+			r.logger().Warn(ctx, "%s failed", fullNameSb.String(),
+				r.fields(log.Fields{"latency": time.Since(begin).Milliseconds()}))
 			return
 		}
 
-		if r.log != nil {
-			r.log.Info(ctx, "[redis] %s succeeded", fullNameSb.String(),
-				log.Fields{"latency": time.Since(begin).Milliseconds()})
-		} else {
-			log.Info(ctx, "[redis] %s succeeded", fullNameSb.String(),
-				log.Fields{"latency": time.Since(begin).Milliseconds()})
-		}
+		r.logger().Info(ctx, "%s succeeded", fullNameSb.String(),
+			r.fields(log.Fields{"latency": time.Since(begin).Milliseconds()}))
 		return
 	}
 }
 
+func (r *redisLogger) logger() log.Logable {
+	if r.log != nil {
+		return r.log
+	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(r.appName))
+}
+
+func (r *redisLogger) fields(fields log.Fields) log.Fields {
+	return utils.MapMerge(fields, redisFields)
+}
+
 func (r *redisLogger) isLoggableCommandSet(command string) bool {
+	if r.confName == "" {
+		return true
+	}
+
 	r.reloadConfig()
 	if !r.enabled {
 		return false
@@ -113,7 +109,13 @@ func (r *redisLogger) isLoggableCommandSet(command string) bool {
 	return !r.unlogableCommandSet.Contains(command)
 }
 
-func (r *redisLogger) isLoggable() bool { r.reloadConfig(); return r.enabled }
+func (r *redisLogger) isLoggable() bool {
+	if r.confName == "" {
+		return true
+	}
+	r.reloadConfig()
+	return r.enabled
+}
 
 func (r *redisLogger) reloadConfig() {
 	var cfgs map[string]map[string]any

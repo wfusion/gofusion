@@ -3,6 +3,7 @@ package customlogger
 import (
 	"context"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 var (
 	// MongoLoggerType FIXME: should not be deleted to avoid compiler optimized
 	MongoLoggerType = reflect.TypeOf(mongoLogger{})
+	mongoFields     = log.Fields{"component": strings.ToLower(config.ComponentMongo)}
 )
 
 type mongoLogger struct {
@@ -39,7 +41,7 @@ type mongoLogger struct {
 func DefaultMongoLogger() (logger *mongoLogger) {
 	logger = &mongoLogger{
 		enabled:    true,
-		requestMap: map[int64]struct{ commandString string }{},
+		requestMap: make(map[int64]struct{ commandString string }),
 		logableCommandSet: utils.NewSet[string](
 			"ping",
 			"insert",
@@ -74,6 +76,28 @@ func (m *mongoLogger) Init(log log.Logable, appName, name string) {
 	m.log = log
 	m.appName = appName
 	m.confName = name
+	m.requestMap = make(map[int64]struct{ commandString string })
+	m.logableCommandSet = utils.NewSet[string](
+		"ping",
+		"insert",
+		"find",
+		"update",
+		"delete",
+		"aggregate",
+		"distinct",
+		"count",
+		"findAndModify",
+		"getMore",
+		"killCursors",
+		"create",
+		"drop",
+		"listDatabases",
+		"dropDatabase",
+		"createIndexes",
+		"listIndexes",
+		"dropIndexes",
+		"listCollections",
+	)
 }
 
 func (m *mongoLogger) GetMonitor() *event.CommandMonitor {
@@ -95,30 +119,18 @@ func (m *mongoLogger) succeeded(ctx context.Context, evt *event.CommandSucceeded
 	if !m.isLoggableCommandName(evt.CommandName) {
 		return
 	}
-	if m.log != nil {
-		m.log.Info(ctx, "[mongodb] %s succeeded [request[%v] command[%s]]",
-			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
-			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
-	} else {
-		log.Info(ctx, "[mongodb] %s succeeded [request[%v] command[%s]]",
-			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
-			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
-	}
+	m.logger().Info(ctx, "%s succeeded [request[%v] command[%s]]",
+		evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+		m.fields(log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)}))
 }
 
 func (m *mongoLogger) failed(ctx context.Context, evt *event.CommandFailedEvent) {
 	if !m.isLoggableCommandName(evt.CommandName) {
 		return
 	}
-	if m.log != nil {
-		m.log.Warn(ctx, "[mongodb] %s failed [request[%v] command[%s]]",
-			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
-			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
-	} else {
-		log.Warn(ctx, "[mongodb] %s failed [request[%v] command[%s]]",
-			evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
-			log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)})
-	}
+	m.logger().Warn(ctx, "%s failed [request[%v] command[%s]]",
+		evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+		m.fields(log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)}))
 }
 
 func (m *mongoLogger) pushCommandString(requestID int64, commandString string) {
@@ -138,9 +150,22 @@ func (m *mongoLogger) popCommandString(requestID int64) string {
 	return ""
 }
 
+func (m *mongoLogger) logger() log.Logable {
+	if m.log != nil {
+		return m.log
+	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(m.appName))
+}
+
+func (m *mongoLogger) fields(fields log.Fields) log.Fields {
+	return utils.MapMerge(fields, mongoFields)
+}
+
 func (m *mongoLogger) isLoggableCommandName(commandName string) bool {
-	m.reloadConfig()
-	if !m.enabled {
+	if m.confName == "" {
+		return true
+	}
+	if m.reloadConfig(); !m.enabled {
 		return false
 	}
 	return m.logableCommandSet.Contains(commandName)

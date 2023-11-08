@@ -14,6 +14,7 @@ import (
 var (
 	// RoutineLoggerType FIXME: should not be deleted to avoid compiler optimized
 	RoutineLoggerType = reflect.TypeOf(routineLogger{})
+	routineFields     = log.Fields{"component": "routine"}
 )
 
 func DefaultRoutineLogger() ants.Logger {
@@ -36,13 +37,15 @@ func (r *routineLogger) Init(log log.Logable, appName string) {
 
 func (r *routineLogger) Printf(format string, args ...any) {
 	if r.reloadConfig(); r.enabled {
-		ctx := context.Background()
-		if r.log != nil {
-			r.log.Info(ctx, format, args...)
-		} else {
-			log.Info(ctx, format, args...)
-		}
+		r.logger().Info(context.Background(), format, append(args, routineFields)...)
 	}
+}
+
+func (r *routineLogger) logger() log.Logable {
+	if r.log != nil {
+		return r.log
+	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(r.appName))
 }
 
 func (r *routineLogger) reloadConfig() {

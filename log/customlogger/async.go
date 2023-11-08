@@ -15,6 +15,7 @@ import (
 var (
 	// AsyncLoggerType FIXME: should not be deleted to avoid compiler optimized
 	AsyncLoggerType = reflect.TypeOf(asyncLogger{})
+	asyncFields     = log.Fields{"component": strings.ToLower(config.ComponentAsync)}
 )
 
 func DefaultAsyncLogger() interface{ Printf(string, ...any) } {
@@ -40,8 +41,10 @@ func (a *asyncLogger) Init(log log.Logable, appName, confName string) {
 }
 
 func (a *asyncLogger) Printf(format string, args ...any) {
-	ctx := context.Background()
-	a.log.Info(ctx, format, args...)
+	if !a.isLoggable() {
+		return
+	}
+	a.logger().Info(context.Background(), format, append(args, asyncFields)...)
 }
 
 // Debug logs a message at Debug level.
@@ -50,11 +53,7 @@ func (a *asyncLogger) Debug(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	if a.log != nil {
-		a.log.Debug(ctx, format, args...)
-	} else {
-		log.Debug(ctx, format, args...)
-	}
+	a.logger().Debug(ctx, format, args...)
 }
 
 // Info logs a message at Info level.
@@ -63,11 +62,7 @@ func (a *asyncLogger) Info(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	if a.log != nil {
-		a.log.Info(ctx, format, args...)
-	} else {
-		log.Info(ctx, format, args...)
-	}
+	a.logger().Info(ctx, format, args...)
 }
 
 // Warn logs a message at Warning level.
@@ -76,11 +71,7 @@ func (a *asyncLogger) Warn(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	if a.log != nil {
-		a.log.Warn(ctx, format, args...)
-	} else {
-		log.Warn(ctx, format, args...)
-	}
+	a.logger().Warn(ctx, format, args...)
 }
 
 // Error logs a message at Error level.
@@ -89,11 +80,7 @@ func (a *asyncLogger) Error(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
-	if a.log != nil {
-		a.log.Error(ctx, format, args...)
-	} else {
-		log.Error(ctx, format, args...)
-	}
+	a.logger().Error(ctx, format, args...)
 }
 
 // Fatal logs a message at Fatal level
@@ -103,11 +90,14 @@ func (a *asyncLogger) Fatal(args ...any) {
 		return
 	}
 	ctx, format, args := a.parseArgs(args...)
+	a.logger().Fatal(ctx, format, args...)
+}
+
+func (a *asyncLogger) logger() log.Logable {
 	if a.log != nil {
-		a.log.Fatal(ctx, format, args...)
-	} else {
-		log.Fatal(ctx, format, args...)
+		return a.log
 	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(a.appName))
 }
 
 // parseArgs support (ctx, format, args...) log format
@@ -115,9 +105,10 @@ func (a *asyncLogger) parseArgs(args ...any) (ctx context.Context, format string
 	var ok bool
 
 	if len(args) == 0 {
-		return context.Background(), "", nil
+		return context.Background(), "", []any{asyncFields}
 	}
 	if len(args) == 1 {
+		args = append(args, asyncFields)
 		return context.Background(), "%+v", args
 	}
 
@@ -142,10 +133,17 @@ func (a *asyncLogger) parseArgs(args ...any) (ctx context.Context, format string
 		ctx = context.Background()
 	}
 
+	params = append(params, asyncFields)
 	return
 }
 
-func (a *asyncLogger) isLoggable() bool { a.reloadConfig(); return a.enabled }
+func (a *asyncLogger) isLoggable() bool {
+	if a.confName == "" {
+		return true
+	}
+	a.reloadConfig()
+	return a.enabled
+}
 
 func (a *asyncLogger) reloadConfig() {
 	var cfgs map[string]map[string]any

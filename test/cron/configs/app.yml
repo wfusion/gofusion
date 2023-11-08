@@ -91,6 +91,7 @@ base:
       queue: gofusion:cron:default
       server: true
       trigger: true
+      enable_logger: true
       tasks:
         test:
           crontab: "@every 1s"
@@ -101,6 +102,7 @@ base:
       queue: gofusion:cron:default
       server: true
       trigger: true
+      enable_logger: true
       tasks:
         test:
           crontab: "@every 1s"
@@ -112,6 +114,7 @@ base:
       queue: gofusion:cron:with_lock
       server: true
       trigger: true
+      enable_logger: true
       tasks:
         test:
           crontab: "@every 1s"
@@ -129,6 +132,7 @@ base:
       queue: gofusion:cron:with_lock
       server: true
       trigger: true
+      enable_logger: true
       tasks:
         test:
           crontab: "@every 1s"

@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	"github.com/wfusion/gofusion/common/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
@@ -19,6 +20,7 @@ import (
 var (
 	// GormLoggerType FIXME: should not be deleted to avoid compiler optimized
 	GormLoggerType = reflect.TypeOf(gormLogger{})
+	dbFields       = log.Fields{"component": strings.ToLower(config.ComponentDB)}
 )
 
 func DefaultMySQLLogger() logger.Interface {
@@ -48,53 +50,28 @@ func (g *gormLogger) LogMode(level logger.LogLevel) logger.Interface {
 
 // Info print info
 func (g *gormLogger) Info(ctx context.Context, msg string, data ...any) {
-	g.reloadConfig()
-	if !g.enabled {
-		return
-	}
-	if g.logLevel >= logger.Info {
-		if g.log != nil {
-			g.log.Info(ctx, msg, data...)
-		} else {
-			log.Info(ctx, msg, data...)
-		}
+	if g.isLoggable() && g.logLevel >= logger.Info {
+		g.logger().Info(ctx, msg, append(data, dbFields)...)
 	}
 }
 
 // Warn print warn messages
 func (g *gormLogger) Warn(ctx context.Context, msg string, data ...any) {
-	g.reloadConfig()
-	if !g.enabled {
-		return
-	}
-	if g.logLevel >= logger.Warn {
-		if g.log != nil {
-			g.log.Warn(ctx, msg, data...)
-		} else {
-			log.Warn(ctx, msg, data...)
-		}
+	if g.isLoggable() && g.logLevel >= logger.Warn {
+		g.logger().Warn(ctx, msg, append(data, dbFields)...)
 	}
 }
 
 // Error print error messages
 func (g *gormLogger) Error(ctx context.Context, msg string, data ...any) {
-	g.reloadConfig()
-	if !g.enabled {
-		return
-	}
-	if g.logLevel >= logger.Error {
-		if g.log != nil {
-			g.log.Error(ctx, msg, data...)
-		} else {
-			log.Error(ctx, msg, data...)
-		}
+	if g.isLoggable() && g.logLevel >= logger.Error {
+		g.logger().Error(ctx, msg, append(data, dbFields)...)
 	}
 }
 
 // Trace print sql message
 func (g *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
-	g.reloadConfig()
-	if !g.enabled {
+	if !g.isLoggable() {
 		return
 	}
 	if g.logLevel <= logger.Silent {
@@ -106,51 +83,28 @@ func (g *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 	case err != nil && g.logLevel >= logger.Error &&
 		(!errors.Is(err, gorm.ErrRecordNotFound) || !g.ignoreRecordNotFoundError):
 		sql, rows := fc()
-		sql = fmt.Sprintf("err[%%s] %s", g.format(sql))
+		sql = fmt.Sprintf("err[%%s] %s", sql)
 		if rows == -1 {
-			if g.log != nil {
-				g.log.Info(ctx, sql, err.Error(), log.Fields{"latency": elapsed.Milliseconds()})
-			} else {
-				log.Info(ctx, sql, err.Error(), log.Fields{"latency": elapsed.Milliseconds()})
-			}
+			g.logger().Info(ctx, sql, err.Error(), g.fields(log.Fields{"latency": elapsed.Milliseconds()}))
 		} else {
-			if g.log != nil {
-				g.log.Info(ctx, sql, err.Error(), log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
-			} else {
-				log.Info(ctx, sql, err.Error(), log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
-			}
+			g.logger().Info(ctx, sql, err.Error(),
+				g.fields(log.Fields{"rows": rows, "latency": elapsed.Milliseconds()}))
 		}
 	case elapsed > g.slowThreshold && g.slowThreshold != 0 && g.logLevel >= logger.Warn:
 		sql, rows := fc()
 		slowLog := fmt.Sprintf("SLOW SQL >= %v %s", g.slowThreshold, g.format(sql))
 		if rows == -1 {
-			if g.log != nil {
-				g.log.Info(ctx, slowLog, log.Fields{"latency": elapsed.Milliseconds()})
-			} else {
-				log.Info(ctx, slowLog, log.Fields{"latency": elapsed.Milliseconds()})
-			}
+			g.logger().Info(ctx, slowLog, g.fields(log.Fields{"latency": elapsed.Milliseconds()}))
 		} else {
-			if g.log != nil {
-				g.log.Info(ctx, slowLog, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
-			} else {
-				log.Info(ctx, slowLog, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
-			}
+			g.logger().Info(ctx, slowLog, g.fields(log.Fields{"rows": rows, "latency": elapsed.Milliseconds()}))
 		}
 	case g.logLevel == logger.Info:
 		sql, rows := fc()
 		sql = g.format(sql)
 		if rows == -1 {
-			if g.log != nil {
-				g.log.Info(ctx, sql, log.Fields{"latency": elapsed.Milliseconds()})
-			} else {
-				log.Info(ctx, sql, log.Fields{"latency": elapsed.Milliseconds()})
-			}
+			g.logger().Info(ctx, sql, g.fields(log.Fields{"latency": elapsed.Milliseconds()}))
 		} else {
-			if g.log != nil {
-				g.log.Info(ctx, sql, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
-			} else {
-				log.Info(ctx, sql, log.Fields{"rows": rows, "latency": elapsed.Milliseconds()})
-			}
+			g.logger().Info(ctx, sql, g.fields(log.Fields{"rows": rows, "latency": elapsed.Milliseconds()}))
 		}
 	}
 }
@@ -163,8 +117,19 @@ func (g *gormLogger) Init(log log.Logable, appName, name string) {
 	g.reloadConfig()
 }
 
+func (g *gormLogger) logger() log.Logable {
+	if g.log != nil {
+		return g.log
+	}
+	return log.Use(config.DefaultInstanceKey, log.AppName(g.appName))
+}
+
 func (g *gormLogger) format(sql string) string {
 	return strings.ReplaceAll(sql, "%", "%%")
+}
+
+func (g *gormLogger) fields(fields log.Fields) log.Fields {
+	return utils.MapMerge(fields, dbFields)
 }
 
 func (g *gormLogger) getLogLevel(level string) logger.LogLevel {
@@ -180,6 +145,14 @@ func (g *gormLogger) getLogLevel(level string) logger.LogLevel {
 	default:
 		return g.logLevel
 	}
+}
+
+func (g *gormLogger) isLoggable() bool {
+	if g.confName == "" {
+		return true
+	}
+	g.reloadConfig()
+	return g.enabled
 }
 
 func (g *gormLogger) reloadConfig() {
