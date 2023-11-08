@@ -147,9 +147,8 @@ func (a *abstract) shutdown() {
 		return
 	}
 
-	a.Metrics.Shutdown()
 	close(a.stop)
-	close(a.queue)
+	a.Metrics.Shutdown()
 }
 
 func (a *abstract) send(ctx context.Context, method string, key []string, val any, opts ...utils.OptionExtender) {
@@ -182,6 +181,7 @@ func (a *abstract) send(ctx context.Context, method string, key []string, val an
 					syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name, opt.timeout)
 			}
 		case <-a.stop:
+			close(a.queue)
 			if a.log != nil {
 				a.log.Info(ctx, "%v [Gofusion] %s %s %s async send task canceled due to metrics stopped",
 					syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
@@ -201,6 +201,7 @@ func (a *abstract) send(ctx context.Context, method string, key []string, val an
 					syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
 			}
 		case <-a.stop:
+			close(a.queue)
 			if a.log != nil {
 				a.log.Info(ctx, "%v [Gofusion] %s %s %s async send task canceled due to metrics stopped",
 					syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
@@ -225,6 +226,7 @@ func (a *abstract) send(ctx context.Context, method string, key []string, val an
 					syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
 			}
 		case <-a.stop:
+			close(a.queue)
 			if a.log != nil {
 				a.log.Info(ctx, "%v [Gofusion] %s %s %s async send task canceled due to metrics stopped",
 					syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name)
@@ -259,7 +261,8 @@ func (a *abstract) start() {
 
 						if err := a.queuePool.Submit(func() { _ = a.process(task) }); err != nil && a.log != nil {
 							a.log.Error(task.ctx, "%v [Gofusion] %s %s %s submit process %s error: %s",
-								syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics, a.name, task, err)
+								syscall.Getpid(), config.Use(a.appName).AppName(), config.ComponentMetrics,
+								a.name, task, err)
 						}
 					}
 				}

@@ -53,9 +53,15 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 }
 
 func addConfig(ctx context.Context, name string, conf *Conf, opt *config.InitOption) {
-	interval, err := time.ParseDuration(conf.Interval)
-	if err != nil {
-		panic(errors.Errorf("metrics component parse %s interval failed: %s", name, err))
+	var (
+		err      error
+		interval time.Duration
+	)
+	if utils.IsStrNotBlank(conf.Interval) {
+		interval, err = time.ParseDuration(conf.Interval)
+		if err != nil {
+			panic(errors.Errorf("metrics component parse %s interval failed: %s", name, err))
+		}
 	}
 
 	rwlock.Lock()
@@ -152,6 +158,8 @@ func use(job string, conf *cfg) (sink Sink) {
 		case modePush:
 			sink = newPrometheusPush(conf.ctx, conf.appName, conf.name, job, conf.interval, conf)
 		}
+	case metricsTypeMock:
+		sink = newMock(conf.ctx, conf.appName, conf.name, job, conf)
 	default:
 		panic(errors.Errorf("unknown metrics type: %s", conf.c.Type))
 	}

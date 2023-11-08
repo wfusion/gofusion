@@ -70,6 +70,7 @@ type endpointConf struct {
 type metricsType string
 
 const (
+	metricsTypeMock       metricsType = "mock"
 	metricsTypePrometheus metricsType = "prometheus"
 )
 

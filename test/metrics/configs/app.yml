@@ -39,3 +39,9 @@ base:
       enable_internal_metrics: true
       enable_logger: true
       log_instance: default
+    mock:
+      type: mock
+      enable_service_label: true
+      enable_internal_metrics: true
+      enable_logger: true
+      log_instance: default
