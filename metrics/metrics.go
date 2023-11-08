@@ -68,7 +68,7 @@ func (t *task) String() string {
 }
 
 func newMetrics(ctx context.Context, appName, name, job string, sink metrics.MetricSink, conf *cfg) *abstract {
-	metricsConfig := metrics.DefaultConfig(appName)
+	metricsConfig := metrics.DefaultConfig(config.Use(appName).AppName())
 	if conf.c.EnableServiceLabel {
 		metricsConfig.EnableHostname = true
 		metricsConfig.EnableHostnameLabel = true

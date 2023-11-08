@@ -236,6 +236,7 @@ func (r *router) convert(method, uri string, handler routerHandler, opt *routerO
 	if typ.NumIn() == 1 && typ.NumOut() == 0 {
 		return func(c *gin.Context) {
 			reflect.ValueOf(handler).Call([]reflect.Value{reflect.ValueOf(c)})
+			c.Next()
 		}
 	}
 
@@ -482,7 +483,7 @@ func (r *router) wrapHandlerFunc(handler routerHandler, reqParse routerRequestPa
 				Error(parseRspError(c, r.appName, nil, Err(c, errParam,
 					Param(map[string]any{"err": fmt.Sprintf(": %s", err.Error())}))))
 			}
-			c.Abort()
+			c.Next()
 			return
 		}
 
@@ -511,17 +512,18 @@ func (r *router) wrapHandlerFunc(handler routerHandler, reqParse routerRequestPa
 			} else {
 				rsp = reflect.New(rspType).Interface()
 			}
-			embedResponse(c, rsp, err)
+			embedResponse(c, r.appName, rsp, err)
 
 		// business error
 		case err != nil:
 			Error(parseRspError(c, r.appName, rspVals, err))
-			c.Abort()
 
 		// success with response
 		default:
 			Success(parseRspSuccess(c, r.appName, rspVals))
 		}
+
+		c.Next()
 	}
 }
 

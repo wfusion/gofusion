@@ -104,14 +104,12 @@ base:
         addresses: [ prometheus:9091 ]
       # 所有打点默认添加 _service, _service_hostname, _service_ip labels
       enable_service_label: true
-      # 自动采集上报 golang 程序数据打点, 包含:
-      # runtime_alloc_bytes,runtime_sys_bytes,runtime_malloc_count,runtime_free_count,runtime_heap_objects,
-      # runtime_total_gc_pause_ns,runtime_total_gc_runs
-      enable_runtime_metrics: true
-      # 自动采集上报各个组件的打点, 包含:
+      # 自动采集上报各个组件的打点, 目前包含 db, redis, mongo, http 以及 routine 组件:
       # redis_idle,redis_total,redis_stale,redis_hits,redis_misses,redis_latency
       # mongo_idle,mongo_inuse,mongo_total,mongo_latency
       # db_idle,db_total,db_inuse,db_wait_count,db_wait_duration,db_latency
+      # runtime_alloc_bytes,runtime_sys_bytes,runtime_malloc_count,runtime_free_count,runtime_heap_objects,
+      # runtime_total_gc_pause_ns,runtime_total_gc_runs
       enable_internal_metrics: true
       # 打点队列长度限制, 限制因为高并发打点所占用的内存大小, 默认为 16384
       # 到达限制时默认丢弃打点, 可通过 metrics.WithTimeout hang 住保证打点, 或 metrics.Timeout 选项设置业务容忍时间

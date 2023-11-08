@@ -71,11 +71,12 @@ func metricDBStats(ctx context.Context, appName, name string, labels []metrics.L
 			return
 		}
 
-		idleKey := append([]string{appName}, metricsPoolIdleKey...)
-		inuseKey := append([]string{appName}, metricsPoolInUseKey...)
-		totalKey := append([]string{appName}, metricsPoolTotalKey...)
-		waitCountKey := append([]string{appName}, metricsPoolWaitCountKey...)
-		waitDurationKey := append([]string{appName}, metricsPoolWaitDurationKey...)
+		app := config.Use(appName).AppName()
+		idleKey := append([]string{app}, metricsPoolIdleKey...)
+		inuseKey := append([]string{app}, metricsPoolInUseKey...)
+		totalKey := append([]string{app}, metricsPoolTotalKey...)
+		waitCountKey := append([]string{app}, metricsPoolWaitCountKey...)
+		waitDurationKey := append([]string{app}, metricsPoolWaitDurationKey...)
 
 		stats := sqlDB.Stats()
 		waitDuration := float64(stats.WaitDuration) / float64(time.Millisecond)
@@ -132,7 +133,7 @@ func metricDBLatency(ctx context.Context, appName, name string, labels []metrics
 			return
 		}
 		latency := float64(time.Since(begin)) / float64(time.Millisecond)
-		latencyKey := append([]string{appName}, metricsLatencyKey...)
+		latencyKey := append([]string{config.Use(appName).AppName()}, metricsLatencyKey...)
 		for _, m := range metrics.Internal(metrics.AppName(appName)) {
 			select {
 			case <-ctx.Done():

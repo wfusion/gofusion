@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cast"
 
 	"github.com/wfusion/gofusion/common/constraint"
@@ -54,14 +55,18 @@ func Success(c *gin.Context, appName string, data any, page, count int, msg stri
 		countPtr = utils.AnyPtr(count)
 	}
 
+	code := Use(AppName(appName)).Config().SuccessCode
 	c.PureJSON(status, &Response{
-		Code:    Use(AppName(appName)).Config().SuccessCode,
+		Code:    code,
 		Message: msg,
 		Data:    data,
 		Page:    pagePtr,
 		Count:   countPtr,
 		TraceID: c.GetString(fmkCtx.KeyTraceID),
 	})
+
+	go metricsCode(fmkCtx.New(fmkCtx.Gin(c)), appName, c.Request.URL.Path, c.Request.Method, code,
+		c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 }
 
 func Error[T constraint.Integer](c *gin.Context, appName string, code T, data any, page, count int, msg string) {
@@ -92,9 +97,12 @@ func Error[T constraint.Integer](c *gin.Context, appName string, code T, data an
 		Count:   countPtr,
 		TraceID: c.GetString(fmkCtx.KeyTraceID),
 	})
+
+	go metricsCode(fmkCtx.New(fmkCtx.Gin(c)), appName, c.Request.URL.Path, c.Request.Method, cast.ToInt(code),
+		c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 }
 
-func embedResponse(c *gin.Context, data any, err error) {
+func embedResponse(c *gin.Context, appName string, data any, err error) {
 	status := c.Writer.Status()
 	if status == 0 {
 		if err != nil {
@@ -102,6 +110,35 @@ func embedResponse(c *gin.Context, data any, err error) {
 		} else {
 			status = http.StatusBadRequest
 		}
+	}
+
+	ctx := fmkCtx.New(fmkCtx.Gin(c))
+	switch rsp := data.(type) {
+	case Response:
+		go metricsCode(ctx, appName, c.Request.URL.Path, c.Request.Method, rsp.Code,
+			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+	case *Response:
+		go metricsCode(ctx, appName, c.Request.URL.Path, c.Request.Method, rsp.Code,
+			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+	default:
+		rspData := make(map[string]any)
+		dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &rspData,
+			TagName: "json",
+		})
+		if err == nil && dec != nil {
+			_ = dec.Decode(data)
+		}
+		var code any
+		utils.IfAny(
+			func() (ok bool) { code, ok = rspData["code"]; return ok },
+			func() (ok bool) { code, ok = rspData["Code"]; return ok },
+		)
+		if code == nil {
+			code = -2
+		}
+		go metricsCode(ctx, appName, c.Request.URL.Path, c.Request.Method, cast.ToInt(code),
+			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 	}
 
 	c.PureJSON(status, data)

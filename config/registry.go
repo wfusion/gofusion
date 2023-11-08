@@ -412,7 +412,7 @@ func (p *registry) initComponents(parent context.Context) func() {
 	app := p.AppName()
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
 	log.Printf("%v [Gofusion] %s initialized total %d components below: %s\n",
-		pid, p.appName, len(componentNames), strings.Join(componentNames, ", "))
+		pid, app, len(componentNames), strings.Join(componentNames, ", "))
 
 	once := new(sync.Once)
 	return func() {

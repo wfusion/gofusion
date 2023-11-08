@@ -111,14 +111,13 @@ base:
         addresses: [ prometheus:9091 ]
       # All metrics default to add _service, _service_hostname, _service_ip labels
       enable_service_label: true
-      # Automatically collect and report golang program metrics, including:
-      # runtime_alloc_bytes,runtime_sys_bytes,runtime_malloc_count,runtime_free_count,runtime_heap_objects,
-      # runtime_total_gc_pause_ns,runtime_total_gc_runs
-      enable_runtime_metrics: true
-      # Automatically collect and report metrics of each component
+      # Automatically collect and report metrics of each component, including db, redis, mongo, http, and routine now:
       # redis_idle,redis_total,redis_stale,redis_hits,redis_misses,redis_latency
       # mongo_idle,mongo_inuse,mongo_total,mongo_latency
       # db_idle,db_total,db_inuse,db_wait_count,db_wait_duration,db_latency
+      # http_latency, http_request_counter, http_code_counter
+      # runtime_alloc_bytes,runtime_sys_bytes,runtime_malloc_count,runtime_free_count,runtime_heap_objects,
+      # runtime_total_gc_pause_ns,runtime_total_gc_runs
       enable_internal_metrics: true
       # Limit on metrics queue length, limiting memory usage due to high concurrency metrics, default is 16384
       #

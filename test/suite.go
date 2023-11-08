@@ -131,10 +131,10 @@ func (t *Suite) mappingFilenames(appName string, filenames []string) (cfgMapping
 }
 
 func (t *Suite) componentName(filename string) (name string) {
-	fpath := "github.com/wfusion/gofusion/test/"
+	fpath := filepath.Clean("github.com/wfusion/gofusion/test")
 	moduleDir := filepath.Dir(filename)
 	component := moduleDir[strings.Index(moduleDir, fpath):]
-	return component[len(fpath):]
+	return component[len(fpath)+1:]
 }
 
 func (t *Suite) clearAllFiles(filenames []string, stackSkip int) {

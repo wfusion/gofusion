@@ -85,7 +85,7 @@ func (t *Event) testPubSubEvent(name string) {
 		ctx = fmkCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
-			time.Sleep(time.Second) // wait for ack
+			time.Sleep(ackTimeout) // wait for ack
 			cancel()
 		}()
 
@@ -141,7 +141,7 @@ func (t *Event) testPubHandlerEvent(name string) {
 		ctx = fmkCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
-			time.Sleep(time.Second) // wait for ack
+			time.Sleep(ackTimeout) // wait for ack
 			cancel()
 		}()
 

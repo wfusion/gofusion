@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/pkg/errors"
@@ -65,14 +66,14 @@ func loadConfig(out any, opts ...utils.OptionExtender) {
 	files := make([]string, 0, 2)
 	switch {
 	case utils.IsStrNotBlank(customConfigPath):
-		files = append(files, customConfigPath)
+		files = append(files, filepath.Clean(customConfigPath))
 	case len(opt.filenames) > 0:
 		files = append(files, opt.filenames...)
 	default:
-		defaultPathPrefix := env.WorkDir + "/configs/app."
-		defaultLocal1PathPrefix := env.WorkDir + "/configs/app.local."
-		defaultLocal2PathPrefix := env.WorkDir + "/configs/app_local."
-		defaultLocal3PathPrefix := env.WorkDir + "/configs/app-local."
+		defaultPathPrefix := filepath.Join(env.WorkDir, "configs", "app.")
+		defaultLocal1PathPrefix := filepath.Join(env.WorkDir, "configs", "app.local.")
+		defaultLocal2PathPrefix := filepath.Join(env.WorkDir, "configs", "app_local.")
+		defaultLocal3PathPrefix := filepath.Join(env.WorkDir, "configs", "app-local.")
 		extensions := []string{"yaml", "yml", "json", "toml"}
 		for _, ext := range extensions {
 			localFilename := defaultLocal1PathPrefix + ext

@@ -80,7 +80,7 @@ func (t *Example) TestRequired() {
 		defer t.RawCopy(files, 1)()
 
 		for i := 0; i < len(files); i++ {
-			files[i] = filepath.Join(env.WorkDir, "configs/", files[i])
+			files[i] = filepath.Join(env.WorkDir, "configs", files[i])
 		}
 
 		appSetting := new(appConf)
@@ -170,8 +170,10 @@ func (t *Example) TestLoadWithLoader() {
 				log.Info(context.Background(), "enter custom loader")
 				defer log.Info(context.Background(), "exit custom loader")
 				files := make([]string, 0, 2)
-				localConfPath := env.WorkDir + fmt.Sprintf("/configs/%s.app.local.yml", t.AppName())
-				defaultConfPath := env.WorkDir + fmt.Sprintf("/configs/%s.app.yml", t.AppName())
+				localConfPath := filepath.Join(env.WorkDir + "configs" +
+					fmt.Sprintf("%s.app.local.yml", t.AppName()))
+				defaultConfPath := filepath.Join(env.WorkDir + "configs" +
+					fmt.Sprintf("%s.app.yml", t.AppName()))
 				if _, err := os.Stat(localConfPath); err == nil {
 					files = append(files, localConfPath)
 				}

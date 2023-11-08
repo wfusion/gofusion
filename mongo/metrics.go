@@ -64,9 +64,10 @@ func metricMongoStats(ctx context.Context, appName, name string, labels []metric
 			return
 		}
 
-		idleKey := append([]string{appName}, metricsPoolIdleKey...)
-		inuseKey := append([]string{appName}, metricsPoolInUseKey...)
-		totalKey := append([]string{appName}, metricsPoolTotalKey...)
+		app := config.Use(appName).AppName()
+		idleKey := append([]string{app}, metricsPoolIdleKey...)
+		inuseKey := append([]string{app}, metricsPoolInUseKey...)
+		totalKey := append([]string{app}, metricsPoolTotalKey...)
 		ide := total - inuse
 		for _, m := range metrics.Internal(metrics.AppName(appName)) {
 			select {
@@ -114,7 +115,7 @@ func metricMongoLatency(ctx context.Context, appName, name string, labels []metr
 		}
 
 		latency := float64(time.Since(begin)) / float64(time.Millisecond)
-		latencyKey := append([]string{appName}, metricsLatencyKey...)
+		latencyKey := append([]string{config.Use(appName).AppName()}, metricsLatencyKey...)
 		for _, m := range metrics.Internal(metrics.AppName(appName)) {
 			select {
 			case <-ctx.Done():

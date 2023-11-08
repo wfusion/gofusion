@@ -70,11 +70,12 @@ func metricRedisStats(ctx context.Context, appName, name string, labels []metric
 			return
 		}
 
-		idleKey := append([]string{appName}, metricsPoolIdleKey...)
-		staleKey := append([]string{appName}, metricsPoolStaleKey...)
-		totalKey := append([]string{appName}, metricsPoolTotalKey...)
-		hitsKey := append([]string{appName}, metricsPoolHitsKey...)
-		missesKey := append([]string{appName}, metricsPoolMissesKey...)
+		app := config.Use(appName).AppName()
+		idleKey := append([]string{app}, metricsPoolIdleKey...)
+		staleKey := append([]string{app}, metricsPoolStaleKey...)
+		totalKey := append([]string{app}, metricsPoolTotalKey...)
+		hitsKey := append([]string{app}, metricsPoolHitsKey...)
+		missesKey := append([]string{app}, metricsPoolMissesKey...)
 
 		rdsCli := instance.GetProxy()
 		stats := rdsCli.PoolStats()
@@ -128,7 +129,7 @@ func metricRedisLatency(ctx context.Context, appName, name string, labels []metr
 		}
 
 		latency := float64(time.Since(begin)) / float64(time.Millisecond)
-		latencyKey := append([]string{appName}, metricsLatencyKey...)
+		latencyKey := append([]string{config.Use(appName).AppName()}, metricsLatencyKey...)
 		for _, m := range metrics.Internal(metrics.AppName(appName)) {
 			select {
 			case <-ctx.Done():

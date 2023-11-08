@@ -27,3 +27,15 @@ base:
         rotation_count: 10
         rotation_size: 1000
         compress: false
+
+  metrics:
+    prometheus_push:
+      type: prometheus
+      mode: push
+      interval: 1s
+      endpoint:
+        addresses: [ prometheus:9091 ]
+      enable_service_label: true
+      enable_internal_metrics: true
+      enable_logger: true
+      log_instance: default

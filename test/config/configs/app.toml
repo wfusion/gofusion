@@ -52,7 +52,6 @@ endpoint.addresses = [
     "prometheus:9091"
 ]
 enable_service_label = true
-enable_runtime_metrics = true
 enable_internal_metrics = true
 log_instance = "default"
 queue_limit = 16384

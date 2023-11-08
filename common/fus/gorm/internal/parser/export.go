@@ -116,7 +116,7 @@ func GetModelMethod(v interface{}) (method *DIYMethods, err error) {
 	}
 
 	for _, file := range p.GoFiles {
-		goFile := p.Dir + "/" + file
+		goFile := p.Dir + string(os.PathSeparator) + file
 		if fileExists(goFile) {
 			method.pkgFiles = append(method.pkgFiles, goFile)
 		}

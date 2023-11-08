@@ -87,7 +87,7 @@ func (t *Raw) testPubSubRaw(name string) {
 		ctx = fmkCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
-			time.Sleep(time.Second) // wait for ack
+			time.Sleep(ackTimeout) // wait for ack
 			cancel()
 		}()
 
@@ -147,7 +147,7 @@ func (t *Raw) testPubHandleRaw(name string) {
 		ctx = fmkCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
-			time.Sleep(time.Second) // wait for ack
+			time.Sleep(ackTimeout) // wait for ack
 			cancel()
 		}()
 

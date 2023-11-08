@@ -21,7 +21,8 @@ const (
 	nameEventPostgres  = "event_postgres"
 	nameEventGoChannel = "event_gochannel"
 
-	timeout = 20 * time.Second
+	ackTimeout = 2 * time.Second
+	timeout    = 20 * time.Second
 )
 
 type cs struct {

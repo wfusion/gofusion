@@ -1,5 +1,7 @@
 package constant
 
+import "os"
+
 const (
 	Space            = " "
 	Dot              = "."
@@ -14,4 +16,6 @@ const (
 	LineBreak        = "\n"
 	Underline        = "_"
 	WindowsLineBreak = "\r\n"
+	PathSeparator    = string(os.PathSeparator)
+	ListSeparator    = string(os.PathListSeparator)
 )
