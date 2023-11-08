@@ -95,7 +95,7 @@ base:
   metrics:
     # Metrics configuration name
     prometheus:
-      # Remote service type, currently only supports prometheus
+      # Remote service type, currently supports mock, prometheus, mock type for business unit test
       type: prometheus
       # Metrics collection method, supports push, pull
       # Note: When using pull, you need to register http endpoint yourself using metrics.HttpHandler

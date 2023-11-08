@@ -88,7 +88,7 @@ base:
   metrics:
     # 打点配置名称
     prometheus:
-      # 远端服务类型, 目前仅支持 prometheus
+      # 远端服务类型, 目前支持 mock, prometheus, 其中 mock 为单测中使用
       type: prometheus
       # 打点方式, 支持 push, pull
       # 注: 使用 pull 时需要使用 metrics.HttpHandler 自行注册 http 开启接口
