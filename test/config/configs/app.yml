@@ -172,11 +172,13 @@ base:
         # Save name, defaults to <app>.log if not configured,
         # or <program run directory name>.log if <app> is not configured, or md5 hash if run directory is /
         name: gofusion.log
-        # Rotation interval, when filled without unit, the unit is hours
+        # Rotation interval, the requirement must be >= 24h and is a multiple of 24h.
+        # When filling in without a unit, the unit is in hours.
         rotation_time: 24h
         # Maximum number of files to retain
         rotation_count: 10
-        # File rotation size, when filled without unit, the unit is mb
+        # File rotation size, the requirement must be >= 24h and is a multiple of 24h.
+        # When filling in without a unit, the unit is mb.
         rotation_size: 1g
         # Automatically gzip compress archived logs
         compress: false

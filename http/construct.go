@@ -36,7 +36,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 		gin.Recovery(),
 		middleware.Gateway,
 		middleware.Trace(),
-		middleware.Logging(opt.AppName, conf.LogInstance),
+		middleware.Logging(ctx, opt.AppName, conf.LogInstance),
 		middleware.Cors(),
 		middleware.XSS(conf.XSSWhiteURLList),
 		middleware.Recover(opt.AppName, conf.LogInstance),
@@ -51,36 +51,50 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 	} else {
 		gin.ForceConsoleColor()
 	}
+	tag := i18n.DefaultLang(i18n.AppName(opt.AppName))
 
 	engine.NoMethod(func(c *gin.Context) {
 		c.Status(http.StatusMethodNotAllowed)
-		Error(c, opt.AppName, -1, nil, 0, 0, fmt.Sprintf("找不到该方法, Method: %s", c.Request.Method))
+		msg := fmt.Sprintf("找不到该方法, Method: %s", c.Request.Method)
+		if tag != language.Chinese {
+			msg = fmt.Sprintf("Cannot find method: %s", c.Request.Method)
+		}
+
+		rspError(c, opt.AppName, -1, nil, 0, 0, msg)
 	})
 	engine.NoRoute(func(c *gin.Context) {
 		c.Status(http.StatusNotFound)
-		Error(c, opt.AppName, -1, nil, 0, 0, fmt.Sprintf("找不到该内容, URL: %s", c.Request.URL.String()))
+		msg := fmt.Sprintf("找不到该内容, URL: %s", c.Request.URL.String())
+		if tag != language.Chinese {
+			msg = fmt.Sprintf("Cannot find URL content: %s", c.Request.URL.String())
+		}
+		rspError(c, opt.AppName, -1, nil, 0, 0, msg)
 	})
 
 	engine.GET("/health", func(c *gin.Context) {
-		Success(c, opt.AppName, nil, 0, -1, "Api 访问正常")
+		msg := "Api 访问正常"
+		if tag != language.Chinese {
+			msg = "api ok"
+		}
+		rspSuccess(c, conf.SuccessCode, nil, 0, -1, msg)
 	})
 
 	if conf.Pprof {
 		pprof.Register(engine)
 	}
-	router := newRouter(engine, opt.AppName)
+	instance := newRouter(ctx, engine, opt.AppName, conf.SuccessCode)
 
 	locker.Lock()
 	defer locker.Unlock()
 	if len(conf.Asynq) > 0 {
-		initAsynq(ctx, opt.AppName, router, conf.Asynq)
+		initAsynq(ctx, opt.AppName, instance, conf.Asynq)
 	}
 	if _, ok := routers[opt.AppName]; ok {
 		panic(errors.Errorf("duplicated http name: %s", opt.AppName))
 	}
-	routers[opt.AppName] = router
+	routers[opt.AppName] = instance
 	if opt.AppName == "" {
-		Router = router
+		Router = instance
 	}
 
 	bundle := i18n.NewBundle[Errcode](i18n.DefaultLang(i18n.AppName(opt.AppName)))
@@ -104,7 +118,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 		language.Chinese: {Other: "请求参数错误{{.err}}"},
 	}, i18n.Var("err"))
 
-	// gracefully exit outside gofusion
+	// gracefully exit outside framework
 	return func() {
 		locker.Lock()
 		defer locker.Unlock()

@@ -30,7 +30,8 @@ func ContentZeroCopy(fn getContentFn, opts ...utils.OptionExtender) func(c *gin.
 	return func(c *gin.Context) {
 		name, modTime, content, err := fn(c)
 		if err != nil {
-			Error(parseRspError(c, opt.appName, nil, err))
+			code, data, page, count, msg := parseRspError(nil, err)
+			rspError(c, opt.appName, code, data, page, count, msg)
 			c.Abort()
 			return
 		}

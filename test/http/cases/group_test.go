@@ -53,7 +53,7 @@ func (t *Group) TestGroupDispatch() {
 		}
 		method := http.MethodPost
 		path := "/test"
-		group := "/group"
+		group := "/TestGroupDispatch"
 		hd := func(c *gin.Context, req *reqStruct) error {
 			t.Require().NotNil(req)
 			t.Require().NotEmpty(req.ID)
@@ -87,6 +87,60 @@ func (t *Group) TestGroupDispatch() {
 		fmkHtp.Use(fmkHtp.AppName(t.AppName())).ServeHTTP(w, req)
 
 		// Then
+		t.Equal(http.StatusOK, w.Code)
+		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+	})
+}
+
+func (t *Group) TestUseDispatch() {
+	t.Catch(func() {
+		// Given
+		type reqStruct struct {
+			ID      *string `json:"id" binding:"required"`
+			NumList []int   `json:"num_list"`
+			Embed   *struct {
+				FUID    *string `json:"fuid"`
+				Boolean *bool   `json:"boolean"`
+			} `json:"embed"`
+		}
+		method := http.MethodPost
+		path := "/test"
+		group := "/TestUseDispatch"
+		hd := func(c *gin.Context, req *reqStruct) error {
+			t.Require().NotNil(req)
+			t.Require().NotEmpty(req.ID)
+			t.Require().NotEmpty(req.NumList)
+			t.Require().NotEmpty(req.Embed)
+			t.Require().NotEmpty(req.Embed.FUID)
+			t.Require().NotNil(req.Embed.Boolean)
+			return io.ErrUnexpectedEOF
+		}
+		reqBody := bytes.NewReader(utils.MustJsonMarshal(&reqStruct{
+			ID:      utils.AnyPtr(utils.UUID()),
+			NumList: []int{1, 2, 3, 4, 5, 6},
+			Embed: &struct {
+				FUID    *string `json:"fuid"`
+				Boolean *bool   `json:"boolean"`
+			}{
+				FUID:    utils.AnyPtr(utils.UUID()),
+				Boolean: utils.AnyPtr(true),
+			},
+		}))
+
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest(method, group+path, reqBody)
+		req.Header.Set("Content-Type", "application/json")
+		t.Require().NoError(err)
+
+		cnt := 0
+		groupRouter := fmkHtp.Use(fmkHtp.AppName(t.AppName())).Group(group).Use(func(c *gin.Context) { cnt++ })
+		groupRouter.POST(path, hd)
+
+		// When
+		fmkHtp.Use(fmkHtp.AppName(t.AppName())).ServeHTTP(w, req)
+
+		// Then
+		t.EqualValues(cnt, 1)
 		t.Equal(http.StatusOK, w.Code)
 		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})

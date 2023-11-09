@@ -103,6 +103,10 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			}
 			rotationSize = int64(u)
 		}
+		if rotationSize < humanize.MByte {
+			panic(errors.Errorf("log component %s parse ratation size %v bytes is smaller than 1m",
+				name, rotationSize))
+		}
 
 		maxAge := time.Duration(cast.ToInt(conf.FileOutputOption.RotationTime)) * time.Hour
 		if maxAge == 0 {
@@ -112,6 +116,10 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 					conf.FileOutputOption.RotationTime, name, err))
 			}
 			maxAge = d
+		}
+		if maxAge < 24*time.Hour {
+			panic(errors.Errorf("log component %s parse ratation time %v is shorter than 24h",
+				name, maxAge))
 		}
 
 		writer := zapcore.AddSync(&lumberjack.Logger{

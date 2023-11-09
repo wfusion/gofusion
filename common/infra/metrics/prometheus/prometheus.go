@@ -7,19 +7,17 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Rican7/retry"
-	"github.com/Rican7/retry/backoff"
-	"github.com/Rican7/retry/jitter"
 	"github.com/Rican7/retry/strategy"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 
+	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/infra/metrics"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/clone"
@@ -589,24 +587,27 @@ func NewPrometheusPushSink(ctx context.Context, address string, pushInterval tim
 }
 
 func (s *PrometheusPushSink) flushMetrics(ctx context.Context) {
-	ticker := time.NewTicker(s.pushInterval)
-
 	go func() {
 		err := retry.Retry(func(attempt uint) (err error) {
+			ticker := time.NewTicker(s.pushInterval)
+			defer ticker.Stop()
+
 			_, err = utils.Catch(func() {
 				for {
 					select {
-					case <-ticker.C:
-						err := s.pusher.PushContext(ctx)
-						if err != nil {
+					case ti := <-ticker.C:
+						if err := s.pusher.PushContext(ctx); err != nil {
 							if s.logger != nil {
 								s.logger.Warn(ctx, "[Common] metrics prometheus pushing to prometheus err: %s", err)
 							} else {
 								log.Printf("[Common] metrics prometheus pushing to prometheus err: %s", err)
 							}
+						} else if s.logger != nil {
+							s.logger.Debug(ctx, "[Common] metrics prometheus push to prometheus success at %s",
+								ti.Format(constant.StdTimeMSLayout))
 						}
+
 					case <-s.stopChan:
-						ticker.Stop()
 						if s.logger != nil {
 							s.logger.Warn(ctx, "[Common] metrics prometheus push cycle exited")
 						} else {
@@ -617,13 +618,8 @@ func (s *PrometheusPushSink) flushMetrics(ctx context.Context) {
 				}
 			})
 			return
-		},
-			strategy.Limit(30),
-			strategy.BackoffWithJitter(
-				backoff.Fibonacci(time.Second),
-				jitter.NormalDistribution(rand.New(rand.NewSource(time.Now().UnixNano())), 0.1),
-			),
-		)
+		}, strategy.Limit(86400)) // 24 * 60 * 60 * s.pushInterval
+
 		if err != nil {
 			if s.logger != nil {
 				s.logger.Warn(ctx, "[Common] metrics prometheus exit unexpectedly: %s", err)

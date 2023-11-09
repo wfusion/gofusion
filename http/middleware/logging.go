@@ -32,7 +32,7 @@ var (
 	}
 )
 
-func logging(c *gin.Context, logger log.Logable, rawURL *url.URL, appName string) {
+func logging(rootCtx context.Context, c *gin.Context, logger log.Logable, rawURL *url.URL, appName string) {
 	ctx := fmkCtx.New(fmkCtx.Gin(c))
 	cost := float64(consts.GetReqCost(c)) / float64(time.Millisecond)
 	status := c.Writer.Status()
@@ -69,7 +69,7 @@ func logging(c *gin.Context, logger log.Logable, rawURL *url.URL, appName string
 		logger.Error(ctx, msg, fields)
 	}
 
-	go metricsLogging(ctx, appName, rawURL.Path, c.Request.Method, status,
+	go metricsLogging(rootCtx, appName, rawURL.Path, c.Request.Method, status,
 		c.Writer.Size(), c.Request.ContentLength, cost)
 }
 
@@ -110,11 +110,11 @@ func metricsLogging(ctx context.Context, appName, path, method string,
 	}
 }
 
-func Logging(appName, logInstance string) gin.HandlerFunc {
+func Logging(ctx context.Context, appName, logInstance string) gin.HandlerFunc {
 	logger := log.Use(logInstance, log.AppName(appName))
 	return func(c *gin.Context) {
 		reqURL := clone.Clone(c.Request.URL)
-		defer logging(c, logger, reqURL, appName)
+		defer logging(ctx, c, logger, reqURL, appName)
 
 		c.Next()
 	}

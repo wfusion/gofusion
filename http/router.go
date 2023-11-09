@@ -2,6 +2,7 @@ package http
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 
@@ -53,18 +55,34 @@ var (
 type router struct {
 	gin.IRouter
 
-	appName string
-	routes  gin.IRoutes      `optional:"true"`
-	group   *gin.RouterGroup `optional:"true"`
-	ptr     dispatch         `optional:"true"`
+	ctx         context.Context
+	appName     string
+	successCode int
+
+	routes gin.IRoutes      `optional:"true"`
+	group  *gin.RouterGroup `optional:"true"`
+	ptr    dispatch         `optional:"true"`
 }
 
-func newRouter(r gin.IRouter, appName string) IRouter {
-	return &router{IRouter: r, appName: appName}
+func newRouter(ctx context.Context, r gin.IRouter, appName string, successCode int) IRouter {
+	return &router{
+		ctx:         ctx,
+		IRouter:     r,
+		appName:     appName,
+		successCode: successCode,
+	}
 }
 
 func (r *router) Use(middlewares ...gin.HandlerFunc) IRouter {
-	return &router{routes: r.use().Use(middlewares...), ptr: dispatchRoutes}
+	return &router{
+		IRouter:     r.IRouter,
+		ctx:         r.ctx,
+		appName:     r.appName,
+		successCode: r.successCode,
+		routes:      r.use().Use(middlewares...),
+		group:       r.group,
+		ptr:         dispatchRoutes,
+	}
 }
 
 func (r *router) Handle(uri string, fn routerHandler, opts ...utils.OptionExtender) IRouter {
@@ -113,7 +131,15 @@ func (r *router) HEAD(uri string, fn routerHandler, opts ...utils.OptionExtender
 	return r
 }
 func (r *router) Group(relativePath string, handlers ...gin.HandlerFunc) IRouter {
-	return &router{group: r.useIRouter().Group(relativePath, handlers...), ptr: dispatchGroup}
+	return &router{
+		IRouter:     r.IRouter,
+		ctx:         r.ctx,
+		appName:     r.appName,
+		successCode: r.successCode,
+		routes:      r.routes,
+		group:       r.useIRouter().Group(relativePath, handlers...),
+		ptr:         dispatchGroup,
+	}
 }
 
 func (r *router) StaticFile(uri, file string) IRouter { r.use().StaticFile(uri, file); return r }
@@ -478,10 +504,10 @@ func (r *router) wrapHandlerFunc(handler routerHandler, reqParse routerRequestPa
 			switch e := err.(type) {
 			case *json.UnmarshalTypeError:
 				msg := fmt.Sprintf(": %s field type should be %s", e.Value, e.Type.String())
-				Error(parseRspError(c, r.appName, nil, Err(c, errParam, Param(map[string]any{"err": msg}))))
+				r.rspError(c, nil, Err(c, errParam, Param(map[string]any{"err": msg})))
 			default:
-				Error(parseRspError(c, r.appName, nil, Err(c, errParam,
-					Param(map[string]any{"err": fmt.Sprintf(": %s", err.Error())}))))
+				r.rspError(c, nil, Err(c, errParam,
+					Param(map[string]any{"err": fmt.Sprintf(": %s", err.Error())})))
 			}
 			c.Next()
 			return
@@ -503,28 +529,72 @@ func (r *router) wrapHandlerFunc(handler routerHandler, reqParse routerRequestPa
 		}
 
 		switch {
-		// directly json marshal embed response
 		case isEmbed, isResponse:
-			rspVal := reflect.Indirect(rspVals[0])
-			var rsp any
-			if rspVal.IsValid() {
-				rsp = rspVal.Interface()
-			} else {
-				rsp = reflect.New(rspType).Interface()
-			}
-			embedResponse(c, r.appName, rsp, err)
-
-		// business error
+			r.rspEmbed(c, rspVals[0], rspType, err) // directly json marshal embed response
 		case err != nil:
-			Error(parseRspError(c, r.appName, rspVals, err))
-
-		// success with response
+			r.rspError(c, rspVals, err) // business error
 		default:
-			Success(parseRspSuccess(c, r.appName, rspVals))
+			r.rspSuccess(c, rspVals) // success with response
 		}
 
 		c.Next()
 	}
+}
+
+func (r *router) rspError(c *gin.Context, rspVals []reflect.Value, err error) {
+	code, data, page, count, msg := parseRspError(rspVals, err)
+	rspError(c, r.appName, code, data, page, count, msg)
+
+	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, cast.ToInt(code),
+		c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+}
+
+func (r *router) rspSuccess(c *gin.Context, rspVals []reflect.Value) {
+	data, page, count, msg := parseRspSuccess(rspVals)
+	rspSuccess(c, r.successCode, data, page, count, msg)
+
+	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.successCode,
+		c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+}
+
+func (r *router) rspEmbed(c *gin.Context, rspVal reflect.Value, rspType reflect.Type, err error) {
+	var data any
+	if rspVal.IsValid() {
+		data = rspVal.Interface()
+	} else {
+		data = reflect.New(rspType).Interface()
+	}
+
+	embedResponse(c, data, err)
+
+	switch rsp := data.(type) {
+	case Response:
+		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, rsp.Code,
+			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+	case *Response:
+		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, rsp.Code,
+			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+	default:
+		rspData := make(map[string]any)
+		dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:  &rspData,
+			TagName: "json",
+		})
+		if err == nil && dec != nil {
+			_ = dec.Decode(data)
+		}
+		var code any
+		utils.IfAny(
+			func() (ok bool) { code, ok = rspData["code"]; return ok },
+			func() (ok bool) { code, ok = rspData["Code"]; return ok },
+		)
+		if code == nil {
+			code = -2
+		}
+		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, cast.ToInt(code),
+			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+	}
+
 }
 
 // 0: return error
@@ -534,11 +604,7 @@ func (r *router) wrapHandlerFunc(handler routerHandler, reqParse routerRequestPa
 // 2: return data, msg, error
 // 3: return data, count, msg, error
 // >3: return data, page, count, msg, unknowns..., error
-func parseRspSuccess(c *gin.Context, srcName string, rspVals []reflect.Value) (
-	ctx *gin.Context, dstName string, data any, page, count int, msg string) {
-	ctx = c
-	dstName = srcName
-
+func parseRspSuccess(rspVals []reflect.Value) (data any, page, count int, msg string) {
 	switch {
 	case len(rspVals) == 0:
 	case len(rspVals) == 2:
@@ -560,10 +626,7 @@ func parseRspSuccess(c *gin.Context, srcName string, rspVals []reflect.Value) (
 	return
 }
 
-func parseRspError(c *gin.Context, srcName string, rspVals []reflect.Value, err error) (
-	ctx *gin.Context, dstName string, code int, data any, page, count int, msg string) {
-	ctx = c
-	dstName = srcName
+func parseRspError(rspVals []reflect.Value, err error) (code int, data any, page, count int, msg string) {
 	switch e := err.(type) {
 	case Errcode:
 		code, msg = int(e), e.Error()
@@ -573,7 +636,7 @@ func parseRspError(c *gin.Context, srcName string, rspVals []reflect.Value, err 
 		code, msg = http.StatusBadRequest, e.Error()
 	}
 
-	_, _, data, page, count, retMsg := parseRspSuccess(c, dstName, rspVals)
+	data, page, count, retMsg := parseRspSuccess(rspVals)
 	if retMsg != "" {
 		msg = retMsg
 	}

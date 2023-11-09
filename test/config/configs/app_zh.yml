@@ -155,11 +155,11 @@ base:
         path: .
         # 保存名称, 未配置则默认按照 <app>.log 输出, 若未配置 <app> 则按照<程序运行目录名>.log 输出, 若运行目录为 / 则 md5 哈希
         name: gofusion.log
-        # 切割时间间隔, 填写为不带单位的数字时单位为小时
+        # 切割时间间隔, 要求 >= 24h 且为 24h 整数倍, 填写为不带单位的数字时单位为小时
         rotation_time: 24h
         # 文件最大保存份数
         rotation_count: 10
-        # 文件切割大小, 填写为不带单位的数字时单位为 mb
+        # 文件切割大小, 要求 >= 1m 且为 1m 的整数倍, 填写为不带单位的数字时单位为 mb
         rotation_size: 1g
         # 是否对归档日志自动进行 gzip 压缩
         compress: false
