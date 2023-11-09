@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/stretchr/testify/suite"
+	"github.com/wfusion/gofusion/common/constant"
 
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
@@ -143,7 +144,7 @@ func (t *Suite) clearAllFiles(filenames []string, stackSkip int) {
 	t.Require().True(ok)
 	projectRoot := filepath.Dir(filename)
 
-	projectConfDir := filepath.Join(strings.TrimSuffix(projectRoot, "/cases"), "configs")
+	projectConfDir := filepath.Join(strings.TrimSuffix(projectRoot, constant.PathSeparator+"cases"), "configs")
 	currentConfDir := filepath.Join(env.WorkDir, "configs")
 	if utils.IsStrBlank(currentConfDir) || projectConfDir == currentConfDir {
 		return

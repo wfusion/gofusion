@@ -56,6 +56,7 @@ func (t *Example) TestDI() {
 
 func (t *Example) TestConcurrentInvoke() {
 	t.Catch(func() {
+		type pointer struct{}
 
 		t.NoError(comDI.Dig.Provide(NewPersonDrink))
 
@@ -85,6 +86,7 @@ func (t *Example) TestConcurrentInvoke() {
 		t.NoError(comDI.Dig.Provide(NewPersonEat[[]uint64]))
 		t.NoError(comDI.Dig.Provide(NewPersonEat[[]bool]))
 		t.NoError(comDI.Dig.Provide(NewPersonEat[[]string]))
+		t.NoError(comDI.Dig.Provide(func() *pointer { return new(pointer) }))
 
 		comDI.Dig.Preload()
 
@@ -95,7 +97,7 @@ func (t *Example) TestConcurrentInvoke() {
 			e10 Eat[uint], e11 Eat[uint8], e12 Eat[uint16], e13 Eat[uint32], e14 Eat[uint64],
 			e15 Eat[[]int], e16 Eat[[]int8], e17 Eat[[]int16], e18 Eat[[]int32], e19 Eat[[]int64],
 			e20 Eat[[]uint], e21 Eat[[]uint8], e22 Eat[[]uint16], e23 Eat[[]uint32], e24 Eat[[]uint64],
-			e25 Eat[[]bool], e28 Eat[[]string],
+			e25 Eat[[]bool], e28 Eat[[]string], p *pointer,
 		) {
 		}
 

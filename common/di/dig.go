@@ -135,10 +135,6 @@ func (d *_dig) addFields(ctor any, opt *provideOption) {
 				(out.Kind() != reflect.Struct && !(out.Kind() == reflect.Ptr && out.Elem().Kind() == reflect.Struct))) {
 			continue
 		}
-		if out.Kind() == reflect.Ptr {
-			out = out.Elem()
-		}
-
 		if !utils.EmbedsType(out, digOutType) {
 			var tag reflect.StructTag
 			switch {
