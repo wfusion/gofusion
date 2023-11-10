@@ -15,6 +15,8 @@ import (
 	"github.com/wfusion/gofusion/config"
 
 	fmkLog "github.com/wfusion/gofusion/log"
+
+	_ "github.com/wfusion/gofusion/log/customlogger"
 )
 
 func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {

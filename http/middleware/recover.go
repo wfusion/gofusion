@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -10,18 +11,17 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
 	"golang.org/x/text/language"
 
 	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/i18n"
-	"github.com/wfusion/gofusion/log"
 
 	fmkCtx "github.com/wfusion/gofusion/context"
 )
 
-func Recover(appName, logInstance string) gin.HandlerFunc {
-	logger := log.Use(logInstance, log.AppName(appName))
+func Recover(appName string, logger resty.Logger) gin.HandlerFunc {
 	tag := i18n.DefaultLang(i18n.AppName(appName))
 	return func(c *gin.Context) {
 		defer func() {
@@ -74,8 +74,11 @@ func Recover(appName, logInstance string) gin.HandlerFunc {
 					buffer.WriteString(fmt.Sprintf("ErrorStack：\n%v", debugStack))
 				}
 
-				ctx := fmkCtx.New(fmkCtx.Gin(c))
-				logger.Error(ctx, buffer.String())
+				if logger != nil {
+					logger.Errorf(buffer.String(), fmkCtx.New(fmkCtx.Gin(c)))
+				} else {
+					log.Printf(buffer.String())
+				}
 
 				c.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
 					"code":    http.StatusInternalServerError,

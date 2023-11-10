@@ -9,7 +9,7 @@ require (
 	github.com/IBM/sarama v1.41.3
 	github.com/PaesslerAG/gval v1.2.2
 	github.com/Rican7/retry v0.3.1
-	github.com/apache/pulsar-client-go v0.11.0
+	github.com/apache/pulsar-client-go v0.11.1
 	github.com/apache/rocketmq-client-go/v2 v2.1.2
 	github.com/bluele/gcache v0.0.2
 	github.com/bytedance/sonic v1.9.1
@@ -20,6 +20,7 @@ require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/glebarez/sqlite v1.9.0
 	github.com/go-faker/faker/v4 v4.2.0
+	github.com/go-resty/resty/v2 v2.10.0
 	github.com/go-test/deep v1.0.7
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.2
@@ -29,6 +30,7 @@ require (
 	github.com/hashicorp/go-immutable-radix v1.0.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/iancoleman/strcase v0.3.0
+	github.com/jarcoal/httpmock v1.3.1
 	github.com/json-iterator/go v1.1.12
 	github.com/klauspost/compress v1.16.7
 	github.com/lithammer/shortuuid/v4 v4.0.0

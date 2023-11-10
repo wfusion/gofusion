@@ -54,6 +54,15 @@ base:
     pprof: false
     read_timeout: 10s
     write_timeout: 10s
+    # Enable logging, can be switched in real-time during program run
+    enable_logger: true
+    # Log configuration, corresponding to the name in the log component
+    log_instance: default
+    # Configurable custom logger that implements the resty.logger.Interface
+    # The default configured logger can print logs to the log configured in log.<log_instance>
+    # Custom configurations may not be found due to not being directly referenced, so when configuring,
+    # you need to define the corresponding object or function's global reflect.Type to avoid being ignored by the compiler
+    logger: github.com/wfusion/gofusion/log/customlogger.httpLogger
     # White list for xss defense middleware
     xss_white_url_list: [ "" ]
     # Asynq monitoring configuration
@@ -66,6 +75,40 @@ base:
         instance_type: redis
         readonly: false
         prometheus_address: ""
+    # HTTP clients configuration
+    clients:
+      # Configuration name
+      default:
+        # Whether to enable mock, used in conjunction with github.com/jarcoal/httpmock, see usage in test/http/cases/client_test.go
+        mock: true
+        # Request timeout
+        timeout: 30s
+        dial_timeout: 30s
+        dial_keepalive_time: 30s
+        force_attempt_http2: true
+        tls_handshake_timeout: 10s
+        disable_compression: false
+        max_idle_conns: 100
+        max_idle_conns_per_host: 100
+        max_conns_per_host: 0
+        idle_conn_timeout: 90s
+        expect_continue_timeout: 1s
+        # Retry count
+        retry_count: 0
+        # Retry interval
+        retry_wait_time: 100ms
+        # Maximum retry time
+        retry_max_wait_time: 2s
+        # Retry conditions, customizable retryable conditions
+        # Configurable custom implementation of github.com/go-resty/resty/v2.RetryConditionFunc function declaration
+        # Custom configurations may not be found due to not being directly referenced, so when configuring,
+        # you need to define the corresponding object or function's global reflect.Type to avoid being ignored by the compiler
+        retry_condition_funcs: [ ]
+        # Retry callback, customizable conditions that trigger a retry
+        # Configurable custom implementation of github.com/go-resty/resty/v2.OnRetryFunc function declaration
+        # Custom configurations may not be found due to not being directly referenced, so when configuring,
+        # you need to define the corresponding object or function's global reflect.Type to avoid being ignored by the compiler
+        retry_hooks: [ ]
 
   # Internationalization configuration
   i18n:
@@ -81,8 +124,8 @@ base:
     max_release_time_per_pool: 3h
     # Mainly used for debugging and unit testing, can force Go, Loop, Promise, Pool to execute synchronously
     force_sync: false
-    # Whether to enable logging for Pool
-    enabled_logger: false
+    # Enable logging, can be switched in real-time during program run
+    enable_logger: false
     # Configurable custom implementation of ants.Logger interface logger object
     # The default configured logger object can print logs to the logs configured in log.default
     # Custom configuration may not find the object because it is not directly referenced, so when business configures,

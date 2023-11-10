@@ -3,12 +3,14 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-resty/resty/v2"
 	"github.com/spf13/cast"
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/metrics"
@@ -16,14 +18,14 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/clone"
 	"github.com/wfusion/gofusion/http/consts"
-	"github.com/wfusion/gofusion/log"
 
 	fmkCtx "github.com/wfusion/gofusion/context"
+	fmkLog "github.com/wfusion/gofusion/log"
 )
 
 var (
 	metricsLatencyKey     = []string{"http", "latency"}
-	metricsCounterKey     = []string{"http", "request", "counter"}
+	metricsTotalKey       = []string{"http", "request", "total"}
 	metricsLatencyBuckets = []float64{
 		10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 99, 99.9,
 		100, 150, 200, 300, 400, 500, 600, 700, 800, 900, 990, 999,
@@ -32,11 +34,11 @@ var (
 	}
 )
 
-func logging(rootCtx context.Context, c *gin.Context, logger log.Logable, rawURL *url.URL, appName string) {
+func logging(rootCtx context.Context, c *gin.Context, logger resty.Logger, rawURL *url.URL, appName string) {
 	ctx := fmkCtx.New(fmkCtx.Gin(c))
 	cost := float64(consts.GetReqCost(c)) / float64(time.Millisecond)
 	status := c.Writer.Status()
-	fields := log.Fields{
+	fields := fmkLog.Fields{
 		"path":        rawURL.Path,
 		"method":      c.Request.Method,
 		"status":      status,
@@ -60,13 +62,17 @@ func logging(rootCtx context.Context, c *gin.Context, logger log.Logable, rawURL
 		c.Request.ContentLength, c.Writer.Size(), status, cost,
 	)
 
-	switch {
-	case status < http.StatusBadRequest:
-		logger.Info(ctx, msg, fields)
-	case status >= http.StatusBadRequest && status < http.StatusInternalServerError:
-		logger.Warn(ctx, msg, fields)
-	default:
-		logger.Error(ctx, msg, fields)
+	if logger != nil {
+		switch {
+		case status < http.StatusBadRequest:
+			logger.Debugf(msg, ctx, fields)
+		case status >= http.StatusBadRequest && status < http.StatusInternalServerError:
+			logger.Warnf(msg, ctx, fields)
+		default:
+			logger.Errorf(msg, ctx, fields)
+		}
+	} else {
+		log.Printf(msg+" %s", utils.MustJsonMarshal(fields))
 	}
 
 	go metricsLogging(rootCtx, appName, rawURL.Path, c.Request.Method, status,
@@ -91,18 +97,18 @@ func metricsLogging(ctx context.Context, appName, path, method string,
 	}
 	app := config.Use(appName).AppName()
 	latencyKey := append([]string{app}, metricsLatencyKey...)
-	counterKey := append([]string{app}, metricsCounterKey...)
+	totalKey := append([]string{app}, metricsTotalKey...)
 	for _, m := range metrics.Internal(metrics.AppName(appName)) {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 			if m.IsEnableServiceLabel() {
-				m.IncrCounter(ctx, counterKey, 1, metrics.Labels(labels))
+				m.IncrCounter(ctx, totalKey, 1, metrics.Labels(labels))
 				m.AddSample(ctx, latencyKey, cost, metrics.Labels(labels),
 					metrics.PrometheusBuckets(metricsLatencyBuckets))
 			} else {
-				m.IncrCounter(ctx, metricsCounterKey, 1, metrics.Labels(labels))
+				m.IncrCounter(ctx, metricsTotalKey, 1, metrics.Labels(labels))
 				m.AddSample(ctx, metricsLatencyKey, cost, metrics.Labels(labels),
 					metrics.PrometheusBuckets(metricsLatencyBuckets))
 			}
@@ -110,8 +116,7 @@ func metricsLogging(ctx context.Context, appName, path, method string,
 	}
 }
 
-func Logging(ctx context.Context, appName, logInstance string) gin.HandlerFunc {
-	logger := log.Use(logInstance, log.AppName(appName))
+func Logging(ctx context.Context, appName string, logger resty.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqURL := clone.Clone(c.Request.URL)
 		defer logging(ctx, c, logger, reqURL, appName)

@@ -156,7 +156,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	}
 	appInstances[opt.AppName][name] = fmkLogger
 
-	if name == config.DefaultInstanceKey {
+	if opt.AppName == "" && name == config.DefaultInstanceKey {
 		globalLogger = fmkLogger
 	}
 

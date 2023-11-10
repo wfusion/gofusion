@@ -47,7 +47,7 @@ type Conf struct {
 
 	// Logger is the customized logger for logging info, if it is not set,
 	// default standard logger from log package is used.
-	EnabledLogger bool   `yaml:"enabled_logger" json:"enabled_logger" toml:"enabled_logger" default:"false"`
+	EnabledLogger bool   `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger" default:"false"`
 	Logger        string `yaml:"logger" json:"logger" toml:"logger" default:"github.com/wfusion/gofusion/log/customlogger.routineLogger"`
 	LogInstance   string `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
 }

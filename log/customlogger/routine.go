@@ -37,7 +37,8 @@ func (r *routineLogger) Init(log log.Logable, appName string) {
 
 func (r *routineLogger) Printf(format string, args ...any) {
 	if r.reloadConfig(); r.enabled {
-		r.logger().Info(context.Background(), format, append(args, routineFields)...)
+		ctx, args := r.parseArgs(args...)
+		r.logger().Info(ctx, format, args...)
 	}
 }
 
@@ -48,9 +49,34 @@ func (r *routineLogger) logger() log.Logable {
 	return log.Use(config.DefaultInstanceKey, log.AppName(r.appName))
 }
 
+func (r *routineLogger) parseArgs(args ...any) (ctx context.Context, params []any) {
+	var ok bool
+
+	if len(args) == 0 {
+		return context.Background(), []any{routineFields}
+	}
+	if len(args) == 1 {
+		args = append(args, routineFields)
+		return context.Background(), args
+	}
+
+	params = args
+	ctx, ok = args[0].(context.Context)
+	if ok {
+		params = args[1:]
+	}
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	params = append(params, routineFields)
+	return
+}
+
 func (r *routineLogger) reloadConfig() {
 	cfg := make(map[string]any)
 	_ = config.Use(r.appName).LoadComponentConfig(config.ComponentGoroutinePool, &cfg)
 
-	r.enabled = cast.ToBool(cfg["enabled_logger"])
+	r.enabled = cast.ToBool(cfg["enable_logger"])
 }

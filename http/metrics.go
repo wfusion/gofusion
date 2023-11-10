@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	metricsCodeCounterKey = []string{"http", "code", "counter"}
+	metricsCodeTotalKey = []string{"http", "code", "total"}
 )
 
 func metricsCode(ctx context.Context, appName, path, method string, code, status, rspSize int, reqSize int64) {
@@ -36,16 +36,16 @@ func metricsCode(ctx context.Context, appName, path, method string, code, status
 		{Key: "req_size", Value: cast.ToString(reqSize)},
 		{Key: "rsp_size", Value: cast.ToString(rspSize)},
 	}
-	counterKey := append([]string{app}, metricsCodeCounterKey...)
+	totalKey := append([]string{app}, metricsCodeTotalKey...)
 	for _, m := range metrics.Internal(metrics.AppName(appName)) {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 			if m.IsEnableServiceLabel() {
-				m.IncrCounter(ctx, counterKey, 1, metrics.Labels(labels))
+				m.IncrCounter(ctx, totalKey, 1, metrics.Labels(labels))
 			} else {
-				m.IncrCounter(ctx, metricsCodeCounterKey, 1, metrics.Labels(labels))
+				m.IncrCounter(ctx, metricsCodeTotalKey, 1, metrics.Labels(labels))
 			}
 		}
 	}

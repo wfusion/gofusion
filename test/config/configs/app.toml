@@ -28,9 +28,31 @@ pprof = false
 read_timeout = "10s"
 write_timeout = "10s"
 xss_white_url_list = [""]
+enable_logger = false
+logger = "github.com/wfusion/gofusion/log/customlogger.httpLogger"
+log_instance = "default"
 asynq = [
     { "path" = "/asynq", "instance" = "default", "instance_type" = "redis", "readonly" = false, "prometheus_address" = "" },
 ]
+
+[base.http.clients.default]
+mock = true
+timeout = "30s"
+dial_timeout = "30s"
+dial_keepalive_time = "30s"
+force_attempt_http2 = true
+tls_handshake_timeout = "10s"
+disable_compression = false
+max_idle_conns = 100
+max_idle_conns_per_host = 100
+max_conns_per_host = 0
+idle_conn_timeout = "90s"
+expect_continue_timeout = "1s"
+retry_count = 0
+retry_wait_time = "100ms"
+retry_max_wait_time = "2s"
+retry_condition_funcs = [ ]
+retry_hooks = [ ]
 
 [base.i18n]
 default_lang = "zh"
@@ -39,7 +61,7 @@ default_lang = "zh"
 max_routine_amount = -1
 max_release_time_per_pool = "3h"
 force_sync = false
-enabled_logger = false
+enable_logger = false
 logger = "github.com/wfusion/gofusion/log/customlogger.routineLogger"
 log_instance = "default"
 

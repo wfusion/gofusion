@@ -7,10 +7,12 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
-	"github.com/wfusion/gofusion/common/utils"
 
 	"github.com/wfusion/gofusion/common/di"
+	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
+
+	_ "github.com/wfusion/gofusion/log/customlogger"
 )
 
 var (
