@@ -54,7 +54,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 	exitI18nFn := addI18n(opt)
 	exitClientFn := addClient(ctx, conf, logger, opt)
 
-	// gracefully exit outside framework
+	// gracefully exit outside gofusion
 	return func() {
 		exitClientFn()
 		exitRouterFn()

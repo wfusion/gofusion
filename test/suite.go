@@ -97,7 +97,7 @@ func (t *Suite) Init(src []string, testName string, stackSkip int) (cleanFn func
 func (t *Suite) ConfigFiles() []string {
 	return []string{
 		"app.local.yml",
-		"app.yml",
+		//"app.yml",
 	}
 }
 

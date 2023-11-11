@@ -517,10 +517,12 @@ base:
   lock:
     # lock 配置名称, 本例中为 default
     default:
-      # 支持 redis_lua, redis_nx, mysql, mariadb
+      # 支持 redis_lua, redis_nx, mysql, mariadb, mongo
       type: redis_lua
       # 对应 redis 或 db 组件中的配置
       instance: default
+      # 当 type 为 mongo 时生效, 指定用于分布式锁的 mongo collection, 初始化可自动生成
+      scheme: lock
 
   # 分布式异步任务配置
   async:

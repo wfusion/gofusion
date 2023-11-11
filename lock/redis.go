@@ -17,18 +17,31 @@ import (
 
 const (
 	redisLuaLockCommand = `
-if redis.call("GET", KEYS[1]) == ARGV[1] then
-    redis.call("SET", KEYS[1], ARGV[1], "PX", ARGV[2])
-    return "OK"
+if redis.call('EXISTS', KEYS[1]) == 0 or redis.call("HGET", KEYS[1], "holder") == ARGV[1] then
+    local expired = redis.call("PTTL", KEYS[1])
+	if expired == -1 or expired == -2 then
+		redis.call('HMSET', KEYS[1], "count", 1, "holder", ARGV[1])
+        redis.call("PEXPIRE", KEYS[1], ARGV[2])
+		return 1
+    else
+    	redis.call('HINCRBY', KEYS[1], "count", 1)
+		redis.call("PEXPIRE", KEYS[1], ARGV[2] + expired)
+		return 1
+	end
 else
-    return redis.call("SET", KEYS[1], ARGV[1], "NX", "PX", ARGV[2])
+	return nil
 end`
 
 	redisLuaUnlockCommand = `
-if redis.call("GET", KEYS[1]) == ARGV[1] then
-    return redis.call("DEL", KEYS[1])
+if redis.call("HGET", KEYS[1], "holder") == ARGV[1] then
+    if redis.call("HINCRBY", KEYS[1], "count", -1) <= 0 then
+        redis.call("DEL", KEYS[1])
+		return 1
+	else
+		return 1
+    end
 else
-    return 0
+    return nil
 end`
 )
 
@@ -44,9 +57,6 @@ func newRedisLuaLocker(ctx context.Context, appName, redisName string) Reentrant
 
 func (r *redisLuaLocker) Lock(ctx context.Context, key string, opts ...utils.OptionExtender) (err error) {
 	opt := utils.ApplyOptions[lockOption](opts...)
-	if utils.IsStrBlank(opt.reentrantKey) {
-		return ErrReentrantKeyNotFound
-	}
 	expired := tolerance
 	if opt.expired > 0 {
 		expired = opt.expired
@@ -59,27 +69,26 @@ func (r *redisLuaLocker) Lock(ctx context.Context, key string, opts ...utils.Opt
 		}).
 		Err()
 	if errors.Is(err, rdsDrv.Nil) {
-		err = ErrTimeout
+		return ErrTimeout
 	}
 	return
 }
 
 func (r *redisLuaLocker) Unlock(ctx context.Context, key string, opts ...utils.OptionExtender) (err error) {
 	opt := utils.ApplyOptions[lockOption](opts...)
-	if utils.IsStrBlank(opt.reentrantKey) {
-		return ErrReentrantKeyNotFound
-	}
 	lockKey := r.formatLockKey(key)
 	return redis.
 		Use(ctx, r.redisName, redis.AppName(r.appName)).
-		Eval(ctx, redisLuaUnlockCommand, []string{lockKey}, []string{
-			opt.reentrantKey, strconv.Itoa(int(opt.expired / time.Millisecond)),
-		}).
+		Eval(ctx, redisLuaUnlockCommand, []string{lockKey}, []string{opt.reentrantKey}).
 		Err()
 }
 
 func (r *redisLuaLocker) ReentrantLock(ctx context.Context, key, reentrantKey string,
 	opts ...utils.OptionExtender) (err error) {
+	opt := utils.ApplyOptions[lockOption](opts...)
+	if utils.IsStrBlank(opt.reentrantKey) {
+		return ErrReentrantKeyNotFound
+	}
 	return r.Lock(ctx, key, append(opts, ReentrantKey(reentrantKey))...)
 }
 

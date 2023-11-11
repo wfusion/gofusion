@@ -64,6 +64,8 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	case lockTypeMariaDB:
 		db.Use(ctx, conf.Instance, db.AppName(opt.AppName)) // check if instance exists
 		appInstances[opt.AppName][name] = newMysqlLocker(ctx, opt.AppName, conf.Instance)
+	case lockTypeMongo:
+		appInstances[opt.AppName][name] = newMongoLocker(ctx, opt.AppName, conf.Instance, conf.Scheme)
 	default:
 		panic(ErrUnsupportedLockType)
 	}

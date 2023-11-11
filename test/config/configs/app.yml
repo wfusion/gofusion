@@ -607,10 +607,13 @@ base:
   lock:
     # Lock configuration name, in this example it's default
     default:
-      # Supports redis_lua, redis_nx, mysql, mariadb
+      # Supports redis_lua, redis_nx, mysql, mariadb, mongo
       type: redis_lua
       # Corresponds to the configuration in redis or db components
       instance: default
+      # When type is set to mongo, it becomes effective. This specifies the MongoDB collection to be used for
+      # distributed locks. The collection can be automatically generated upon initialization.
+      scheme: lock
 
   # Distributed Asynchronous Task Configuration
   async:

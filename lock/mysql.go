@@ -67,8 +67,10 @@ func (m *mysqlLocker) Lock(ctx context.Context, key string, opts ...utils.Option
 	m.lockTimers[lockKey] = struct{}{}
 	timer := time.NewTimer(expired)
 	routine.Loop(
-		func(ctx context.Context, lockKey string, timer *time.Timer) {
+		func(ctx context.Context, key string, timer *time.Timer) {
 			defer timer.Stop()
+
+			lockKey := m.formatLockKey(key)
 			if !m.isLocked(ctx, lockKey) {
 				return
 			}
@@ -76,13 +78,13 @@ func (m *mysqlLocker) Lock(ctx context.Context, key string, opts ...utils.Option
 			for {
 				select {
 				case <-ctx.Done():
-					_ = m.Unlock(ctx, lockKey) // context done
+					_ = m.Unlock(ctx, key) // context done
 					return
 				case <-m.ctx.Done():
-					_ = m.Unlock(ctx, lockKey) // context done
+					_ = m.Unlock(ctx, key) // context done
 					return
 				case <-timer.C:
-					_ = m.Unlock(ctx, lockKey) // timeout
+					_ = m.Unlock(ctx, key) // timeout
 					return
 				default:
 					if !m.isLocked(ctx, lockKey) {
@@ -91,8 +93,7 @@ func (m *mysqlLocker) Lock(ctx context.Context, key string, opts ...utils.Option
 					time.Sleep(200*time.Millisecond + time.Duration(rand.Int63())%(100*time.Millisecond))
 				}
 			}
-		},
-		routine.Args(ctx, lockKey, timer), routine.AppName(m.appName))
+		}, routine.Args(ctx, key, timer), routine.AppName(m.appName))
 	return
 }
 

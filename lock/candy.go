@@ -16,8 +16,11 @@ func Within(ctx context.Context, locker Lockable, key string,
 		reLockWaitTime = time.Duration(200) * time.Millisecond
 	)
 	opt := utils.ApplyOptions[useOption](opts...)
-	reentrantKey := utils.UUID20()
-	optionals := []utils.OptionExtender{ReentrantKey(reentrantKey)}
+	optL := utils.ApplyOptions[lockOption](opts...)
+	if optL.reentrantKey == "" {
+		optL.reentrantKey = utils.ULID()
+	}
+	optionals := []utils.OptionExtender{ReentrantKey(optL.reentrantKey)}
 	if expired > 0 {
 		optionals = append(optionals, Expire(expired))
 	}
@@ -35,7 +38,7 @@ func Within(ctx context.Context, locker Lockable, key string,
 				return
 			default:
 				if ok {
-					if e = rLocker.ReentrantLock(ctx, key, reentrantKey, optionals...); e == nil {
+					if e = rLocker.ReentrantLock(ctx, key, optL.reentrantKey, optionals...); e == nil {
 						return
 					}
 				} else {

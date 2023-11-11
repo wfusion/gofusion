@@ -35,12 +35,14 @@ const (
 	lockTypeRedisNX  lockType = "redis_nx" // not support ReentrantKey
 	lockTypeMySQL    lockType = "mysql"    // MariaDB versions >= 10.0.2 MySQL versions >= 5.7.5
 	lockTypeMariaDB  lockType = "mariadb"  // MariaDB versions >= 10.0.2 MySQL versions >= 5.7.5
+	lockTypeMongo    lockType = "mongo"    // mongo versions >= 3.6
 )
 
 // Conf lock configure
 type Conf struct {
 	Type     lockType `yaml:"type" json:"type" toml:"type"`
 	Instance string   `yaml:"instance" json:"instance" toml:"instance"`
+	Scheme   string   `yaml:"scheme" json:"scheme" toml:"scheme"`
 }
 
 type lockOption struct {

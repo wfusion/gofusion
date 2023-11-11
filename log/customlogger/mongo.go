@@ -119,8 +119,8 @@ func (m *mongoLogger) succeeded(ctx context.Context, evt *event.CommandSucceeded
 	if !m.isLoggableCommandName(evt.CommandName) {
 		return
 	}
-	m.logger().Info(ctx, "%s succeeded [request[%v] command[%s]]",
-		evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+	m.logger().Info(ctx, "%s succeeded: %s [request[%v] command[%s]]",
+		evt.CommandName, evt.Reply, evt.RequestID, m.popCommandString(evt.RequestID),
 		m.fields(log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)}))
 }
 
@@ -128,8 +128,9 @@ func (m *mongoLogger) failed(ctx context.Context, evt *event.CommandFailedEvent)
 	if !m.isLoggableCommandName(evt.CommandName) {
 		return
 	}
-	m.logger().Warn(ctx, "%s failed [request[%v] command[%s]]",
-		evt.CommandName, evt.RequestID, m.popCommandString(evt.RequestID),
+
+	m.logger().Warn(ctx, "%s failed: %s [request[%v] command[%s]]",
+		evt.CommandName, evt.Failure, evt.RequestID, m.popCommandString(evt.RequestID),
 		m.fields(log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)}))
 }
 

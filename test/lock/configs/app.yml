@@ -36,7 +36,7 @@ base:
       max_idle_conns: 10
       max_open_conns: 200
       conn_max_life_time: 1000s
-      enable_logger: false
+      enable_logger: true
       logger_config:
         log_level: info
         slow_threshold: 500ms
@@ -53,8 +53,31 @@ base:
       write_timeout: 2s
       min_idle_conns: 100
       max_idle_conns: 10000
-      enable_logger: false
+      enable_logger: true
       unlogable_commands: [echo,ping]
+
+  mongo:
+    default:
+      db: admin
+      auth_db: admin
+      user: root
+      password: ci
+      endpoints:
+        - mongo:27017
+      timeout: 5s
+      conn_timeout: 30s
+      socket_timeout: 5s
+      heartbeat_interval: 10s
+      max_connecting: 2
+      min_pool_size: 0
+      max_pool_size: 100
+      max_conn_idle_time: 10s
+      retry_writes: true
+      retry_reads: true
+      enable_logger: true
+      logger_config:
+        logable_commands: [ ping,create,drop,insert,find,update,delete,aggregate,distinct,count,findAndModify,listCollections ]
+        log_instance: default
 
   lock:
     redis_lua:
@@ -66,3 +89,7 @@ base:
     mysql:
       type: mysql
       instance: default
+    mongo:
+      type: mongo
+      instance: default
+      scheme: lock
