@@ -126,7 +126,7 @@ func (e *eventSubscriber[T]) SubscribeEvent(ctx context.Context, opts ...utils.O
 	r := Use(e.name, AppName(e.appName)).(*router)
 	r.Handle(
 		e.evtType,
-		eventHandlerWithMsg[T](func(ctx context.Context, event Event[T]) (msgs []Message, err error) {
+		EventHandlerWithMsg[T](func(ctx context.Context, event Event[T]) (msgs []Message, err error) {
 			select {
 			case out <- event:
 			case <-r.Router.ClosingInProgressCh:
