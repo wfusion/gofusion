@@ -33,7 +33,7 @@ func DefaultMySQLLogger() logger.Interface {
 }
 
 type gormLogger struct {
-	log                       log.Logable
+	log                       log.Loggable
 	appName                   string
 	confName                  string
 	enabled                   bool
@@ -109,7 +109,7 @@ func (g *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 	}
 }
 
-func (g *gormLogger) Init(log log.Logable, appName, name string) {
+func (g *gormLogger) Init(log log.Loggable, appName, name string) {
 	g.log = log
 	g.appName = appName
 	g.confName = name
@@ -117,7 +117,7 @@ func (g *gormLogger) Init(log log.Logable, appName, name string) {
 	g.reloadConfig()
 }
 
-func (g *gormLogger) logger() log.Logable {
+func (g *gormLogger) logger() log.Loggable {
 	if g.log != nil {
 		return g.log
 	}

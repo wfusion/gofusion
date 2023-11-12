@@ -25,7 +25,7 @@
 
 > Gofusion quick start
 
-- 拷贝 test/config/configs/app_zh.yml 到业务仓库 configs 目录中并重命名为 app.yml, 或者其他位置在启动时通过 -configPath 参数指定
+- 拷贝 [test/config/configs/app_zh.yml](https://github.com/wfusion/gofusion/blob/master/test/config/configs/app_zh.yml) 到业务仓库 configs 目录中并重命名为 app.yml, 或者其他位置在启动时通过 -configPath 参数指定
 - 通过如下代码初始化 gofusion
 
 ```go
@@ -173,9 +173,10 @@ Use "fus [command] --help" for more information about a command.
 
 > 分布式锁组件, 提供分布式锁功能
 
-- 支持基于 redis lua 的分布式锁
+- 支持基于 redis lua 的分布式锁, 可重入
 - 支持基于 redis setnx 用 timeout 管理的分布式锁
 - 支持基于 mysql/mariadb GET_LOCK/RELEASE_LOCK 的分布式锁
+- 支持基于 mongo collection 和唯一键的分布式锁, 可重入
 - 封装 lock.Within 分布式锁调用
 
 ## cache
@@ -335,6 +336,7 @@ Use "fus [command] --help" for more information about a command.
 - [longbridgeapp/sqlparser](https://github.com/longbridgeapp/sqlparser)
 - [jinzhu/configor](https://github.com/jinzhu/configor)
 - [go-gorm/postgres](https://github.com/go-gorm/postgres)
+- [natefinch/lumberjack](https://github.com/natefinch/lumberjack)
 
 # Todo List
 

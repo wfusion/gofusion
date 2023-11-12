@@ -1,0 +1,56 @@
+base:
+  debug: false
+  app: gofusion
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: true
+      console_output_option:
+        layout: console
+    rotate_size:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: false
+      enable_file_output: true
+      file_output_option:
+        layout: console
+        path: .
+        name: gofusion.log
+        rotation_max_age: 24h
+        rotation_count: 5
+        rotation_size: 1kib
+        compress: false
+    rotate_time:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: false
+      enable_file_output: true
+      file_output_option:
+        layout: console
+        path: .
+        name: gofusion.log
+        rotation_max_age: 1s
+        rotation_count: 5
+        rotation_size: 1kib
+        compress: false
+    rotate_count:
+      log_level: debug
+      stacktrace_level: error
+      shorter_filepath: true
+      enable_console_output: false
+      enable_file_output: true
+      file_output_option:
+        layout: console
+        path: .
+        name: gofusion.log
+        rotation_max_age: 24h
+        rotation_count: 1
+        rotation_size: 1kib
+        compress: false

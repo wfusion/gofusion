@@ -23,13 +23,13 @@ func DefaultMetricsLogger() metrics.Logger {
 }
 
 type metricsLogger struct {
-	log      log.Logable
+	log      log.Loggable
 	appName  string
 	confName string
 	enabled  bool
 }
 
-func (m *metricsLogger) Init(log log.Logable, appName, name string) {
+func (m *metricsLogger) Init(log log.Loggable, appName, name string) {
 	m.log = log
 	m.appName = appName
 	m.confName = name
@@ -89,7 +89,7 @@ func (m *metricsLogger) Fatal(args ...any) {
 	m.logger().Fatal(ctx, format, args...)
 }
 
-func (m *metricsLogger) logger() log.Logable {
+func (m *metricsLogger) logger() log.Loggable {
 	if m.log != nil {
 		return m.log
 	}

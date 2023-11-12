@@ -16,11 +16,11 @@ import (
 type rds struct {
 	appName  string
 	name     string
-	log      log.Logable
+	log      log.Loggable
 	instance rdsDrv.UniversalClient
 }
 
-func newRedis(appName, name string, log log.Logable) provider {
+func newRedis(appName, name string, log log.Loggable) provider {
 	return &rds{
 		appName:  appName,
 		name:     name,

@@ -23,9 +23,6 @@ base:
     default:
       enable_console_output: true
       enable_file_output: true
-      file_output_option:
-        rotation_time: 24h
-        rotation_size: 1g
   db:
     default:
       driver: mysql

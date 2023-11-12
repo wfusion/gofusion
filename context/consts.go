@@ -6,6 +6,7 @@ const (
 	KeyLangs        = "base:langs"
 	KeyUserID       = "base:user_id"
 	KeyTraceID      = "base:trace_id"
+	KeyLoggable     = "base:loggable"
 	KeyLogFields    = "base:log_fields"
 	KeyGormDB       = "base:gorm_db"
 	KeyDALOption    = "base:dal_option"

@@ -49,5 +49,5 @@ type shardingConf struct {
 }
 
 type customLogger interface {
-	Init(log log.Logable, appName, name string)
+	Init(log log.Loggable, appName, name string)
 }

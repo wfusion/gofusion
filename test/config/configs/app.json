@@ -115,7 +115,7 @@
                     "layout": "json",
                     "path": ".",
                     "name": "gofusion.log",
-                    "rotation_time": "24h",
+                    "rotation_max_age": "720h",
                     "rotation_count": 10,
                     "rotation_size": "1g",
                     "compress": false
@@ -204,7 +204,7 @@
                 "retry_reads": true,
                 "enable_logger": true,
                 "logger_config": {
-                    "logable_commands": [
+                    "loggable_commands": [
                         "insert",
                         "find",
                         "update",
@@ -241,7 +241,7 @@
                 "pool_size": 0,
                 "pool_timeout": "",
                 "enable_logger": true,
-                "unlogable_commands": [
+                "unloggable_commands": [
                     "echo",
                     "ping"
                 ],

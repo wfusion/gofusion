@@ -23,14 +23,14 @@ var (
 )
 
 type redisLogger struct {
-	log                 log.Logable
-	appName             string
-	confName            string
-	enabled             bool
-	unlogableCommandSet *utils.Set[string]
+	log                  log.Loggable
+	appName              string
+	confName             string
+	enabled              bool
+	unloggableCommandSet *utils.Set[string]
 }
 
-func (r *redisLogger) Init(log log.Logable, appName, name string) {
+func (r *redisLogger) Init(log log.Loggable, appName, name string) {
 	r.log = log
 	r.appName = appName
 	r.confName = name
@@ -83,7 +83,7 @@ func (r *redisLogger) ProcessPipelineHook(next rdsDrv.ProcessPipelineHook) rdsDr
 	}
 }
 
-func (r *redisLogger) logger() log.Logable {
+func (r *redisLogger) logger() log.Loggable {
 	if r.log != nil {
 		return r.log
 	}
@@ -103,10 +103,10 @@ func (r *redisLogger) isLoggableCommandSet(command string) bool {
 	if !r.enabled {
 		return false
 	}
-	if r.unlogableCommandSet == nil {
+	if r.unloggableCommandSet == nil {
 		return true
 	}
-	return !r.unlogableCommandSet.Contains(command)
+	return !r.unloggableCommandSet.Contains(command)
 }
 
 func (r *redisLogger) isLoggable() bool {
@@ -131,11 +131,11 @@ func (r *redisLogger) reloadConfig() {
 	enabled := cast.ToBool(cfg["enable_logger"])
 	r.enabled = enabled
 
-	unlogableCommandsObj, ok1 := cfg["unlogable_commands"]
-	unlogableCommands, ok2 := unlogableCommandsObj.([]string)
+	unloggableCommandsObj, ok1 := cfg["unloggable_commands"]
+	unloggableCommands, ok2 := unloggableCommandsObj.([]string)
 	if !ok1 || !ok2 {
 		return
 	}
-	sets := utils.NewSet(unlogableCommands...)
-	r.unlogableCommandSet = sets
+	sets := utils.NewSet(unloggableCommands...)
+	r.unloggableCommandSet = sets
 }

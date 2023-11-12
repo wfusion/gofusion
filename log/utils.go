@@ -3,9 +3,11 @@ package log
 import (
 	"strings"
 
+	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/log/encoder"
 )
 
@@ -56,4 +58,57 @@ func getEncoder(layout string, cfg zapcore.EncoderConfig) zapcore.Encoder {
 	default:
 		return zapcore.NewJSONEncoder(cfg)
 	}
+}
+
+func newZapLogLevel(appName, confName, enableField, levelField string) zapcore.LevelEnabler {
+	z := &zapLogLevel{
+		enabled:     true,
+		appName:     config.Use(appName).AppName(),
+		confName:    confName,
+		enableField: enableField,
+		levelField:  levelField,
+	}
+	z.reloadConfig()
+	return z
+}
+
+type zapLogLevel struct {
+	zapcore.Level
+
+	enabled     bool
+	appName     string
+	confName    string
+	enableField string
+	levelField  string
+}
+
+func (z *zapLogLevel) Enabled(level zapcore.Level) bool {
+	if z.reloadConfig(); !z.enabled {
+		return false
+	}
+
+	return level >= z.Level
+}
+
+func (z *zapLogLevel) reloadConfig() {
+	var cfgs map[string]map[string]any
+	_ = config.Use(z.appName).LoadComponentConfig(config.ComponentLog, &cfgs)
+	if len(cfgs) == 0 {
+		return
+	}
+
+	cfg, ok := cfgs[z.confName]
+	if !ok {
+		return
+	}
+	enabled := cast.ToBool(cfg[z.enableField])
+	z.enabled = enabled
+
+	logLevelObj, ok1 := cfg[z.levelField]
+	logLevel, ok2 := logLevelObj.(string)
+	if !ok1 || !ok2 {
+		return
+	}
+	level := getLogLevel(logLevel)
+	z.Level = level
 }

@@ -215,15 +215,18 @@ base:
         # Save name, defaults to <app>.log if not configured,
         # or <program run directory name>.log if <app> is not configured, or md5 hash if run directory is /
         name: gofusion.log
-        # Rotation interval, the requirement must be >= 24h and is a multiple of 24h.
-        # When filling in without a unit, the unit is in hours.
-        rotation_time: 24h
-        # Maximum number of files to retain
+        # The maximum duration to retain logs. This is triggered only during log rotation due to exceeding size limits.
+        # The duration should be >= 1ms. When specified as a number without a unit, it is treated as hours.
+        # The default value is 720 hours.
+        rotation_max_age: 720h
+        # The maximum number of file copies to keep. The actual number retained includes the current log file in use,
+        # so the actual maximum number of copies is <rotation_count> + 1.
         rotation_count: 10
-        # File rotation size, the requirement must be >= 24h and is a multiple of 24h.
-        # When filling in without a unit, the unit is mb.
-        rotation_size: 1g
-        # Automatically gzip compress archived logs
+        # The size limit for log file rotation. When specified as a number without a unit, it is treated as MiB.
+        # The default value is 100 MiB.
+        rotation_size: 1gib
+        # Whether to automatically compress logs using gzip. This only applies to archived logs;
+        # the current log file in use is not compressed in real-time.
         compress: false
 
   # Relational database configuration
@@ -380,7 +383,7 @@ base:
       # Note: logger_config.logger configuration cannot take effect in real-time
       logger_config:
         # Configure the mongo command that needs to be printed
-        logable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
+        loggable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
         # Configurable custom log object that implements the gofusion/mongo.logger interface
         #
         # The default configured log object can print logs to logs configured in log.<log_instance>
@@ -432,7 +435,7 @@ base:
       enable_logger: true
       # Redis commands that don't need log recording, can be toggled in real-time while the program is running
       # Configuration in hooks containing gofusion/log/customlogger.redisLogger will take effect
-      unlogable_commands: [echo,ping]
+      unloggable_commands: [echo,ping]
       # Log configuration, corresponds to the name in log component
       log_instance: default
       # Can configure custom implementation of github.com/redis/go-redis/v9/redis.Hook interface

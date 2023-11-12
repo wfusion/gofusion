@@ -34,7 +34,7 @@ base:
         layout: json
         path: .
         name: gofusion.log
-        rotation_time: 24
+        rotation_max_age: 24
         rotation_count: 10
         rotation_size: 1000
         compress: false
@@ -70,7 +70,7 @@ base:
       min_idle_conns: 100
       max_idle_conns: 10000
       enable_logger: false
-      unlogable_commands: [echo,ping]
+      unloggable_commands: [echo,ping]
 
   lock:
     redis_lua:

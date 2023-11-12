@@ -27,13 +27,13 @@ func DefaultAsynqCronLogger() asynq.Logger {
 }
 
 type cronLogger struct {
-	log      log.Logable
+	log      log.Loggable
 	appName  string
 	confName string
 	enabled  bool
 }
 
-func (c *cronLogger) Init(log log.Logable, appName, name string) {
+func (c *cronLogger) Init(log log.Loggable, appName, name string) {
 	c.log = log
 	c.appName = appName
 	c.confName = name
@@ -93,7 +93,7 @@ func (c *cronLogger) Fatal(args ...any) {
 	c.logger().Fatal(ctx, format, args...)
 }
 
-func (c *cronLogger) logger() log.Logable {
+func (c *cronLogger) logger() log.Loggable {
 	if c.log != nil {
 		return c.log
 	}

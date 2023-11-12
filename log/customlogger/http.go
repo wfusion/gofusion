@@ -22,12 +22,12 @@ func DefaultHttpLogger() resty.Logger {
 }
 
 type httpLogger struct {
-	log     log.Logable
+	log     log.Loggable
 	appName string
 	enabled bool
 }
 
-func (h *httpLogger) Init(log log.Logable, appName string) {
+func (h *httpLogger) Init(log log.Loggable, appName string) {
 	h.log = log
 	h.appName = appName
 	h.reloadConfig()
@@ -52,7 +52,7 @@ func (h *httpLogger) Debugf(format string, v ...any) {
 	}
 }
 
-func (h *httpLogger) logger() log.Logable {
+func (h *httpLogger) logger() log.Loggable {
 	if h.log != nil {
 		return h.log
 	}

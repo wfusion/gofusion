@@ -6,7 +6,7 @@ go install gotest.tools/gotestsum@latest
 go install github.com/t-yuki/gocover-cobertura@master
 #go mod tidy -v
 
-COVER_PKG=$(find . -type d | sed 's|^./||' | sed 's|^\.$||' | egrep -v '^$|^.git/*|^test/*|^assets/*|^.idea/*|^common/fus/*|^common/infra/drivers/orm/opengauss/*|^common/infra/asynq/*|^common/infra/metrics/*|^common/infra/watermill/*|^common/utils/gomonkey/*|^common/utils/sqlparser/*' | awk '{print "github.com/wfusion/gofusion/" $0}' | tr '\n' ',' | sed 's/,$//')
+COVER_PKG=$(find . -type d | sed 's|^./||' | sed 's|^\.$||' | egrep -v '^$|^.git/*|^test/*|^assets/*|^.idea/*|^common/fus/*|^common/infra/drivers/orm/opengauss/*|^common/infra/asynq/*|^common/infra/metrics/*|^common/infra/watermill/*|^common/infra/rotatelog/*|^common/utils/gomonkey/*|^common/utils/sqlparser/*' | awk '{print "github.com/wfusion/gofusion/" $0}' | tr '\n' ',' | sed 's/,$//')
 
 gotestsum --junitfile assets/junit.xml -- -timeout 30m -parallel 1 ./test/... -coverpkg="${COVER_PKG}" -coverprofile=assets/coverage.out -covermode count || true
 

@@ -112,5 +112,5 @@ const (
 )
 
 type customLogger interface {
-	Init(log log.Logable, appName string)
+	Init(log log.Loggable, appName string)
 }

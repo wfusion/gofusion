@@ -3,6 +3,7 @@ package log
 import (
 	"context"
 
+	"github.com/wfusion/gofusion/common/utils"
 	"go.uber.org/zap"
 
 	fmkCtx "github.com/wfusion/gofusion/context"
@@ -28,4 +29,12 @@ func convertFieldsToZapFields(fields Fields) (zapFields []zap.Field) {
 		zapFields = append(zapFields, zap.Any(k, v))
 	}
 	return
+}
+
+func GetCtxLogger(ctx context.Context, args ...Loggable) (logger Loggable) {
+	return utils.GetCtxAny(ctx, fmkCtx.KeyLoggable, args...)
+}
+
+func SetCtxLogger(ctx context.Context, val Loggable) context.Context {
+	return utils.SetCtxAny(ctx, fmkCtx.KeyLoggable, val)
 }

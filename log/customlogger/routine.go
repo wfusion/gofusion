@@ -24,12 +24,12 @@ func DefaultRoutineLogger() ants.Logger {
 }
 
 type routineLogger struct {
-	log     log.Logable
+	log     log.Loggable
 	appName string
 	enabled bool
 }
 
-func (r *routineLogger) Init(log log.Logable, appName string) {
+func (r *routineLogger) Init(log log.Loggable, appName string) {
 	r.log = log
 	r.appName = appName
 	r.reloadConfig()
@@ -42,7 +42,7 @@ func (r *routineLogger) Printf(format string, args ...any) {
 	}
 }
 
-func (r *routineLogger) logger() log.Logable {
+func (r *routineLogger) logger() log.Loggable {
 	if r.log != nil {
 		return r.log
 	}

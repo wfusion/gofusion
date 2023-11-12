@@ -40,7 +40,7 @@ type parsedConf[K constraint.Sortable, T any] struct {
 	serializeType  serialize.Algorithm
 	compressType   compress.Algorithm
 
-	log      log.Logable
+	log      log.Loggable
 	callback callback[K, T]
 }
 

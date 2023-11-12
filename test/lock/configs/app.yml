@@ -17,7 +17,7 @@ base:
         layout: json
         path: .
         name: gofusion.log
-        rotation_time: 24
+        rotation_max_age: 24
         rotation_count: 10
         rotation_size: 1000
         compress: false
@@ -54,7 +54,7 @@ base:
       min_idle_conns: 100
       max_idle_conns: 10000
       enable_logger: true
-      unlogable_commands: [echo,ping]
+      unloggable_commands: [echo,ping]
 
   mongo:
     default:
@@ -76,7 +76,7 @@ base:
       retry_reads: true
       enable_logger: true
       logger_config:
-        logable_commands: [ ping,create,drop,insert,find,update,delete,aggregate,distinct,count,findAndModify,listCollections ]
+        loggable_commands: [ ping,create,drop,insert,find,update,delete,aggregate,distinct,count,findAndModify,listCollections ]
         log_instance: default
 
   lock:

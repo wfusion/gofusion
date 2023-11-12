@@ -155,5 +155,5 @@ type routerMiddlewareFunc func(ctx context.Context, task Task) (err error)
 type routerMiddleware func(next routerMiddlewareFunc) routerMiddlewareFunc
 
 type customLogger interface {
-	Init(log log.Logable, appName, name string)
+	Init(log log.Loggable, appName, name string)
 }

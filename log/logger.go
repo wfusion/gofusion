@@ -42,7 +42,7 @@ func AppName(name string) utils.OptionFunc[useOption] {
 	}
 }
 
-func Use(name string, opts ...utils.OptionExtender) Logable {
+func Use(name string, opts ...utils.OptionExtender) Loggable {
 	opt := utils.ApplyOptions[useOption](opts...)
 
 	rwlock.RLock()
@@ -69,7 +69,7 @@ func Use(name string, opts ...utils.OptionExtender) Logable {
 	return instance
 }
 
-func defaultLogger(colorful bool) Logable {
+func defaultLogger(colorful bool) Loggable {
 	devCfg := zap.NewDevelopmentConfig()
 	devCfg.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 	if colorful {
@@ -87,28 +87,52 @@ func defaultLogger(colorful bool) Logable {
 	}
 }
 func (l *logger) Debug(ctx context.Context, format string, args ...any) {
-	msg, fields := l.sweeten(ctx, format, args...)
-	l.logger.Debug(msg, fields...)
+	lg, msg, fields := l.sweeten(ctx, format, args...)
+	if logger, ok := lg.(*logger); ok {
+		logger.logger.Debug(msg, fields...)
+	} else {
+		lg.Debug(ctx, msg, args...)
+	}
 }
 func (l *logger) Info(ctx context.Context, format string, args ...any) {
-	msg, fields := l.sweeten(ctx, format, args...)
-	l.logger.Info(msg, fields...)
+	lg, msg, fields := l.sweeten(ctx, format, args...)
+	if logger, ok := lg.(*logger); ok {
+		logger.logger.Info(msg, fields...)
+	} else {
+		lg.Info(ctx, msg, args...)
+	}
 }
 func (l *logger) Warn(ctx context.Context, format string, args ...any) {
-	msg, fields := l.sweeten(ctx, format, args...)
-	l.logger.Warn(msg, fields...)
+	lg, msg, fields := l.sweeten(ctx, format, args...)
+	if logger, ok := lg.(*logger); ok {
+		logger.logger.Warn(msg, fields...)
+	} else {
+		lg.Warn(ctx, msg, args...)
+	}
 }
 func (l *logger) Error(ctx context.Context, format string, args ...any) {
-	msg, fields := l.sweeten(ctx, format, args...)
-	l.logger.Error(msg, fields...)
+	lg, msg, fields := l.sweeten(ctx, format, args...)
+	if logger, ok := lg.(*logger); ok {
+		logger.logger.Error(msg, fields...)
+	} else {
+		lg.Error(ctx, msg, args...)
+	}
 }
 func (l *logger) Panic(ctx context.Context, format string, args ...any) {
-	msg, fields := l.sweeten(ctx, format, args...)
-	l.logger.Panic(msg, fields...)
+	lg, msg, fields := l.sweeten(ctx, format, args...)
+	if logger, ok := lg.(*logger); ok {
+		logger.logger.Panic(msg, fields...)
+	} else {
+		lg.Panic(ctx, msg, args...)
+	}
 }
 func (l *logger) Fatal(ctx context.Context, format string, args ...any) {
-	msg, fields := l.sweeten(ctx, format, args...)
-	l.logger.Fatal(msg, fields...)
+	lg, msg, fields := l.sweeten(ctx, format, args...)
+	if logger, ok := lg.(*logger); ok {
+		logger.logger.Fatal(msg, fields...)
+	} else {
+		lg.Fatal(ctx, msg, args...)
+	}
 }
 func (l *logger) flush() {
 	ignore := func(err error) bool {
@@ -135,7 +159,8 @@ func (l *logger) flush() {
 	}
 }
 
-func (l *logger) sweeten(ctx context.Context, format string, raw ...any) (msg string, fields []zap.Field) {
+func (l *logger) sweeten(ctx context.Context, format string, raw ...any) (
+	log Loggable, msg string, fields []zap.Field) {
 	args := make([]any, 0, len(raw))
 	fields = getContextZapFields(ctx)
 	for _, arg := range raw {
@@ -166,5 +191,6 @@ func (l *logger) sweeten(ctx context.Context, format string, raw ...any) (msg st
 		fields = append(fields, zap.String("message_raw_id", id))
 	}
 
+	log = GetCtxLogger(ctx, l)
 	return
 }

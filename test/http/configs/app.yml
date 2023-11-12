@@ -29,7 +29,7 @@ base:
         layout: json
         path: .
         name: gofusion.log
-        rotation_time: 24
+        rotation_max_age: 24
         rotation_count: 10
         rotation_size: 1000
         compress: false

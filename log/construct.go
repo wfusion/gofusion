@@ -13,10 +13,11 @@ import (
 	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
 
+	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/env"
+	"github.com/wfusion/gofusion/common/infra/rotatelog"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
 )
@@ -59,8 +60,6 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 }
 
 func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) {
-	logLevel := getLogLevel(conf.LogLevel)
-
 	if !conf.EnableFileOutput && !conf.EnableConsoleOutput {
 		panic(ErrUnknownOutput)
 	}
@@ -73,6 +72,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		}
 		encoder := getEncoder(conf.ConsoleOutputOption.Layout, cfg)
 		writer := zapcore.Lock(os.Stdout)
+		logLevel := newZapLogLevel(opt.AppName, name, "enable_console_output", "log_level")
 		cores = append(cores, zapcore.NewCore(encoder, writer, logLevel))
 	}
 	if conf.EnableFileOutput {
@@ -86,7 +86,10 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		utils.IfAny(
 			func() bool { logName = conf.FileOutputOption.Name; return utils.IsStrNotBlank(logName) },
 			func() bool { logName = config.Use(opt.AppName).AppName() + ext; return utils.IsStrNotBlank(logName) },
-			func() bool { logName = filepath.Base(env.WorkDir) + ext; return logName != "/.log" },
+			func() bool {
+				logName = filepath.Base(env.WorkDir) + ext
+				return logName != constant.PathSeparator+".log"
+			},
 			func() bool {
 				sum := md5.Sum([]byte(env.WorkDir))
 				logName = string(sum[:]) + ext
@@ -94,8 +97,8 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			},
 		)
 
-		rotationSize := cast.ToInt64(conf.FileOutputOption.RotationSize) * int64(humanize.MByte)
-		if rotationSize == 0 {
+		rotationSize := cast.ToInt64(conf.FileOutputOption.RotationSize) * humanize.MiByte
+		if rotationSize <= 0 {
 			u, err := humanize.ParseBytes(conf.FileOutputOption.RotationSize)
 			if err != nil {
 				panic(errors.Errorf("log component parse ratation size %s failed for name %s: %s",
@@ -103,42 +106,39 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			}
 			rotationSize = int64(u)
 		}
-		if rotationSize < humanize.MByte {
-			panic(errors.Errorf("log component %s parse ratation size %v bytes is smaller than 1m",
-				name, rotationSize))
-		}
 
-		maxAge := time.Duration(cast.ToInt(conf.FileOutputOption.RotationTime)) * time.Hour
-		if maxAge == 0 {
-			d, err := time.ParseDuration(conf.FileOutputOption.RotationTime)
+		maxAge := time.Duration(cast.ToInt(conf.FileOutputOption.RotationMaxAge)) * 24 * time.Hour
+		if maxAge <= 0 {
+			d, err := time.ParseDuration(conf.FileOutputOption.RotationMaxAge)
 			if err != nil {
 				panic(errors.Errorf("log component parse ratation time %s failed for name %s: %s",
-					conf.FileOutputOption.RotationTime, name, err))
+					conf.FileOutputOption.RotationMaxAge, name, err))
 			}
 			maxAge = d
 		}
-		if maxAge < 24*time.Hour {
-			panic(errors.Errorf("log component %s parse ratation time %v is shorter than 24h",
-				name, maxAge))
-		}
 
-		writer := zapcore.AddSync(&lumberjack.Logger{
-			Filename:   path.Join(conf.FileOutputOption.Path, logName),
-			MaxSize:    int(rotationSize / int64(humanize.MByte)),
+		writer := zapcore.AddSync(&rotatelog.Logger{
+			Filename:   path.Join(filepath.Clean(conf.FileOutputOption.Path), logName),
+			MaxSize:    rotationSize,
 			MaxBackups: conf.FileOutputOption.RotationCount,
-			MaxAge:     int(maxAge) / int(24*time.Hour),
+			MaxAge:     maxAge,
 			Compress:   conf.FileOutputOption.Compress,
 		})
+		logLevel := newZapLogLevel(opt.AppName, name, "enable_file_output", "log_level")
 		cores = append(cores, zapcore.NewCore(encoder, writer, logLevel))
 	}
 
+	zopts := []zap.Option{
+		zap.Hooks(),
+		zap.AddCaller(),
+		zap.AddStacktrace(newZapLogLevel(opt.AppName, name, "enable_file_output", "stacktrace_level")),
+	}
+	if config.Use(opt.AppName).Debug() {
+		zopts = append(zopts, zap.Development())
+	}
+
 	zapLogger := zap.
-		New(
-			zapcore.NewTee(cores...),
-			zap.AddStacktrace(getLogLevel(conf.StacktraceLevel)),
-			zap.AddCaller(),
-			zap.Hooks(),
-		).
+		New(zapcore.NewTee(cores...), zopts...).
 		Named(config.Use(opt.AppName).AppName())
 
 	fmkLogger := &logger{name: name, logger: zapLogger, sugaredLogger: zapLogger.Sugar()}
@@ -163,7 +163,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	// ioc
 	if opt.DI != nil {
 		opt.DI.MustProvide(
-			func() Logable { return Use(name, AppName(opt.AppName)) },
+			func() Loggable { return Use(name, AppName(opt.AppName)) },
 			di.Name(name),
 		)
 	}

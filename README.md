@@ -1,5 +1,5 @@
 - English README version: you are reading now =。= translated by openai chat gpt4
-- Chinese README version: https://github.com/wfusion/gofusion/blob/master/assets/docs/zh/README.md
+- 中文 README: https://github.com/wfusion/gofusion/blob/master/assets/docs/zh/README.md
 
 # Usage Limitations
 
@@ -28,15 +28,14 @@
     - Supports near and remote caching.
     - Multi-instance support for all components.
 - Comparison
-    - Compared to microservice frameworks like go-zero, go-micro, kratos, jupiter, kitex, dubbo-go, tarsgo, this
-      framework is not a microservices framework, but is designed for dependency integration and combination, and can be
+    - Compared to microservice frameworks like go-zero, go-micro, kratos, jupiter, kitex, dubbo-go, tarsgo, Gofusion is not a microservices framework, but is designed for dependency integration and combination, and can be
       used in conjunction with other frameworks.
 
 # Quick Start
 
 > Gofusion quick start
 
-- Copy `test/config/configs/app.yml` to the `configs` directory in your business repository, or specify another location
+- Copy [test/config/configs/app.yml](https://github.com/wfusion/gofusion/blob/master/test/config/configs/app.yml) to the `configs` directory in your business repository, or specify another location
   at startup with the `-configPath` parameter.
 - Initialize gofusion with the following code:
 
@@ -204,10 +203,11 @@ mysql, postgres, sqlserver all passed tests.
 
 > Distributed Lock component, provides distributed lock functionality
 
-- Supports distributed locks based on redis lua.
-- Supports distributed locks managed with timeout based on redis setnx.
-- Supports distributed locks based on mysql/mariadb GET_LOCK/RELEASE_LOCK.
-- Encapsulated lock.Within for distributed lock invocation.
+- Supports distributed locks based on Redis Lua, which are reentrant.
+- Supports distributed locks based on Redis SETNX managed with a timeout.
+- Supports distributed locks based on MySQL/MariaDB GET_LOCK/RELEASE_LOCK.
+- Supports distributed locks based on a MongoDB collection and unique key, which are reentrant.
+- Encapsulates lock.Within for distributed lock invocation.
 
 ## Cache
 
@@ -271,7 +271,7 @@ mysql, postgres, sqlserver all passed tests.
     - When registering multiple routers with the same configuration, using event will trigger panic as registration name
       must be event type name causing duplication.
 - Messages support default, raw, event types for publish/subscribe, raw is original message without encapsulation,
-  default and event are framework-encoded messages.
+  default and event are gofusion-encoded messages.
     - Publish/subscribe default messages
         - Publisher uses Messages(), Objects() options to call Publish.
         - Subscriber uses Subscribe.
@@ -325,7 +325,7 @@ mysql, postgres, sqlserver all passed tests.
 - Scheduled task execution function can be customized to func(ctx context.Context, payload *JsonSerializable) error
   signature, payload will be automatically parsed in gofusion.
 - Scheduled task execution will carry cron_task_name and trace_id information in context.
-- Configuration file supports asynq framework's timeout, payload (json format), retry, deadline feature configurations.
+- Configuration file supports asynq timeout, payload (json format), retry, deadline feature configurations.
 - Besides configuring scheduled tasks in the configuration file, businesses can define custom task loader to append
   scheduled tasks.
 
@@ -395,6 +395,7 @@ mysql, postgres, sqlserver all passed tests.
 - [longbridgeapp/sqlparser](https://github.com/longbridgeapp/sqlparser)
 - [jinzhu/configor](https://github.com/jinzhu/configor)
 - [go-gorm/postgres](https://github.com/go-gorm/postgres)
+- [natefinch/lumberjack](https://github.com/natefinch/lumberjack)
 
 # Todo List
 

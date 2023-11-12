@@ -195,13 +195,13 @@ base:
         path: .
         # 保存名称, 未配置则默认按照 <app>.log 输出, 若未配置 <app> 则按照<程序运行目录名>.log 输出, 若运行目录为 / 则 md5 哈希
         name: gofusion.log
-        # 切割时间间隔, 要求 >= 24h 且为 24h 整数倍, 填写为不带单位的数字时单位为小时
-        rotation_time: 24h
-        # 文件最大保存份数
+        # 日志最长保留时间, 只会在因为日志过大进行切分时触发, 要求 >= 1ms, 填写为不带单位的数字时单位为小时, 默认值为 720h
+        rotation_max_age: 720h
+        # 文件最大保存份数, 实际保留中会存在当前正在使用的日志文件, 所以实际最大保存分数为 <rotation_count> + 1
         rotation_count: 10
-        # 文件切割大小, 要求 >= 1m 且为 1m 的整数倍, 填写为不带单位的数字时单位为 mb
-        rotation_size: 1g
-        # 是否对归档日志自动进行 gzip 压缩
+        # 文件切割大小, 填写为不带单位的数字时单位为 mib, 默认值为 100mib
+        rotation_size: 1gib
+        # 是否日志自动进行 gzip 压缩, 只对归档日志生效, 当前正在使用的日志文件不会实时压缩
         compress: false
 
   # 关系型数据库配置
@@ -331,7 +331,7 @@ base:
       # 注: logger_config.logger 配置无法实时生效
       logger_config:
         # 配置需要打印的 mongo 命令
-        logable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
+        loggable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
         # 可配置自定义的实现 gofusion/mongo.logger 接口的日志对象
         # 默认配置的日志对象可打印日志到 log.<log_instance> 中配置的日志中
         # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
@@ -376,7 +376,7 @@ base:
       enable_logger: true
       # 无需记录日志的 redis 命令, 可在程序运行时实时切换生效
       # 配置的 hooks 中包含 gofusion/log/customlogger.redisLogger 才能生效
-      unlogable_commands: [echo,ping]
+      unloggable_commands: [echo,ping]
       # 日志配置, 对应 log 组件中的名称
       log_instance: default
       # 可配置自定义的实现 github.com/redis/go-redis/v9/redis.Hook 接口的对象

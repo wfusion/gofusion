@@ -18,7 +18,7 @@ func Error(ctx context.Context, format string, args ...any) { globalLogger.Error
 func Panic(ctx context.Context, format string, args ...any) { globalLogger.Panic(ctx, format, args...) }
 func Fatal(ctx context.Context, format string, args ...any) { globalLogger.Fatal(ctx, format, args...) }
 
-func TimeElapsed(ctx context.Context, logger Logable, fn func(), format string, args ...any) {
+func TimeElapsed(ctx context.Context, logger Loggable, fn func(), format string, args ...any) {
 	now := time.Now()
 	defer func() {
 		elapsed := time.Since(now).Milliseconds()

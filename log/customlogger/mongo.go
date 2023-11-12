@@ -24,11 +24,11 @@ var (
 type mongoLogger struct {
 	*event.CommandMonitor
 
-	log               log.Logable
-	enabled           bool
-	appName           string
-	confName          string
-	logableCommandSet *utils.Set[string]
+	log                log.Loggable
+	enabled            bool
+	appName            string
+	confName           string
+	loggableCommandSet *utils.Set[string]
 
 	mutex sync.RWMutex
 	// requestMap The key is the monotonically atomic incrementing RequestID from the Mongo command event,
@@ -42,7 +42,7 @@ func DefaultMongoLogger() (logger *mongoLogger) {
 	logger = &mongoLogger{
 		enabled:    true,
 		requestMap: make(map[int64]struct{ commandString string }),
-		logableCommandSet: utils.NewSet[string](
+		loggableCommandSet: utils.NewSet[string](
 			"ping",
 			"insert",
 			"find",
@@ -72,12 +72,12 @@ func DefaultMongoLogger() (logger *mongoLogger) {
 	return
 }
 
-func (m *mongoLogger) Init(log log.Logable, appName, name string) {
+func (m *mongoLogger) Init(log log.Loggable, appName, name string) {
 	m.log = log
 	m.appName = appName
 	m.confName = name
 	m.requestMap = make(map[int64]struct{ commandString string })
-	m.logableCommandSet = utils.NewSet[string](
+	m.loggableCommandSet = utils.NewSet[string](
 		"ping",
 		"insert",
 		"find",
@@ -151,7 +151,7 @@ func (m *mongoLogger) popCommandString(requestID int64) string {
 	return ""
 }
 
-func (m *mongoLogger) logger() log.Logable {
+func (m *mongoLogger) logger() log.Loggable {
 	if m.log != nil {
 		return m.log
 	}
@@ -169,7 +169,7 @@ func (m *mongoLogger) isLoggableCommandName(commandName string) bool {
 	if m.reloadConfig(); !m.enabled {
 		return false
 	}
-	return m.logableCommandSet.Contains(commandName)
+	return m.loggableCommandSet.Contains(commandName)
 }
 
 func (m *mongoLogger) reloadConfig() {
@@ -189,10 +189,10 @@ func (m *mongoLogger) reloadConfig() {
 	if !ok1 || !ok2 {
 		return
 	}
-	logableCommandList, ok := logCfg["logable_commands"].([]string)
+	loggableCommandList, ok := logCfg["loggable_commands"].([]string)
 	if !ok {
 		return
 	}
 
-	m.logableCommandSet = utils.NewSet(logableCommandList...)
+	m.loggableCommandSet = utils.NewSet(loggableCommandList...)
 }

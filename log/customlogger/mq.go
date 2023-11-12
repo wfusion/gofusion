@@ -21,7 +21,7 @@ var (
 
 // mqLogger implements watermill.LoggerAdapter with *zap.Logger.
 type mqLogger struct {
-	log      log.Logable
+	log      log.Loggable
 	appName  string
 	confName string
 	enabled  bool
@@ -33,7 +33,7 @@ func NewLogger() watermill.LoggerAdapter {
 	return new(mqLogger)
 }
 
-func (m *mqLogger) Init(log log.Logable, appName, name string) {
+func (m *mqLogger) Init(log log.Loggable, appName, name string) {
 	m.log = log
 	m.appName = appName
 	m.confName = name
@@ -85,7 +85,7 @@ func (m *mqLogger) With(fields watermill.LogFields) watermill.LoggerAdapter {
 	return &mqLogger{fields: m.fields.Add(fields)}
 }
 
-func (m *mqLogger) logger() log.Logable {
+func (m *mqLogger) logger() log.Loggable {
 	if m.log != nil {
 		return m.log
 	}

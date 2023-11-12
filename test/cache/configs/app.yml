@@ -1,10 +1,6 @@
 base:
   debug: false
   app: gofusion
-  http:
-    port: 9001
-    xss_white_url_list: [ "" ]
-
   goroutine_pool:
     max_routine_amount: -1
 
@@ -21,7 +17,7 @@ base:
         layout: json
         path: .
         name: gofusion.log
-        rotation_time: 24
+        rotation_max_age: 24
         rotation_count: 10
         rotation_size: 1000
         compress: false
@@ -37,7 +33,7 @@ base:
       read_timeout: 2s
       write_timeout: 2s
       enable_logger: false
-      unlogable_commands: [echo,ping]
+      unloggable_commands: [echo,ping]
       hooks:
         - github.com/wfusion/gofusion/log/customlogger.redisLogger
 

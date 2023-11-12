@@ -27,13 +27,13 @@ func DefaultAsynqAsyncLogger() asynq.Logger {
 }
 
 type asyncLogger struct {
-	log      log.Logable
+	log      log.Loggable
 	appName  string
 	confName string
 	enabled  bool
 }
 
-func (a *asyncLogger) Init(log log.Logable, appName, confName string) {
+func (a *asyncLogger) Init(log log.Loggable, appName, confName string) {
 	a.log = log
 	a.appName = appName
 	a.confName = confName
@@ -93,7 +93,7 @@ func (a *asyncLogger) Fatal(args ...any) {
 	a.logger().Fatal(ctx, format, args...)
 }
 
-func (a *asyncLogger) logger() log.Logable {
+func (a *asyncLogger) logger() log.Loggable {
 	if a.log != nil {
 		return a.log
 	}

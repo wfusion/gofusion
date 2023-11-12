@@ -30,7 +30,7 @@ type scanOption struct {
 	batch int
 	limit int
 
-	log log.Logable
+	log log.Loggable
 }
 
 type scanOptionGeneric[T any, TS ~[]*T] struct {
@@ -82,7 +82,7 @@ func ScanLimit(limit int) utils.OptionFunc[scanOption] {
 	}
 }
 
-func ScanLog(log log.Logable) utils.OptionFunc[scanOption] {
+func ScanLog(log log.Loggable) utils.OptionFunc[scanOption] {
 	return func(o *scanOption) {
 		o.log = log
 	}

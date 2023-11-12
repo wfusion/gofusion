@@ -12,7 +12,7 @@ import (
 	"github.com/wfusion/gofusion/log"
 )
 
-func newGCache(size int, strategy string, log log.Logable) *gCache {
+func newGCache(size int, strategy string, log log.Loggable) *gCache {
 	cacheBuilder := gcache.New(size)
 	switch strategy {
 	case gcache.TYPE_ARC:
@@ -34,7 +34,7 @@ func newGCache(size int, strategy string, log log.Logable) *gCache {
 }
 
 type gCache struct {
-	log      log.Logable
+	log      log.Loggable
 	instance gcache.Cache
 }
 
