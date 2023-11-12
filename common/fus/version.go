@@ -2,6 +2,6 @@
 package main
 
 var (
-	gitCommit = "ad290014da20f47bfa770234c5a2b8bad349bf5b"
-	gitTag    = "v1.1.3"
+	gitCommit = "fa4733946884552cb4d1e500d67d1a6ad51f6b82"
+	gitTag    = "v1.1.4"
 )

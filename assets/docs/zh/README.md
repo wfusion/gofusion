@@ -46,7 +46,7 @@ func main() {
 ```bash
 ~ > go install github.com/wfusion/gofusion/config/common/fus@master
 ~ > fus -h
-Gofusion CLI (v0.0.4 built with go1.18.10 darwin/arm64 from v1.0.0 on Sat Nov  4 01:00:32 CST 2023)
+Gofusion CLI (v0.0.1 built with go1.18.10 darwin/arm64 from v1.1.4 on Sun Nov 12 18:05:03 CST 2023)
 
 Capability:
   asynq client integrated

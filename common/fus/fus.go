@@ -16,7 +16,7 @@ import (
 	"github.com/wfusion/gofusion/common/fus/rnd"
 )
 
-const ver = "v0.0.4"
+const ver = "v0.0.1"
 
 var buildTime = time.Now()
 
