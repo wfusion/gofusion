@@ -38,6 +38,8 @@ func startDaemonRoutines(ctx context.Context, appName, name string, conf *Conf) 
 		{Key: "config", Value: name},
 		{Key: "database", Value: conf.DB},
 	}
+
+	log.Printf("%v [Gofusion] %s %s %s metrics start", syscall.Getpid(), app, config.ComponentMongo, name)
 	for {
 		select {
 		case <-ctx.Done():

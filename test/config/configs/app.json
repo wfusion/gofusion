@@ -117,7 +117,7 @@
                     "name": "gofusion.log",
                     "rotation_max_age": "720h",
                     "rotation_count": 10,
-                    "rotation_size": "1g",
+                    "rotation_size": "100mib",
                     "compress": false
                 },
                 "skip_callers": [],

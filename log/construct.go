@@ -10,7 +10,6 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
-	"github.com/spf13/cast"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -97,29 +96,21 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			},
 		)
 
-		rotationSize := cast.ToInt64(conf.FileOutputOption.RotationSize) * humanize.MiByte
-		if rotationSize <= 0 {
-			u, err := humanize.ParseBytes(conf.FileOutputOption.RotationSize)
-			if err != nil {
-				panic(errors.Errorf("log component parse ratation size %s failed for name %s: %s",
-					conf.FileOutputOption.RotationSize, name, err))
-			}
-			rotationSize = int64(u)
+		rotationSize, err := humanize.ParseBytes(conf.FileOutputOption.RotationSize)
+		if err != nil {
+			panic(errors.Errorf("log component parse ratation size %s failed for name %s: %s",
+				conf.FileOutputOption.RotationSize, name, err))
 		}
 
-		maxAge := time.Duration(cast.ToInt(conf.FileOutputOption.RotationMaxAge)) * 24 * time.Hour
-		if maxAge <= 0 {
-			d, err := time.ParseDuration(conf.FileOutputOption.RotationMaxAge)
-			if err != nil {
-				panic(errors.Errorf("log component parse ratation time %s failed for name %s: %s",
-					conf.FileOutputOption.RotationMaxAge, name, err))
-			}
-			maxAge = d
+		maxAge, err := time.ParseDuration(conf.FileOutputOption.RotationMaxAge)
+		if err != nil {
+			panic(errors.Errorf("log component parse ratation time %s failed for name %s: %s",
+				conf.FileOutputOption.RotationMaxAge, name, err))
 		}
 
 		writer := zapcore.AddSync(&rotatelog.Logger{
 			Filename:   path.Join(filepath.Clean(conf.FileOutputOption.Path), logName),
-			MaxSize:    rotationSize,
+			MaxSize:    int64(rotationSize),
 			MaxBackups: conf.FileOutputOption.RotationCount,
 			MaxAge:     maxAge,
 			Compress:   conf.FileOutputOption.Compress,

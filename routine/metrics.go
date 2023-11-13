@@ -37,6 +37,8 @@ func startDaemonRoutines(ctx context.Context, appName string, conf *Conf) {
 	app := config.Use(appName).AppName()
 	labels := []metrics.Label{}
 	lastNumGc := atomic.NewUint32(0)
+
+	log.Printf("%v [Gofusion] %s %s metrics start", syscall.Getpid(), app, config.ComponentGoroutinePool)
 	for {
 		select {
 		case <-ctx.Done():
