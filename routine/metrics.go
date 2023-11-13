@@ -84,15 +84,16 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 		}
 		lastNumGc.Store(stats.NumGC)
 
-		totalGoRoutinesKey := append([]string{appName}, metricsRuntimeTotalGoroutinesKey...)
-		goroutineKey := append([]string{appName}, metricsRuntimeGoroutinesKey...)
-		allocBytesKey := append([]string{appName}, metricsRuntimeAllocBytesKey...)
-		sysBytesKey := append([]string{appName}, metricsRuntimeSysBytesKey...)
-		mallocCountKey := append([]string{appName}, metricsRuntimeMallocCountKey...)
-		freeCountKey := append([]string{appName}, metricsRuntimeFreeCountKey...)
-		heapObjectsKey := append([]string{appName}, metricsRuntimeHeapObjectsKey...)
-		gcRunsKey := append([]string{appName}, metricsRuntimeGCRunsKey...)
-		totalSTWLatencyKey := append([]string{appName}, metricsRuntimeTotalSTWLatencyKey...)
+		app := config.Use(appName).AppName()
+		totalGoRoutinesKey := append([]string{app}, metricsRuntimeTotalGoroutinesKey...)
+		goroutineKey := append([]string{app}, metricsRuntimeGoroutinesKey...)
+		allocBytesKey := append([]string{app}, metricsRuntimeAllocBytesKey...)
+		sysBytesKey := append([]string{app}, metricsRuntimeSysBytesKey...)
+		mallocCountKey := append([]string{app}, metricsRuntimeMallocCountKey...)
+		freeCountKey := append([]string{app}, metricsRuntimeFreeCountKey...)
+		heapObjectsKey := append([]string{app}, metricsRuntimeHeapObjectsKey...)
+		gcRunsKey := append([]string{app}, metricsRuntimeGCRunsKey...)
+		totalSTWLatencyKey := append([]string{app}, metricsRuntimeTotalSTWLatencyKey...)
 
 		for _, m := range metrics.Internal(metrics.AppName(appName)) {
 			select {
