@@ -15,7 +15,7 @@ import (
 	"github.com/wfusion/gofusion/mq"
 	"github.com/wfusion/gofusion/test/internal/mock"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 	testMq "github.com/wfusion/gofusion/test/mq"
 )
 
@@ -82,7 +82,7 @@ func (t *Event) testPubSubEvent(name string) {
 		cnt := atomic.NewInt64(0)
 		ctx := context.Background()
 		traceID := utils.NginxID()
-		ctx = fmkCtx.SetTraceID(ctx, traceID)
+		ctx = fusCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
 			time.Sleep(ackTimeout) // wait for ack
@@ -138,7 +138,7 @@ func (t *Event) testPubHandlerEvent(name string) {
 		cnt := atomic.NewInt64(0)
 		ctx := context.Background()
 		traceID := utils.NginxID()
-		ctx = fmkCtx.SetTraceID(ctx, traceID)
+		ctx = fusCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
 			time.Sleep(ackTimeout) // wait for ack
@@ -156,7 +156,7 @@ func (t *Event) testPubHandlerEvent(name string) {
 			func(ctx context.Context, event mq.Event[*mock.RandomObj]) (err error) {
 				// Then
 				cnt.Add(1)
-				t.EqualValues(traceID, fmkCtx.GetTraceID(ctx))
+				t.EqualValues(traceID, fusCtx.GetTraceID(ctx))
 				t.EqualValues(event.Type(), randomEventType)
 				t.EqualValues(randomObjMap[event.ID()], event.Payload())
 

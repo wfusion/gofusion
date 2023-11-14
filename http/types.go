@@ -34,6 +34,11 @@ type IRouter interface {
 	Config() OutputConf
 	ListenAndServe() error
 	Start()
+
+	Running() <-chan struct{}
+	Closing() <-chan struct{}
+
+	shutdown()
 }
 
 // Conf http configure

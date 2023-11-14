@@ -5,7 +5,7 @@ import (
 
 	"github.com/wfusion/gofusion/common/utils"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 func Trace() gin.HandlerFunc {
@@ -14,7 +14,7 @@ func Trace() gin.HandlerFunc {
 			userID, traceID string
 		)
 		utils.IfAny(
-			func() bool { traceID = c.GetHeader(fmkCtx.KeyTraceID); return traceID != "" },
+			func() bool { traceID = c.GetHeader(fusCtx.KeyTraceID); return traceID != "" },
 			func() bool { traceID = c.GetHeader("HTTP_TRACE_ID"); return traceID != "" },
 			func() bool {
 				traceID = utils.LookupByFuzzyKeyword[string](c.GetHeader, "trace_id")
@@ -23,10 +23,10 @@ func Trace() gin.HandlerFunc {
 			func() bool { traceID = utils.NginxID(); return traceID != "" },
 		)
 		c.Header("Trace-Id", traceID)
-		c.Set(fmkCtx.KeyTraceID, traceID)
+		c.Set(fusCtx.KeyTraceID, traceID)
 
 		utils.IfAny(
-			func() bool { userID = c.GetHeader(fmkCtx.KeyUserID); return userID != "" },
+			func() bool { userID = c.GetHeader(fusCtx.KeyUserID); return userID != "" },
 			func() bool {
 				userID = utils.LookupByFuzzyKeyword[string](c.GetHeader, "user_id")
 				return userID != ""
@@ -40,7 +40,7 @@ func Trace() gin.HandlerFunc {
 				return userID != ""
 			},
 		)
-		c.Set(fmkCtx.KeyUserID, userID)
+		c.Set(fusCtx.KeyUserID, userID)
 		c.Next()
 	}
 }

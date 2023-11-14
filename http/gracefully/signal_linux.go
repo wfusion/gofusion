@@ -59,7 +59,12 @@ func (e *endlessServer) handleSignals() {
 
 	pid := syscall.Getpid()
 	for {
-		sig = <-e.sigChan
+		select {
+		case sig = <-e.sigChan:
+		case <-e.close:
+			return
+		}
+
 		e.signalHooks(PreSignal, sig)
 		switch sig {
 		case syscall.SIGHUP:

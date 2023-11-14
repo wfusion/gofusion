@@ -77,7 +77,7 @@ type endlessServer struct {
 	endlessListener  net.Listener
 	tlsInnerListener *endlessListener
 	close            chan struct{}
-	wg               sync.WaitGroup
+	wg               *sync.WaitGroup
 	sigChan          chan os.Signal
 	isChild          bool
 	state            uint8
@@ -111,6 +111,8 @@ func NewServer(appName string, handler http.Handler, addr string, nextProtos []s
 			Handler:        handler,
 			TLSConfig:      &tls.Config{NextProtos: nextProtos},
 		},
+		close:       make(chan struct{}),
+		wg:          new(sync.WaitGroup),
 		sigChan:     make(chan os.Signal),
 		isChild:     isChild,
 		SignalHooks: newSignalHookFunc(),
@@ -137,7 +139,8 @@ func ListenAndServe(appName string, handler http.Handler, addr string, nextProto
 // private key for the server must be provided. If the certificate is signed by a
 // certificate authority, the certFile should be the concatenation of the server's
 // certificate followed by the CA's certificate.
-func ListenAndServeTLS(appName string, handler http.Handler, addr, certFile, keyFile string, nextProtos []string) error {
+func ListenAndServeTLS(appName string, handler http.Handler, addr, certFile, keyFile string,
+	nextProtos []string) error {
 	server := NewServer(appName, handler, addr, nextProtos)
 	return server.ListenAndServeTLS(certFile, keyFile)
 }
@@ -168,10 +171,7 @@ func (e *endlessServer) Serve() (err error) {
 	e.wg.Wait()
 	e.setState(StateTerminate)
 
-	if e.close != nil {
-		<-e.close
-	}
-	e.close = nil
+	<-e.close
 
 	return
 }
@@ -269,7 +269,6 @@ func (e *endlessServer) ListenAndServeTLS(certFile, keyFile string) (err error) 
 // after DefaultHammerTime.
 func (e *endlessServer) Shutdown() {
 	// make sure server Shutdown & log printed before Serve() return
-	e.close = make(chan struct{})
 	defer close(e.close)
 
 	if e.getState() != StateRunning {
@@ -468,10 +467,9 @@ func (e *endlessListener) Accept() (c net.Conn, err error) {
 	// see net/http.tcpKeepAliveListener
 	_ = tc.SetKeepAlivePeriod(3 * time.Minute)
 
-	c = endlessConn{
-		Conn:     tc,
-		doneOnce: new(sync.Once),
-		server:   e.server,
+	c = &endlessConn{
+		Conn:   tc,
+		server: e.server,
 	}
 
 	e.server.wg.Add(1)
@@ -487,32 +485,34 @@ func (e *endlessListener) File() *os.File {
 
 type endlessConn struct {
 	net.Conn
-	doneOnce *sync.Once
+	doneOnce sync.Once
 	server   *endlessServer
 }
 
 // Read reads data from the connection.
 // Read can be made to time out and return an error after a fixed
 // time limit; see SetDeadline and SetReadDeadline.
-func (e endlessConn) Read(b []byte) (n int, err error) { return e.Conn.Read(b) }
+func (e *endlessConn) Read(b []byte) (n int, err error) { return e.Conn.Read(b) }
 
 // Write writes data to the connection.
 // Write can be made to time out and return an error after a fixed
 // time limit; see SetDeadline and SetWriteDeadline.
-func (e endlessConn) Write(b []byte) (n int, err error) { return e.Conn.Write(b) }
+func (e *endlessConn) Write(b []byte) (n int, err error) { return e.Conn.Write(b) }
 
 // Close closes the connection.
 // Any blocked Read or Write operations will be unblocked and return errors.
-func (e endlessConn) Close() (err error) {
-	defer e.doneOnce.Do(func() { e.server.wg.Done() })
+func (e *endlessConn) Close() (err error) {
+	defer e.doneOnce.Do(func() {
+		e.server.wg.Done()
+	})
 	return e.Conn.Close()
 }
 
 // LocalAddr returns the local network address, if known.
-func (e endlessConn) LocalAddr() net.Addr { return e.Conn.LocalAddr() }
+func (e *endlessConn) LocalAddr() net.Addr { return e.Conn.LocalAddr() }
 
 // RemoteAddr returns the remote network address, if known.
-func (e endlessConn) RemoteAddr() net.Addr { return e.Conn.RemoteAddr() }
+func (e *endlessConn) RemoteAddr() net.Addr { return e.Conn.RemoteAddr() }
 
 // SetDeadline sets the read and write deadlines associated
 // with the connection. It is equivalent to calling both
@@ -535,28 +535,28 @@ func (e endlessConn) RemoteAddr() net.Addr { return e.Conn.RemoteAddr() }
 // the deadline after successful Read or Write calls.
 //
 // A zero value for t means I/O operations will not time out.
-func (e endlessConn) SetDeadline(t time.Time) error { return e.Conn.SetDeadline(t) }
+func (e *endlessConn) SetDeadline(t time.Time) error { return e.Conn.SetDeadline(t) }
 
 // SetReadDeadline sets the deadline for future Read calls
 // and any currently-blocked Read call.
 // A zero value for t means Read will not time out.
-func (e endlessConn) SetReadDeadline(t time.Time) error { return e.Conn.SetReadDeadline(t) }
+func (e *endlessConn) SetReadDeadline(t time.Time) error { return e.Conn.SetReadDeadline(t) }
 
 // SetWriteDeadline sets the deadline for future Write calls
 // and any currently-blocked Write call.
 // Even if write times out, it may return n > 0, indicating that
 // some of the data was successfully written.
 // A zero value for t means Write will not time out.
-func (e endlessConn) SetWriteDeadline(t time.Time) error { return e.Conn.SetWriteDeadline(t) }
+func (e *endlessConn) SetWriteDeadline(t time.Time) error { return e.Conn.SetWriteDeadline(t) }
 
 // SyscallConn returns a raw network connection.
 // This implements the syscall.Conn interface.
-func (e endlessConn) SyscallConn() (syscall.RawConn, error) {
+func (e *endlessConn) SyscallConn() (syscall.RawConn, error) {
 	return e.Conn.(*net.TCPConn).SyscallConn()
 }
 
 // ReadFrom implements the io.ReaderFrom ReadFrom method.
-func (e endlessConn) ReadFrom(r io.Reader) (int64, error) {
+func (e *endlessConn) ReadFrom(r io.Reader) (int64, error) {
 	return e.Conn.(*net.TCPConn).ReadFrom(r)
 }
 
@@ -572,18 +572,18 @@ func (e endlessConn) ReadFrom(r io.Reader) (int64, error) {
 // If sec > 0, the data is sent in the background as with sec < 0. On
 // some operating systems after sec seconds have elapsed any remaining
 // unsent data may be discarded.
-func (e endlessConn) SetLinger(sec int) error {
+func (e *endlessConn) SetLinger(sec int) error {
 	return e.Conn.(*net.TCPConn).SetLinger(sec)
 }
 
 // SetKeepAlive sets whether the operating system should send
 // keep-alive messages on the connection.
-func (e endlessConn) SetKeepAlive(keepalive bool) error {
+func (e *endlessConn) SetKeepAlive(keepalive bool) error {
 	return e.Conn.(*net.TCPConn).SetKeepAlive(keepalive)
 }
 
 // SetKeepAlivePeriod sets period between keep-alives.
-func (e endlessConn) SetKeepAlivePeriod(d time.Duration) error {
+func (e *endlessConn) SetKeepAlivePeriod(d time.Duration) error {
 	return e.Conn.(*net.TCPConn).SetKeepAlivePeriod(d)
 }
 
@@ -591,6 +591,6 @@ func (e endlessConn) SetKeepAlivePeriod(d time.Duration) error {
 // packet transmission in hopes of sending fewer packets (Nagle's
 // algorithm).  The default is true (no delay), meaning that data is
 // sent as soon as possible after a Write.
-func (e endlessConn) SetNoDelay(noDelay bool) error {
+func (e *endlessConn) SetNoDelay(noDelay bool) error {
 	return e.Conn.(*net.TCPConn).SetNoDelay(noDelay)
 }

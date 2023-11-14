@@ -11,7 +11,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/i18n"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 type Response struct {
@@ -60,7 +60,7 @@ func rspSuccess(c *gin.Context, code int, data any, page, count int, msg string)
 		Data:    data,
 		Page:    pagePtr,
 		Count:   countPtr,
-		TraceID: c.GetString(fmkCtx.KeyTraceID),
+		TraceID: c.GetString(fusCtx.KeyTraceID),
 	})
 }
 
@@ -90,7 +90,7 @@ func rspError[T constraint.Integer](c *gin.Context, appName string, code T, data
 		Data:    data,
 		Page:    pagePtr,
 		Count:   countPtr,
-		TraceID: c.GetString(fmkCtx.KeyTraceID),
+		TraceID: c.GetString(fusCtx.KeyTraceID),
 	})
 }
 
@@ -115,7 +115,7 @@ func langs(c *gin.Context) (langs []string) {
 	if lang := c.GetString("lang"); utils.IsStrNotBlank(lang) {
 		langs = append(langs, lang)
 	}
-	if lang := c.GetString(fmkCtx.KeyLangs); utils.IsStrNotBlank(lang) {
+	if lang := c.GetString(fusCtx.KeyLangs); utils.IsStrNotBlank(lang) {
 		langs = append(langs, lang)
 	}
 	return langs

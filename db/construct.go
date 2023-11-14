@@ -22,7 +22,8 @@ import (
 	"github.com/wfusion/gofusion/db/callbacks"
 	"github.com/wfusion/gofusion/db/plugins"
 	"github.com/wfusion/gofusion/db/softdelete"
-	fmkLog "github.com/wfusion/gofusion/log"
+
+	fusLog "github.com/wfusion/gofusion/log"
 
 	_ "github.com/wfusion/gofusion/log/customlogger"
 )
@@ -74,7 +75,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		loggerType := inspect.TypeOf(conf.LoggerConfig.Logger)
 		loggerValue := reflect.New(loggerType)
 		if loggerValue.Type().Implements(customLoggerType) {
-			l := fmkLog.Use(conf.LoggerConfig.LogInstance, fmkLog.AppName(opt.AppName))
+			l := fusLog.Use(conf.LoggerConfig.LogInstance, fusLog.AppName(opt.AppName))
 			loggerValue.Interface().(customLogger).Init(l, opt.AppName, name)
 		}
 		logObj = loggerValue.Interface().(logger.Interface)

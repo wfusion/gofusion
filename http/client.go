@@ -15,7 +15,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils/serialize/json"
 	"github.com/wfusion/gofusion/config"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 var (
@@ -133,10 +133,10 @@ func NewRequest(ctx context.Context, opts ...utils.OptionExtender) *resty.Reques
 
 func traceHeaderMiddleware(cli *resty.Client, req *resty.Request) (err error) {
 	ctx := req.Context()
-	if userID := fmkCtx.GetUserID(ctx); utils.IsStrNotBlank(userID) {
+	if userID := fusCtx.GetUserID(ctx); utils.IsStrNotBlank(userID) {
 		req.SetHeader("User-ID", userID)
 	}
-	if traceID := fmkCtx.GetTraceID(ctx); utils.IsStrNotBlank(traceID) {
+	if traceID := fusCtx.GetTraceID(ctx); utils.IsStrNotBlank(traceID) {
 		req.SetHeader("Trace-ID", traceID)
 	}
 	return

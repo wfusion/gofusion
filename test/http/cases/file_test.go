@@ -17,7 +17,7 @@ import (
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/log"
 
-	fmkHtp "github.com/wfusion/gofusion/http"
+	fusHtp "github.com/wfusion/gofusion/http"
 	testHtp "github.com/wfusion/gofusion/test/http"
 )
 
@@ -71,7 +71,7 @@ func (t *File) TestStaticZeroCopy() {
 		req, err := http.NewRequest(http.MethodGet, "/TestStaticZeroCopy.yml", nil)
 		t.NoError(err)
 		engine := t.ServerGiven("File", "/TestStaticZeroCopyMock.yml", p)
-		engine.GET("/TestStaticZeroCopy.yml", fmkHtp.StaticFileZeroCopy(p))
+		engine.GET("/TestStaticZeroCopy.yml", fusHtp.StaticFileZeroCopy(p))
 
 		// When
 		engine.ServeHTTP(w, req)
@@ -91,7 +91,7 @@ func (t *File) TestContentZeroCopy() {
 		req, err := http.NewRequest(http.MethodGet, "/TestContentZeroCopy.yml", nil)
 		t.NoError(err)
 		engine := t.ServerGiven("File", "/TestContentZeroCopyMock.yml", p)
-		engine.GET("/TestContentZeroCopy.yml", fmkHtp.ContentZeroCopy(func(c *gin.Context) (
+		engine.GET("/TestContentZeroCopy.yml", fusHtp.ContentZeroCopy(func(c *gin.Context) (
 			name string, modTime time.Time, content io.ReadSeeker, err error) {
 			f, err := os.Open(p)
 			if err != nil {

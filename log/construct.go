@@ -132,7 +132,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		New(zapcore.NewTee(cores...), zopts...).
 		Named(config.Use(opt.AppName).AppName())
 
-	fmkLogger := &logger{name: name, logger: zapLogger, sugaredLogger: zapLogger.Sugar()}
+	fusLogger := &logger{name: name, logger: zapLogger, sugaredLogger: zapLogger.Sugar()}
 
 	rwlock.Lock()
 	defer rwlock.Unlock()
@@ -145,10 +145,10 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	if _, ok := appInstances[opt.AppName][name]; ok {
 		panic(ErrDuplicatedName)
 	}
-	appInstances[opt.AppName][name] = fmkLogger
+	appInstances[opt.AppName][name] = fusLogger
 
 	if opt.AppName == "" && name == config.DefaultInstanceKey {
-		globalLogger = fmkLogger
+		globalLogger = fusLogger
 	}
 
 	// ioc

@@ -8,7 +8,7 @@ import (
 
 	"github.com/wfusion/gofusion/common/utils"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 func Debug(ctx context.Context, format string, args ...any) { globalLogger.Debug(ctx, format, args...) }
@@ -36,9 +36,9 @@ func TimeElapsed(ctx context.Context, logger Loggable, fn func(), format string,
 }
 
 func GetContextFields(ctx context.Context) Fields {
-	return utils.GetCtxAny(ctx, fmkCtx.KeyLogFields, (Fields)(nil))
+	return utils.GetCtxAny(ctx, fusCtx.KeyLogFields, (Fields)(nil))
 }
 
 func SetContextFields(ctx context.Context, fields Fields) context.Context {
-	return utils.SetCtxAny(ctx, fmkCtx.KeyLogFields, fields)
+	return utils.SetCtxAny(ctx, fusCtx.KeyLogFields, fields)
 }

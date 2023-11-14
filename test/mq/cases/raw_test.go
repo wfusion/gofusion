@@ -16,7 +16,7 @@ import (
 	"github.com/wfusion/gofusion/mq"
 	"github.com/wfusion/gofusion/test/internal/mock"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 	testMq "github.com/wfusion/gofusion/test/mq"
 )
 
@@ -84,7 +84,7 @@ func (t *Raw) testPubSubRaw(name string) {
 		cnt := atomic.NewInt64(0)
 		ctx := context.Background()
 		traceID := utils.NginxID()
-		ctx = fmkCtx.SetTraceID(ctx, traceID)
+		ctx = fusCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
 			time.Sleep(ackTimeout) // wait for ack
@@ -144,7 +144,7 @@ func (t *Raw) testPubHandleRaw(name string) {
 		cnt := atomic.NewInt64(0)
 		ctx := context.Background()
 		traceID := utils.NginxID()
-		ctx = fmkCtx.SetTraceID(ctx, traceID)
+		ctx = fusCtx.SetTraceID(ctx, traceID)
 		ctx, cancel := context.WithTimeout(ctx, time.Duration(expected)*timeout)
 		defer func() {
 			time.Sleep(ackTimeout) // wait for ack

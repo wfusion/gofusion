@@ -9,7 +9,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/i18n"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 const (
@@ -67,7 +67,7 @@ func Err(c *gin.Context, code Errcode, opts ...utils.OptionExtender) error {
 func ErrCtx(ctx context.Context, code Errcode, opts ...utils.OptionExtender) error {
 	opt := utils.ApplyOptions[errOption](opts...)
 	if len(opt.langs) == 0 {
-		opt.langs = fmkCtx.GetLangs(ctx)
+		opt.langs = fusCtx.GetLangs(ctx)
 	}
 	return &bizErr{
 		code:      code,

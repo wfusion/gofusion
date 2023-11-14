@@ -16,7 +16,7 @@ import (
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/test"
 
-	fmkHtp "github.com/wfusion/gofusion/http"
+	fusHtp "github.com/wfusion/gofusion/http"
 )
 
 var (
@@ -77,7 +77,7 @@ func (t *Test) Init(testingSuite suite.TestingSuite) {
 	t.testsLefts.Add(numTestLeft)
 }
 
-func (t *Test) ServerGiven(method, path string, hd any) (r fmkHtp.IRouter) {
+func (t *Test) ServerGiven(method, path string, hd any) (r fusHtp.IRouter) {
 	r = newRouter(context.Background(), gin.New(), t.AppName(), 0)
 	switch method {
 	case http.MethodGet:
@@ -105,4 +105,4 @@ func (t *Test) ServerGiven(method, path string, hd any) (r fmkHtp.IRouter) {
 }
 
 //go:linkname newRouter github.com/wfusion/gofusion/http.newRouter
-func newRouter(context.Context, gin.IRouter, string, int) fmkHtp.IRouter
+func newRouter(context.Context, gin.IRouter, string, int) fusHtp.IRouter

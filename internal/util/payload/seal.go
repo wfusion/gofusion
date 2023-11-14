@@ -8,7 +8,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils/encode"
 	"github.com/wfusion/gofusion/common/utils/serialize"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 func Seal(data any, opts ...utils.OptionExtender) (dst []byte, err error) {
@@ -49,7 +49,7 @@ func Seal(data any, opts ...utils.OptionExtender) (dst []byte, err error) {
 			return
 		}
 	} else {
-		ctxBytes := fmkCtx.Flatten(opt.ctx).Marshal()
+		ctxBytes := fusCtx.Flatten(opt.ctx).Marshal()
 		if err = binary.Write(dstBuffer, binary.LittleEndian, uint64(len(ctxBytes))); err != nil {
 			return
 		}

@@ -19,8 +19,8 @@ import (
 	"github.com/wfusion/gofusion/common/utils/clone"
 	"github.com/wfusion/gofusion/http/consts"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
-	fmkLog "github.com/wfusion/gofusion/log"
+	fusCtx "github.com/wfusion/gofusion/context"
+	fusLog "github.com/wfusion/gofusion/log"
 )
 
 var (
@@ -35,10 +35,10 @@ var (
 )
 
 func logging(rootCtx context.Context, c *gin.Context, logger resty.Logger, rawURL *url.URL, appName string) {
-	ctx := fmkCtx.New(fmkCtx.Gin(c))
+	ctx := fusCtx.New(fusCtx.Gin(c))
 	cost := float64(consts.GetReqCost(c)) / float64(time.Millisecond)
 	status := c.Writer.Status()
-	fields := fmkLog.Fields{
+	fields := fusLog.Fields{
 		"path":        rawURL.Path,
 		"method":      c.Request.Method,
 		"status":      status,

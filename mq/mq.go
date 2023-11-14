@@ -15,7 +15,7 @@ import (
 	"github.com/wfusion/gofusion/routine"
 
 	mw "github.com/wfusion/gofusion/common/infra/watermill/message"
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 	pd "github.com/wfusion/gofusion/internal/util/payload"
 )
 
@@ -101,7 +101,7 @@ func (a *abstractMQ) PublishRaw(ctx context.Context, opts ...utils.OptionExtende
 	msgs := opt.watermillMessages
 	for _, msg := range opt.messages {
 		wmsg := mw.NewMessage(msg.ID(), msg.Payload())
-		wmsg.Metadata = fmkCtx.WatermillMetadata(ctx)
+		wmsg.Metadata = fusCtx.WatermillMetadata(ctx)
 		wmsg.SetContext(ctx)
 		msgs = append(msgs, wmsg)
 	}
@@ -200,7 +200,7 @@ func (a *abstractMQ) Subscribe(ctx context.Context, opts ...utils.OptionExtender
 					})
 					continue
 				}
-				wmsg.SetContext(fmkCtx.New(fmkCtx.Watermill(wmsg.Metadata)))
+				wmsg.SetContext(fusCtx.New(fusCtx.Watermill(wmsg.Metadata)))
 				msg := &message{Message: wmsg, payload: data}
 				if !isRaw {
 					_, msg.obj, _, err = pd.Unseal(wmsg.Payload,
@@ -251,7 +251,7 @@ func (a *abstractMQ) newMessage(ctx context.Context, src Message, _ *pubOption) 
 		return
 	}
 	msg = mw.NewMessage(src.ID(), payload)
-	msg.Metadata = fmkCtx.WatermillMetadata(ctx)
+	msg.Metadata = fusCtx.WatermillMetadata(ctx)
 	msg.SetContext(ctx)
 	return
 }
@@ -268,7 +268,7 @@ func (a *abstractMQ) newObjectMessage(ctx context.Context, object any, opt *pubO
 		uuid = opt.objectUUIDGenFunc.Call([]reflect.Value{inParam})[0].Interface().(string)
 	}
 	msg = mw.NewMessage(uuid, payload)
-	msg.Metadata = fmkCtx.WatermillMetadata(ctx)
+	msg.Metadata = fusCtx.WatermillMetadata(ctx)
 	msg.SetContext(ctx)
 	return
 }
@@ -288,7 +288,7 @@ func messageConvertFrom(src *mw.Message,
 	if err != nil {
 		return
 	}
-	src.SetContext(fmkCtx.New(fmkCtx.Watermill(src.Metadata)))
+	src.SetContext(fusCtx.New(fusCtx.Watermill(src.Metadata)))
 	msg := &message{Message: src, payload: data}
 	if !isRaw {
 		_, msg.obj, _, err = pd.Unseal(src.Payload,

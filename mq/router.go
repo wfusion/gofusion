@@ -24,7 +24,7 @@ import (
 	"github.com/wfusion/gofusion/routine"
 
 	mw "github.com/wfusion/gofusion/common/infra/watermill/message"
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 	pd "github.com/wfusion/gofusion/internal/util/payload"
 )
 
@@ -344,7 +344,7 @@ func (r *router) handle(hdr any) mw.NoPublishHandlerFunc {
 			return
 		}
 		params := unwrapParams(typ, data)
-		ctx := fmkCtx.New(fmkCtx.Watermill(msg.Metadata))
+		ctx := fusCtx.New(fusCtx.Watermill(msg.Metadata))
 		return fn(append([]any{ctx}, params...)...)
 	}
 }
@@ -401,7 +401,7 @@ func (r *router) addEventDispatchHandler(consumerName string) {
 						event := reflect.New(hdr.evtType).Interface()
 						inspect.SetField(event, "pd", data)
 
-						ctx := fmkCtx.New(fmkCtx.Watermill(msg.Metadata))
+						ctx := fusCtx.New(fusCtx.Watermill(msg.Metadata))
 						ctx = log.SetContextFields(ctx, log.Fields{
 							keyEntityID:  msg.Metadata[keyEntityID],
 							keyEventType: msg.Metadata[keyEventType],

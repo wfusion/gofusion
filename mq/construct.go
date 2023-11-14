@@ -15,7 +15,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
 
-	fmkLog "github.com/wfusion/gofusion/log"
+	fusLog "github.com/wfusion/gofusion/log"
 
 	_ "github.com/wfusion/gofusion/log/customlogger"
 )
@@ -97,7 +97,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		loggerType := inspect.TypeOf(conf.Logger)
 		loggerValue := reflect.New(loggerType)
 		if loggerValue.Type().Implements(customLoggerType) {
-			l := fmkLog.Use(conf.LogInstance, fmkLog.AppName(opt.AppName))
+			l := fusLog.Use(conf.LogInstance, fusLog.AppName(opt.AppName))
 			loggerValue.Interface().(customLogger).Init(l, opt.AppName, name)
 		}
 		logger = loggerValue.Convert(watermillLoggerType).Interface().(watermill.LoggerAdapter)

@@ -12,6 +12,10 @@ base:
         retry_count: 2
         retry_wait_time: 1s
         retry_max_wait_time: 10s
+      local:
+        retry_count: 2
+        retry_wait_time: 1s
+        retry_max_wait_time: 10s
 
   goroutine_pool:
     max_routine_amount: -1

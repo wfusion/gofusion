@@ -9,7 +9,6 @@ func IsChannelClosed[T any](ch <-chan T) (data T, ok bool) {
 		}
 		return d, false
 	default:
-		ok = true
 		return
 	}
 }

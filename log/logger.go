@@ -16,7 +16,7 @@ import (
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/log/encoder"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 var (
@@ -172,16 +172,16 @@ func (l *logger) sweeten(ctx context.Context, format string, raw ...any) (
 	}
 
 	msg = fmt.Sprintf(format, args...)
-	if userID := fmkCtx.GetUserID(ctx); utils.IsStrNotBlank(userID) {
+	if userID := fusCtx.GetUserID(ctx); utils.IsStrNotBlank(userID) {
 		fields = append(fields, zap.String("user_id", userID))
 	}
-	if traceID := fmkCtx.GetTraceID(ctx); utils.IsStrNotBlank(traceID) {
+	if traceID := fusCtx.GetTraceID(ctx); utils.IsStrNotBlank(traceID) {
 		fields = append(fields, zap.String("trace_id", traceID))
 	}
-	if taskID := fmkCtx.GetCronTaskID(ctx); utils.IsStrNotBlank(taskID) {
+	if taskID := fusCtx.GetCronTaskID(ctx); utils.IsStrNotBlank(taskID) {
 		fields = append(fields, zap.String("cron_task_id", taskID))
 	}
-	if taskName := fmkCtx.GetCronTaskName(ctx); utils.IsStrNotBlank(taskName) {
+	if taskName := fusCtx.GetCronTaskName(ctx); utils.IsStrNotBlank(taskName) {
 		fields = append(fields, zap.String("cron_task_name", taskName))
 	}
 	if id := utils.GetCtxAny[string](ctx, watermill.ContextKeyMessageUUID); utils.IsStrNotBlank(id) {

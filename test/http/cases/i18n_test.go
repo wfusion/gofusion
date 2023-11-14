@@ -11,7 +11,7 @@ import (
 	"github.com/wfusion/gofusion/i18n"
 	"github.com/wfusion/gofusion/log"
 
-	fmkHtp "github.com/wfusion/gofusion/http"
+	fusHtp "github.com/wfusion/gofusion/http"
 	testHtp "github.com/wfusion/gofusion/test/http"
 )
 
@@ -39,8 +39,8 @@ func (t *I18n) AfterTest(suiteName, testName string) {
 
 func (t *I18n) TestCase() {
 	t.Catch(func() {
-		config.Use(t.AppName()).DI().MustInvoke(func(b i18n.Localizable[fmkHtp.Errcode]) {
-			b.AddMessages(fmkHtp.Errcode(1), map[language.Tag]*i18n.Message{})
+		config.Use(t.AppName()).DI().MustInvoke(func(b i18n.Localizable[fusHtp.Errcode]) {
+			b.AddMessages(fusHtp.Errcode(1), map[language.Tag]*i18n.Message{})
 		})
 	})
 }

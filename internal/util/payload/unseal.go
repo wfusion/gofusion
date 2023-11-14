@@ -14,7 +14,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/common/utils/serialize"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 func Unseal(src []byte, opts ...utils.OptionExtender) (ctx context.Context, dst any, ok bool, err error) {
@@ -64,7 +64,7 @@ func unsealV1(inf, src []byte, opts ...utils.OptionExtender) (ctx context.Contex
 	if contextLength > 0 {
 		var contextBytes []byte
 		contextBytes, src = src[:contextLength], src[contextLength:]
-		ctx = fmkCtx.New(fmkCtx.Context(contextBytes))
+		ctx = fusCtx.New(fusCtx.Context(contextBytes))
 	}
 
 	// unseal data type
@@ -157,7 +157,7 @@ func unsealV1T[T any](inf, src []byte, opts ...utils.OptionExtender) (ctx contex
 	if contextLength > 0 {
 		var contextBytes []byte
 		contextBytes, src = src[:contextLength], src[contextLength:]
-		ctx = fmkCtx.New(fmkCtx.Context(contextBytes))
+		ctx = fusCtx.New(fusCtx.Context(contextBytes))
 	}
 
 	// unseal data type
@@ -246,7 +246,7 @@ func unsealRawV1(inf, src []byte, opts ...utils.OptionExtender) (
 	if contextLength > 0 {
 		var contextBytes []byte
 		contextBytes, src = src[:contextLength], src[contextLength:]
-		ctx = fmkCtx.New(fmkCtx.Context(contextBytes))
+		ctx = fusCtx.New(fusCtx.Context(contextBytes))
 	}
 
 	// unseal data type

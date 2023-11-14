@@ -14,7 +14,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
 
-	fmkLog "github.com/wfusion/gofusion/log"
+	fusLog "github.com/wfusion/gofusion/log"
 
 	_ "github.com/wfusion/gofusion/log/customlogger"
 )
@@ -62,7 +62,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 			logger := reflect.New(inspect.TypeOf(conf.Logger)).Interface().(ants.Logger)
 			defaultLogger[opt.AppName] = logger
 			if custom, ok := logger.(customLogger); ok {
-				l := fmkLog.Use(conf.LogInstance, fmkLog.AppName(opt.AppName))
+				l := fusLog.Use(conf.LogInstance, fusLog.AppName(opt.AppName))
 				custom.Init(l, opt.AppName)
 			}
 		}

@@ -20,7 +20,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/log"
 
-	fmkHtp "github.com/wfusion/gofusion/http"
+	fusHtp "github.com/wfusion/gofusion/http"
 	testHtp "github.com/wfusion/gofusion/test/http"
 )
 
@@ -224,7 +224,7 @@ func (t *Router) TestExample04() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
 		t.Require().EqualValues("ok", rsp.Message)
@@ -297,7 +297,7 @@ func (t *Router) TestExample05() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
@@ -371,7 +371,7 @@ func (t *Router) TestExample06() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
@@ -438,7 +438,7 @@ func (t *Router) TestExample07() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
@@ -504,7 +504,7 @@ func (t *Router) TestExample08() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
 		t.Require().EqualValues("ok", rsp.Message)
@@ -565,7 +565,7 @@ func (t *Router) TestExample09() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
@@ -631,7 +631,7 @@ func (t *Router) TestExample10() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
@@ -695,7 +695,7 @@ func (t *Router) TestExample11() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
@@ -1375,7 +1375,7 @@ func (t *Router) TestExample29() {
 			} `json:"embed"`
 		}
 		type rspStruct struct {
-			fmkHtp.Embed
+			fusHtp.Embed
 
 			Page  int
 			Count int
@@ -1531,7 +1531,7 @@ func (t *Router) TestExample31() {
 		// Then
 		t.Equal(http.StatusOK, w.Code)
 
-		rsp := utils.MustJsonUnmarshal[fmkHtp.Response](w.Body.Bytes())
+		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 		t.Require().EqualValues(1, *rsp.Page)
 		t.Require().EqualValues(1, *rsp.Count)
 		t.Require().EqualValues("wrong", rsp.Message)

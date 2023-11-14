@@ -14,7 +14,7 @@ import (
 	"github.com/wfusion/gofusion/db/plugins"
 
 	ormDrv "github.com/wfusion/gofusion/common/infra/drivers/orm"
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 // DalInterface
@@ -71,7 +71,7 @@ func NewDAL[T any, TS ~[]*T](readDBName, writeDBName string, opts ...utils.Optio
 
 func (d *dal[T, TS]) Query(ctx context.Context, query any, args ...any) (TS, error) {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 
 	found := d.ModelSlice()
 	result := d.ReadDB(ctx).Clauses(o.clauses...).Where(query, args...).Find(&found)
@@ -83,7 +83,7 @@ func (d *dal[T, TS]) Query(ctx context.Context, query any, args ...any) (TS, err
 
 func (d *dal[T, TS]) QueryLast(ctx context.Context, query any, args ...any) (*T, error) {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 
 	found := d.Model()
 	result := d.ReadDB(ctx).Clauses(o.clauses...).Where(query, args...).Last(found)
@@ -95,7 +95,7 @@ func (d *dal[T, TS]) QueryLast(ctx context.Context, query any, args ...any) (*T,
 
 func (d *dal[T, TS]) QueryFirst(ctx context.Context, query any, args ...any) (*T, error) {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 
 	found := d.Model()
 	result := d.ReadDB(ctx).Clauses(o.clauses...).Where(query, args...).First(found)
@@ -108,7 +108,7 @@ func (d *dal[T, TS]) QueryFirst(ctx context.Context, query any, args ...any) (*T
 func (d *dal[T, TS]) QueryInBatches(ctx context.Context, batchSize int,
 	fc func(tx *DB, batch int, found TS) error, query any, args ...any) (err error) {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 
 	orm := Use(ctx, d.readDBName, AppName(d.appName))
 	found := make(TS, 0, batchSize)
@@ -132,7 +132,7 @@ func (d *dal[T, TS]) Count(ctx context.Context, query any, args ...any) (int64, 
 	var count int64
 
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 
 	result := d.ReadDB(ctx).Clauses(o.clauses...).Where(query, args...).Count(&count)
 	if d.CanIgnore(result.Error) {
@@ -144,7 +144,7 @@ func (d *dal[T, TS]) Count(ctx context.Context, query any, args ...any) (int64, 
 func (d *dal[T, TS]) Pluck(ctx context.Context, column string, dest any,
 	query any, args ...any) error {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 
 	result := d.ReadDB(ctx).Clauses(o.clauses...).Where(query, args...).Pluck(column, dest)
 	return d.IgnoreErr(result.Error)
@@ -152,7 +152,7 @@ func (d *dal[T, TS]) Pluck(ctx context.Context, column string, dest any,
 
 func (d *dal[T, TS]) Take(ctx context.Context, dest any, conds ...any) error {
 	o, args := d.parseOptionFromArgs(conds...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 
 	result := d.ReadDB(ctx).Clauses(o.clauses...).Take(dest, args...)
 	return d.IgnoreErr(result.Error)
@@ -160,14 +160,14 @@ func (d *dal[T, TS]) Take(ctx context.Context, dest any, conds ...any) error {
 
 func (d *dal[T, TS]) InsertOne(ctx context.Context, mod *T, opts ...utils.OptionExtender) error {
 	o := utils.ApplyOptions[mysqlDALOption](opts...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 	return d.WriteDB(ctx).Clauses(o.clauses...).Create(mod).Error
 }
 
 func (d *dal[T, TS]) InsertInBatches(ctx context.Context,
 	modList TS, batchSize int, opts ...utils.OptionExtender) error {
 	o := utils.ApplyOptions[mysqlDALOption](opts...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 	sharded, err := d.writeWithTableSharding(ctx, modList)
 	if err != nil {
 		return err
@@ -183,7 +183,7 @@ func (d *dal[T, TS]) InsertInBatches(ctx context.Context,
 
 func (d *dal[T, TS]) FirstOrCreate(ctx context.Context, mod *T, conds ...any) (int64, error) {
 	o, conds := d.parseOptionFromArgs(conds...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 	result := d.WriteDB(ctx).Clauses(o.clauses...).FirstOrCreate(mod, conds...)
 	return result.RowsAffected, result.Error
 }
@@ -204,7 +204,7 @@ func (d *dal[T, TS]) Save(ctx context.Context, mod any, opts ...utils.OptionExte
 		return nil
 	}
 	o := utils.ApplyOptions[mysqlDALOption](opts...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 	sharded, err := d.writeWithTableSharding(ctx, mList)
 	if err != nil {
 		return err
@@ -221,7 +221,7 @@ func (d *dal[T, TS]) Save(ctx context.Context, mod any, opts ...utils.OptionExte
 func (d *dal[T, TS]) Update(ctx context.Context, column string, value any,
 	query any, args ...any) (int64, error) {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 	u := d.WriteDB(ctx).Clauses(o.clauses...).Where(query, args...).Update(column, value)
 	return u.RowsAffected, u.Error
 }
@@ -229,14 +229,14 @@ func (d *dal[T, TS]) Update(ctx context.Context, column string, value any,
 func (d *dal[T, TS]) Updates(ctx context.Context, columns map[string]any,
 	query any, args ...any) (int64, error) {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 	u := d.WriteDB(ctx).Clauses(o.clauses...).Where(query, args...).Updates(columns)
 	return u.RowsAffected, u.Error
 }
 
 func (d *dal[T, TS]) Delete(ctx context.Context, query any, args ...any) (int64, error) {
 	o, args := d.parseOptionFromArgs(args...)
-	ctx = context.WithValue(ctx, fmkCtx.KeyDALOption, o)
+	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
 	mList, ok := d.convertAnyToTS(query)
 	if !ok || len(mList) == 0 {
 		deleted := d.WriteDB(ctx).Clauses(o.clauses...).Where(query, args...).Delete(d.Model())
@@ -280,7 +280,7 @@ func (d *dal[T, TS]) Transaction(ctx context.Context, fc func(context.Context) e
 }
 
 func (d *dal[T, TS]) ReadDB(ctx context.Context) *gorm.DB {
-	o, _ := ctx.Value(fmkCtx.KeyDALOption).(*mysqlDALOption)
+	o, _ := ctx.Value(fusCtx.KeyDALOption).(*mysqlDALOption)
 	if orm := GetCtxGormDB(ctx); orm != nil && orm.Name == d.readDBName {
 		return d.unscopedGormDB(orm.Model(d.Model()), o)
 	}
@@ -292,7 +292,7 @@ func (d *dal[T, TS]) ReadDB(ctx context.Context) *gorm.DB {
 	return d.unscopedGormDB(Use(ctx, dbName, AppName(d.appName)).WithContext(ctx).Model(d.Model()), o)
 }
 func (d *dal[T, TS]) WriteDB(ctx context.Context) *gorm.DB {
-	o, _ := ctx.Value(fmkCtx.KeyDALOption).(*mysqlDALOption)
+	o, _ := ctx.Value(fusCtx.KeyDALOption).(*mysqlDALOption)
 	if orm := GetCtxGormDB(ctx); orm != nil && orm.Name == d.writeDBName {
 		return d.unscopedGormDB(orm.Model(d.Model()), o)
 	}

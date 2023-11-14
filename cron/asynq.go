@@ -26,7 +26,7 @@ import (
 
 	rdsDrv "github.com/redis/go-redis/v9"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 const (
@@ -377,11 +377,11 @@ func (a *asynqRouter) gatewayMiddleware(next asynq.Handler) asynq.Handler {
 	return asynq.HandlerFunc(func(ctx context.Context, raw *asynq.Task) (err error) {
 		taskName := a.unformatTaskName(raw.Type())
 		inspect.SetField(raw, asyncqTaskTypenameField, taskName)
-		if utils.IsStrBlank(fmkCtx.GetTraceID(ctx)) {
-			ctx = fmkCtx.SetTraceID(ctx, utils.NginxID())
+		if utils.IsStrBlank(fusCtx.GetTraceID(ctx)) {
+			ctx = fusCtx.SetTraceID(ctx, utils.NginxID())
 		}
-		if utils.IsStrBlank(fmkCtx.GetCronTaskName(ctx)) {
-			ctx = fmkCtx.SetCronTaskName(ctx, taskName)
+		if utils.IsStrBlank(fusCtx.GetCronTaskName(ctx)) {
+			ctx = fusCtx.SetCronTaskName(ctx, taskName)
 		}
 		return next.ProcessTask(ctx, raw)
 	})

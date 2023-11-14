@@ -10,7 +10,7 @@ import (
 
 	"github.com/wfusion/gofusion/log"
 
-	fmkHttp "github.com/wfusion/gofusion/http"
+	fusHtp "github.com/wfusion/gofusion/http"
 	testHtp "github.com/wfusion/gofusion/test/http"
 )
 
@@ -44,16 +44,16 @@ func (t *Client) TestMock() {
 	t.Catch(func() {
 		// Given
 		fakeUrl := "http://localhost/TestMock"
-		expected := &fmkHttp.Response{
+		expected := &fusHtp.Response{
 			Code:    0,
 			Message: "ok",
 			Data:    2,
 		}
-		actual := new(fmkHttp.Response)
+		actual := new(fusHtp.Response)
 		responder, err := httpmock.NewJsonResponder(http.StatusOK, expected)
 		t.NoError(err)
 		httpmock.RegisterResponder(http.MethodGet, fakeUrl, responder)
-		cli := fmkHttp.NewRequest(context.Background(), fmkHttp.AppName(t.AppName())).SetResult(&actual)
+		cli := fusHtp.NewRequest(context.Background(), fusHtp.AppName(t.AppName())).SetResult(&actual)
 
 		// When
 		rsp, err := cli.Get(fakeUrl)

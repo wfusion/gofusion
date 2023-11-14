@@ -14,7 +14,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/log"
 
-	fmkHtp "github.com/wfusion/gofusion/http"
+	fusHtp "github.com/wfusion/gofusion/http"
 	testHtp "github.com/wfusion/gofusion/test/http"
 )
 
@@ -80,11 +80,11 @@ func (t *Group) TestGroupDispatch() {
 		req.Header.Set("Content-Type", "application/json")
 		t.Require().NoError(err)
 
-		groupRouter := fmkHtp.Use(fmkHtp.AppName(t.AppName())).Group(group)
+		groupRouter := fusHtp.Use(fusHtp.AppName(t.AppName())).Group(group)
 		groupRouter.POST(path, hd)
 
 		// When
-		fmkHtp.Use(fmkHtp.AppName(t.AppName())).ServeHTTP(w, req)
+		fusHtp.Use(fusHtp.AppName(t.AppName())).ServeHTTP(w, req)
 
 		// Then
 		t.Equal(http.StatusOK, w.Code)
@@ -133,11 +133,11 @@ func (t *Group) TestUseDispatch() {
 		t.Require().NoError(err)
 
 		cnt := 0
-		groupRouter := fmkHtp.Use(fmkHtp.AppName(t.AppName())).Group(group).Use(func(c *gin.Context) { cnt++ })
+		groupRouter := fusHtp.Use(fusHtp.AppName(t.AppName())).Group(group).Use(func(c *gin.Context) { cnt++ })
 		groupRouter.POST(path, hd)
 
 		// When
-		fmkHtp.Use(fmkHtp.AppName(t.AppName())).ServeHTTP(w, req)
+		fusHtp.Use(fusHtp.AppName(t.AppName())).ServeHTTP(w, req)
 
 		// Then
 		t.EqualValues(cnt, 1)

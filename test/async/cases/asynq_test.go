@@ -18,7 +18,7 @@ import (
 	"github.com/wfusion/gofusion/redis"
 	"github.com/wfusion/gofusion/test/internal/mock"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 	testAsync "github.com/wfusion/gofusion/test/async"
 )
 
@@ -50,7 +50,7 @@ func (t *Asynq) TestDefault() {
 		times := 2
 		c := async.C(nameDefault, async.AppName(t.AppName()))
 		p := async.P(nameDefault, async.AppName(t.AppName()))
-		ctx := fmkCtx.SetTraceID(context.Background(), utils.NginxID())
+		ctx := fusCtx.SetTraceID(context.Background(), utils.NginxID())
 		t.cleanByQueue(ctx, "")
 		defer t.cleanByQueue(ctx, "")
 
@@ -157,7 +157,7 @@ func (t *Asynq) TestWithQueue() {
 		queue := "gofusion:async:with_queues"
 		expect := time.Duration(2)
 		cnt := atomic.NewInt32(0)
-		ctx := fmkCtx.SetTraceID(context.Background(), utils.NginxID())
+		ctx := fusCtx.SetTraceID(context.Background(), utils.NginxID())
 		t.cleanByQueue(ctx, queue)
 		defer t.cleanByQueue(ctx, queue)
 

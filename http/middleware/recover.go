@@ -18,7 +18,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/i18n"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 func Recover(appName string, logger resty.Logger) gin.HandlerFunc {
@@ -56,7 +56,7 @@ func Recover(appName string, logger resty.Logger) gin.HandlerFunc {
 					buffer.WriteString(fmt.Sprintf("%v \n", err))
 					buffer.WriteString(fmt.Sprintf("请求时间：%v \n", time.Now().Format(constant.StdTimeLayout)))
 					buffer.WriteString(fmt.Sprintf("主机名称：%v \n", hostname))
-					buffer.WriteString(fmt.Sprintf("请求编号：%v \n", c.GetString(fmkCtx.KeyTraceID)))
+					buffer.WriteString(fmt.Sprintf("请求编号：%v \n", c.GetString(fusCtx.KeyTraceID)))
 					buffer.WriteString(fmt.Sprintf("请求地址：%v \n",
 						c.Request.Method+"  "+c.Request.Host+c.Request.RequestURI))
 					buffer.WriteString(fmt.Sprintf("请求UA：%v \n", c.Request.UserAgent()))
@@ -66,7 +66,7 @@ func Recover(appName string, logger resty.Logger) gin.HandlerFunc {
 					buffer.WriteString(fmt.Sprintf("%v \n", err))
 					buffer.WriteString(fmt.Sprintf("RequstTime：%v \n", time.Now().Format(constant.StdTimeLayout)))
 					buffer.WriteString(fmt.Sprintf("Hostname：%v \n", hostname))
-					buffer.WriteString(fmt.Sprintf("TraceID：%v \n", c.GetString(fmkCtx.KeyTraceID)))
+					buffer.WriteString(fmt.Sprintf("TraceID：%v \n", c.GetString(fusCtx.KeyTraceID)))
 					buffer.WriteString(fmt.Sprintf("RequestURI：%v \n",
 						c.Request.Method+"  "+c.Request.Host+c.Request.RequestURI))
 					buffer.WriteString(fmt.Sprintf("UA：%v \n", c.Request.UserAgent()))
@@ -75,7 +75,7 @@ func Recover(appName string, logger resty.Logger) gin.HandlerFunc {
 				}
 
 				if logger != nil {
-					logger.Errorf(buffer.String(), fmkCtx.New(fmkCtx.Gin(c)))
+					logger.Errorf(buffer.String(), fusCtx.New(fusCtx.Gin(c)))
 				} else {
 					log.Printf(buffer.String())
 				}

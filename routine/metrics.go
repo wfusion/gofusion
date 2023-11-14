@@ -25,10 +25,14 @@ var (
 	metricsRuntimeGCRunsKey              = []string{"runtime", "total_gc_runs"}
 	metricsRuntimeTotalSTWLatencyKey     = []string{"runtime", "total_gc_pause_ns"}
 	metricsRuntimeTotalSTWLatencyBuckets = []float64{
-		.1, .25, .5, .75, .90, .95, .99,
-		1, 2.5, 5, 7.5, 9, 9.5, 9.9,
-		10, 25, 50, 75, 90, 95, 99,
-		100, 250, 500, 750, 900, 950, 990,
+		1000, 2500, 5000, 7500, 9000, 9500, 9900, // 1μs - 9.9μs
+		10000, 25000, 50000, 75000, 90000, 95000, 99000, // 0.01ms - 0.099ms
+		100000, 250000, 500000, 750000, 900000, 950000, 990000, // 0.1ms - 0.99ms
+		1000000, 2500000, 5000000, 7500000, 9000000, 9500000, 9900000, // 1ms - 9.9ms
+		10000000, 25000000, 50000000, 75000000, 90000000, 95000000, 99000000, // 10ms - 99ms
+		100000000, 250000000, 500000000, 750000000, 900000000, 950000000, 990000000, // 100ms - 990ms
+		1000000000, 2500000000, 5000000000, 7500000000, 9000000000, 9500000000, 9900000000, // 1s - 9.9s
+		10000000000, 25000000000, 50000000000, 75000000000, 90000000000, 95000000000, 99000000000, // 10s - 99s
 	}
 )
 
@@ -82,7 +86,6 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 		if stats.NumGC-lastNumGc.Load() >= 256 {
 			lastNumGc.Store(stats.NumGC - 255)
 		}
-		lastNumGc.Store(stats.NumGC)
 
 		app := config.Use(appName).AppName()
 		totalGoRoutinesKey := append([]string{app}, metricsRuntimeTotalGoroutinesKey...)
@@ -131,5 +134,6 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 			}
 		}
 
+		lastNumGc.Store(stats.NumGC)
 	})
 }

@@ -27,7 +27,7 @@ import (
 	"github.com/wfusion/gofusion/routine"
 	"github.com/wfusion/gofusion/test/config"
 
-	fmkCfg "github.com/wfusion/gofusion/config"
+	fusCfg "github.com/wfusion/gofusion/config"
 
 	_ "github.com/wfusion/gofusion/cache"
 	_ "github.com/wfusion/gofusion/http"
@@ -61,13 +61,13 @@ func (t *Example) TestDefault() {
 		defer t.RawCopy(t.AllConfigFiles(), 1)()
 
 		appSetting := new(appConf)
-		defer fmkCfg.Registry.Init(&appSetting)()
+		defer fusCfg.Registry.Init(&appSetting)()
 
-		allConfigs := fmkCfg.Registry.GetAllConfigs()
+		allConfigs := fusCfg.Registry.GetAllConfigs()
 		log.Info(context.Background(), "get all configs: %+v", allConfigs)
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
-		log.Info(context.Background(), "get app name: %s", fmkCfg.Registry.AppName())
-		log.Info(context.Background(), "get debug: %+v", fmkCfg.Registry.Debug())
+		log.Info(context.Background(), "get app name: %s", fusCfg.Registry.AppName())
+		log.Info(context.Background(), "get debug: %+v", fusCfg.Registry.Debug())
 	})
 }
 
@@ -84,12 +84,12 @@ func (t *Example) TestRequired() {
 		}
 
 		appSetting := new(appConf)
-		defer fmkCfg.Registry.Init(&appSetting, fmkCfg.Files(files))()
-		allConfigs := fmkCfg.Registry.GetAllConfigs()
+		defer fusCfg.Registry.Init(&appSetting, fusCfg.Files(files))()
+		allConfigs := fusCfg.Registry.GetAllConfigs()
 		log.Info(context.Background(), "get all configs: %+v", allConfigs)
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
-		log.Info(context.Background(), "get app name: %s", fmkCfg.Registry.AppName())
-		log.Info(context.Background(), "get debug: %+v", fmkCfg.Registry.Debug())
+		log.Info(context.Background(), "get app name: %s", fusCfg.Registry.AppName())
+		log.Info(context.Background(), "get debug: %+v", fusCfg.Registry.Debug())
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
@@ -109,12 +109,12 @@ func (t *Example) TestRequired() {
 func (t *Example) TestWithoutFiles() {
 	t.Catch(func() {
 		appSetting := new(appConf)
-		defer fmkCfg.Registry.Init(&appSetting, fmkCfg.Files(nil))()
-		allConfigs := fmkCfg.Registry.GetAllConfigs()
+		defer fusCfg.Registry.Init(&appSetting, fusCfg.Files(nil))()
+		allConfigs := fusCfg.Registry.GetAllConfigs()
 		log.Info(context.Background(), "get all configs: %+v", allConfigs)
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
-		log.Info(context.Background(), "get app name: %s", fmkCfg.Registry.AppName())
-		log.Info(context.Background(), "get debug: %+v", fmkCfg.Registry.Debug())
+		log.Info(context.Background(), "get app name: %s", fusCfg.Registry.AppName())
+		log.Info(context.Background(), "get debug: %+v", fusCfg.Registry.Debug())
 		routine.Go(func() {})
 	})
 }
@@ -122,26 +122,26 @@ func (t *Example) TestWithoutFiles() {
 func (t *Example) TestLoadAppConfig() {
 	t.Catch(func() {
 		appSetting := new(appConf)
-		defer fmkCfg.New(t.AppName()).Init(&appSetting, fmkCfg.Files(t.ConfigFiles()))()
-		allConfigs := fmkCfg.Use(t.AppName()).GetAllConfigs()
+		defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()))()
+		allConfigs := fusCfg.Use(t.AppName()).GetAllConfigs()
 		log.Info(context.Background(), "get all configs: %+v", allConfigs)
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
-		log.Info(context.Background(), "get app name: %s", fmkCfg.Use(t.AppName()).AppName())
-		log.Info(context.Background(), "get debug: %+v", fmkCfg.Use(t.AppName()).Debug())
+		log.Info(context.Background(), "get app name: %s", fusCfg.Use(t.AppName()).AppName())
+		log.Info(context.Background(), "get debug: %+v", fusCfg.Use(t.AppName()).Debug())
 	})
 }
 
 func (t *Example) TestLoadMultiTimes() {
 	t.Catch(func() {
 		appSetting := new(appConf)
-		fmkCfg.New(t.AppName()).Init(&appSetting, fmkCfg.Files(t.ConfigFiles()))()
+		fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()))()
 
 		appSetting = new(appConf)
-		defer fmkCfg.New(t.AppName()).Init(&appSetting, fmkCfg.Files(t.ConfigFiles()))()
-		allConfigs := fmkCfg.Use(t.AppName()).GetAllConfigs()
+		defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()))()
+		allConfigs := fusCfg.Use(t.AppName()).GetAllConfigs()
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
-		log.Info(context.Background(), "get app name: %s", fmkCfg.Use(t.AppName()).AppName())
-		log.Info(context.Background(), "get debug: %+v", fmkCfg.Use(t.AppName()).Debug())
+		log.Info(context.Background(), "get app name: %s", fusCfg.Use(t.AppName()).AppName())
+		log.Info(context.Background(), "get debug: %+v", fusCfg.Use(t.AppName()).Debug())
 	})
 }
 
@@ -149,13 +149,13 @@ func (t *Example) TestLoadWithContext() {
 	t.Catch(func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		appSetting := new(appConf)
-		defer fmkCfg.New(t.AppName()).Init(&appSetting, fmkCfg.Ctx(ctx), fmkCfg.Files(t.ConfigFiles()))()
+		defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Ctx(ctx), fusCfg.Files(t.ConfigFiles()))()
 
-		allConfigs := fmkCfg.Use(t.AppName()).GetAllConfigs()
+		allConfigs := fusCfg.Use(t.AppName()).GetAllConfigs()
 		log.Info(context.Background(), "get all configs: %+v", allConfigs)
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
-		log.Info(context.Background(), "get app name: %s", fmkCfg.Use(t.AppName()).AppName())
-		log.Info(context.Background(), "get debug: %+v", fmkCfg.Use(t.AppName()).Debug())
+		log.Info(context.Background(), "get app name: %s", fusCfg.Use(t.AppName()).AppName())
+		log.Info(context.Background(), "get debug: %+v", fusCfg.Use(t.AppName()).Debug())
 
 		cancel()
 		time.Sleep(time.Second)
@@ -165,8 +165,8 @@ func (t *Example) TestLoadWithContext() {
 func (t *Example) TestLoadWithLoader() {
 	t.Catch(func() {
 		appSetting := new(appConf)
-		defer fmkCfg.New(t.AppName()).Init(&appSetting, fmkCfg.Files(t.ConfigFiles()),
-			fmkCfg.Loader(func(a any, opts ...utils.OptionExtender) {
+		defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()),
+			fusCfg.Loader(func(a any, opts ...utils.OptionExtender) {
 				log.Info(context.Background(), "enter custom loader")
 				defer log.Info(context.Background(), "exit custom loader")
 				files := make([]string, 0, 2)
@@ -181,11 +181,11 @@ func (t *Example) TestLoadWithLoader() {
 				t.Require().NoError(configor.New(&configor.Config{}).Load(a, files...))
 			}))()
 
-		allConfigs := fmkCfg.Use(t.AppName()).GetAllConfigs()
+		allConfigs := fusCfg.Use(t.AppName()).GetAllConfigs()
 		log.Info(context.Background(), "get all configs: %+v", allConfigs)
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
-		log.Info(context.Background(), "get app name: %s", fmkCfg.Use(t.AppName()).AppName())
-		log.Info(context.Background(), "get debug: %+v", fmkCfg.Use(t.AppName()).Debug())
+		log.Info(context.Background(), "get app name: %s", fusCfg.Use(t.AppName()).AppName())
+		log.Info(context.Background(), "get debug: %+v", fusCfg.Use(t.AppName()).Debug())
 	})
 }
 
@@ -218,7 +218,7 @@ func (t *Example) TestConcurrency() {
 				time.Sleep(time.Duration(rand.Intn(50)) * time.Millisecond)
 
 				appSetting := new(appConf)
-				defer fmkCfg.New(t.AppName()).Init(&appSetting, fmkCfg.Files(t.ConfigFiles()))()
+				defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()))()
 				testComponentsFn(t.AppName())
 			}()
 
@@ -229,7 +229,7 @@ func (t *Example) TestConcurrency() {
 				time.Sleep(time.Duration(rand.Intn(50)) * time.Millisecond)
 
 				appSetting := new(appConf)
-				defer fmkCfg.Registry.Init(&appSetting)()
+				defer fusCfg.Registry.Init(&appSetting)()
 				testComponentsFn("")
 			}()
 		}

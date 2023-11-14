@@ -9,7 +9,7 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
 
-	fmkCtx "github.com/wfusion/gofusion/context"
+	fusCtx "github.com/wfusion/gofusion/context"
 )
 
 func logError(ctx context.Context, l watermill.LoggerAdapter, app, n, m string, args ...any) {
@@ -27,16 +27,16 @@ func logTrace(ctx context.Context, l watermill.LoggerAdapter, app, n, m string, 
 
 func formatFields(ctx context.Context) (fs watermill.LogFields) {
 	fs = make(watermill.LogFields, 4)
-	if userID := fmkCtx.GetUserID(ctx); utils.IsStrNotBlank(userID) {
+	if userID := fusCtx.GetUserID(ctx); utils.IsStrNotBlank(userID) {
 		fs["user_id"] = userID
 	}
-	if traceID := fmkCtx.GetTraceID(ctx); utils.IsStrNotBlank(traceID) {
+	if traceID := fusCtx.GetTraceID(ctx); utils.IsStrNotBlank(traceID) {
 		fs["trace_id"] = traceID
 	}
-	if taskID := fmkCtx.GetCronTaskID(ctx); utils.IsStrNotBlank(taskID) {
+	if taskID := fusCtx.GetCronTaskID(ctx); utils.IsStrNotBlank(taskID) {
 		fs["cron_task_id"] = taskID
 	}
-	if taskName := fmkCtx.GetCronTaskName(ctx); utils.IsStrNotBlank(taskName) {
+	if taskName := fusCtx.GetCronTaskName(ctx); utils.IsStrNotBlank(taskName) {
 		fs["cron_task_name"] = taskName
 	}
 	return

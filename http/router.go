@@ -55,9 +55,12 @@ var (
 type router struct {
 	gin.IRouter
 
-	ctx         context.Context
-	appName     string
-	successCode int
+	open         chan struct{}
+	close        chan struct{}
+	ctx          context.Context
+	appName      string
+	successCode  int
+	shutdownFunc func()
 
 	routes gin.IRoutes      `optional:"true"`
 	group  *gin.RouterGroup `optional:"true"`
@@ -66,8 +69,10 @@ type router struct {
 
 func newRouter(ctx context.Context, r gin.IRouter, appName string, successCode int) IRouter {
 	return &router{
-		ctx:         ctx,
 		IRouter:     r,
+		ctx:         ctx,
+		open:        make(chan struct{}),
+		close:       make(chan struct{}),
 		appName:     appName,
 		successCode: successCode,
 	}
@@ -76,6 +81,8 @@ func newRouter(ctx context.Context, r gin.IRouter, appName string, successCode i
 func (r *router) Use(middlewares ...gin.HandlerFunc) IRouter {
 	return &router{
 		IRouter:     r.IRouter,
+		open:        r.open,
+		close:       r.close,
 		ctx:         r.ctx,
 		appName:     r.appName,
 		successCode: r.successCode,
@@ -133,6 +140,8 @@ func (r *router) HEAD(uri string, fn routerHandler, opts ...utils.OptionExtender
 func (r *router) Group(relativePath string, handlers ...gin.HandlerFunc) IRouter {
 	return &router{
 		IRouter:     r.IRouter,
+		open:        r.open,
+		close:       r.close,
 		ctx:         r.ctx,
 		appName:     r.appName,
 		successCode: r.successCode,
@@ -156,7 +165,12 @@ func (r *router) StaticFS(uri string, fs http.FileSystem) IRouter {
 func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	r.IRouter.(*gin.Engine).ServeHTTP(w, req)
 }
-func (r *router) ListenAndServe() error {
+func (r *router) ListenAndServe() (err error) {
+	if _, ok := utils.IsChannelClosed(r.open); ok {
+		<-r.close
+		return
+	}
+
 	conf := r.Config()
 	gracefully.DefaultReadTimeOut = conf.ReadTimeout
 	gracefully.DefaultWriteTimeOut = conf.WriteTimeout
@@ -164,6 +178,13 @@ func (r *router) ListenAndServe() error {
 
 	port := fmt.Sprintf(":%v", conf.Port)
 	srv := gracefully.NewServer(r.appName, r.IRouter.(*gin.Engine), port, conf.NextProtos)
+	r.shutdownFunc = srv.Shutdown
+
+	close(r.open)
+	defer func() {
+		close(r.close)
+		r.reset()
+	}()
 	if conf.TLS {
 		return srv.ListenAndServeTLS(conf.Cert, conf.Key)
 	} else {
@@ -171,6 +192,9 @@ func (r *router) ListenAndServe() error {
 	}
 }
 func (r *router) Start() {
+	if _, ok := utils.IsChannelClosed(r.open); ok {
+		return
+	}
 	conf := r.Config()
 	gracefully.DefaultReadTimeOut = conf.ReadTimeout
 	gracefully.DefaultWriteTimeOut = conf.WriteTimeout
@@ -178,11 +202,14 @@ func (r *router) Start() {
 
 	port := fmt.Sprintf(":%v", conf.Port)
 	srv := gracefully.NewServer(r.appName, r.IRouter.(*gin.Engine), port, conf.NextProtos)
+	r.shutdownFunc = srv.Shutdown
 	if conf.TLS {
 		routine.Go(srv.ListenAndServeTLS, routine.Args(conf.Cert, conf.Key), routine.AppName(r.appName))
 	} else {
 		routine.Go(srv.ListenAndServe, routine.AppName(r.appName))
 	}
+
+	close(r.open)
 }
 func (r *router) Config() OutputConf {
 	cfg := new(Conf)
@@ -199,6 +226,22 @@ func (r *router) Config() OutputConf {
 		WriteTimeout: utils.Must(time.ParseDuration(cfg.WriteTimeout)),
 		AsynqConf:    clone.Slowly(cfg.Asynq),
 	}
+}
+func (r *router) Running() <-chan struct{} { return r.open }
+func (r *router) Closing() <-chan struct{} { return r.close }
+
+func (r *router) shutdown() {
+	if _, ok := utils.IsChannelClosed(r.close); ok || r.shutdownFunc == nil {
+		return
+	}
+
+	r.shutdownFunc()
+	close(r.close)
+	r.reset()
+}
+func (r *router) reset() {
+	r.open = make(chan struct{})
+	r.close = make(chan struct{})
 }
 
 func (r *router) use() gin.IRoutes {
