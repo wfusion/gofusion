@@ -78,10 +78,10 @@ Use "fus [command] --help" for more information about a command.
 
 # 单元测试
 
+- 基于 allure 的单测用例报告, [test result](../../unittest/complete.html)
 - 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 59.8%
-- 基于 allure 的单测用例报告, [test result](assets/unittest/complete.html)
 
-![go-cover-treemap](assets/unittest/coverage.svg)
+![go-cover-treemap](../../unittest/coverage.svg)
 
 # 功能简述
 
