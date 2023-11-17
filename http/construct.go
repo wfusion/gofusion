@@ -3,9 +3,12 @@ package http
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"reflect"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -20,7 +23,8 @@ import (
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/http/middleware"
 	"github.com/wfusion/gofusion/i18n"
-	"github.com/wfusion/gofusion/log"
+
+	fusLog "github.com/wfusion/gofusion/log"
 
 	_ "github.com/wfusion/gofusion/log/customlogger"
 )
@@ -45,7 +49,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 	if utils.IsStrNotBlank(conf.Logger) {
 		logger = reflect.New(inspect.TypeOf(conf.Logger)).Interface().(resty.Logger)
 		if custom, ok := logger.(customLogger); ok {
-			l := log.Use(conf.LogInstance, log.AppName(opt.AppName))
+			l := fusLog.Use(conf.LogInstance, fusLog.AppName(opt.AppName))
 			custom.Init(l, opt.AppName)
 		}
 	}
@@ -129,6 +133,18 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 		locker.Lock()
 		defer locker.Unlock()
 		if routers != nil {
+			if router, ok := routers[opt.AppName]; ok {
+				router.shutdown()
+				wg := new(sync.WaitGroup)
+				wg.Add(1)
+				go func() { defer wg.Done(); <-router.Closing() }()
+				if utils.Timeout(15*time.Second, utils.TimeoutWg(wg)) {
+					pid := syscall.Getpid()
+					app := config.Use(opt.AppName).AppName()
+					log.Printf("%v [Gofusion] %s %s close http server timeout", pid, app, config.ComponentHttp)
+				}
+			}
+
 			delete(routers, opt.AppName)
 		}
 		if opt.AppName == "" {

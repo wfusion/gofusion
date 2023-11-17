@@ -167,7 +167,7 @@ func (r *router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 }
 func (r *router) ListenAndServe() (err error) {
 	if _, ok := utils.IsChannelClosed(r.open); ok {
-		<-r.close
+		<-r.Closing()
 		return
 	}
 
@@ -180,11 +180,13 @@ func (r *router) ListenAndServe() (err error) {
 	srv := gracefully.NewServer(r.appName, r.IRouter.(*gin.Engine), port, conf.NextProtos)
 	r.shutdownFunc = srv.Shutdown
 
+	r.close = make(chan struct{})
 	close(r.open)
 	defer func() {
 		close(r.close)
-		r.reset()
+		r.open = make(chan struct{})
 	}()
+
 	if conf.TLS {
 		return srv.ListenAndServeTLS(conf.Cert, conf.Key)
 	} else {
@@ -209,6 +211,7 @@ func (r *router) Start() {
 		routine.Go(srv.ListenAndServe, routine.AppName(r.appName))
 	}
 
+	r.close = make(chan struct{})
 	close(r.open)
 }
 func (r *router) Config() OutputConf {
@@ -231,17 +234,19 @@ func (r *router) Running() <-chan struct{} { return r.open }
 func (r *router) Closing() <-chan struct{} { return r.close }
 
 func (r *router) shutdown() {
-	if _, ok := utils.IsChannelClosed(r.close); ok || r.shutdownFunc == nil {
-		return
+	if r.close != nil {
+		if _, ok := utils.IsChannelClosed(r.close); ok {
+			return
+		}
+	}
+	if r.shutdownFunc != nil {
+		r.shutdownFunc()
+	}
+	if r.close != nil {
+		close(r.close)
 	}
 
-	r.shutdownFunc()
-	close(r.close)
-	r.reset()
-}
-func (r *router) reset() {
 	r.open = make(chan struct{})
-	r.close = make(chan struct{})
 }
 
 func (r *router) use() gin.IRoutes {
