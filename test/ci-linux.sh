@@ -48,7 +48,7 @@ gotestsum --junitfile "${OUTPUT}"/junit.xml -- -timeout 30m -parallel 1 ./test/.
 
 # export test report
 echo "export complete.xml"
-allure generate "${OUTPUT}" -o "${OUTPUT}"/allure --clean
+/opt/allure/bin/allure generate "${OUTPUT}" -o "${OUTPUT}"/allure --clean
 while [ ! -d "${OUTPUT}"/allure ]; do
   sleep 1
 done
