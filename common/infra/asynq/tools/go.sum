@@ -35,8 +35,8 @@ github.com/robfig/cron/v3 v3.0.1/go.mod h1:eQICP3HwyT7UooqI/z+Ov+PtYAWygg1TEWWzG
 github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
 github.com/spf13/cast v1.5.1 h1:R+kOtfhWQE6TVQzY+4D7wJLBgkdVasCEFxSUBYBYIlA=
 github.com/spf13/cast v1.5.1/go.mod h1:b9PdjNptOpzXr7Rq1q9gJML/2cdGQAo69NKzQ10KN48=
-github.com/wfusion/gofusion v1.1.6 h1:9Bdkem9J3NF8AV0Zw5CHx5SjU7C1IeZo35w6eOXKtLo=
-github.com/wfusion/gofusion v1.1.6/go.mod h1:JkBnKr8w+vBZyLVz2QVHSI9pPTeYVDz7aX69o2ZkDbg=
+github.com/wfusion/gofusion v1.1.7 h1:BnVIm01vMiBHAhDsquIXpcYEtFQCaDs+RoMDVl87igU=
+github.com/wfusion/gofusion v1.1.7/go.mod h1:JkBnKr8w+vBZyLVz2QVHSI9pPTeYVDz7aX69o2ZkDbg=
 golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sys v0.13.0 h1:Af8nKPmuFypiUBjVoU9V20FiaFXOcuZI21p0ycVYYGE=
 golang.org/x/sys v0.13.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
