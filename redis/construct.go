@@ -87,5 +87,5 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 }
 
 func init() {
-	config.AddComponent(config.ComponentRedis, Construct)
+	config.AddComponent(config.ComponentRedis, Construct, config.WithFlag(&flagString))
 }

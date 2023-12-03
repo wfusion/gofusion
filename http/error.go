@@ -12,8 +12,8 @@ import (
 	fusCtx "github.com/wfusion/gofusion/context"
 )
 
-const (
-	errParam Errcode = 10000 // 00010000
+var (
+	errParam Errcode = -1
 )
 
 type Errcode int

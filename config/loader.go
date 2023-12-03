@@ -1,7 +1,6 @@
 package config
 
 import (
-	"flag"
 	"log"
 	"os"
 	"path/filepath"
@@ -50,23 +49,17 @@ var profile string
 
 type loadConfigFunc func(out any, opts ...utils.OptionExtender)
 
-var customConfigPath string
-
-func init() {
-	flag.StringVar(&customConfigPath, "configPath", "", "config file path")
-}
-
 func loadConfig(out any, opts ...utils.OptionExtender) {
-	if !flag.Parsed() {
-		flag.Parse()
-	}
+	parseFlags()
 
 	opt := utils.ApplyOptions[initOption](opts...)
 
 	files := make([]string, 0, 2)
 	switch {
-	case utils.IsStrNotBlank(customConfigPath):
-		files = append(files, filepath.Clean(customConfigPath))
+	case len(customConfigPath) > 0:
+		for _, p := range customConfigPath {
+			files = append(files, filepath.Clean(p))
+		}
 	case len(opt.filenames) > 0:
 		files = append(files, opt.filenames...)
 	default:
@@ -94,22 +87,12 @@ func loadConfig(out any, opts ...utils.OptionExtender) {
 		}
 		for _, ext := range extensions {
 			defaultFilename := defaultPathPrefix + ext
-			if _, err := os.Stat(defaultFilename); err == nil {
-				files = append(files, defaultFilename)
-			}
-		}
-	}
-
-	// check if configure file exists first, to avoid auto reload a nonexistent file
-	existFiles := make([]string, 0, len(files))
-	for _, name := range files {
-		if _, err := os.Stat(name); err == nil {
-			existFiles = append(existFiles, name)
+			files = append(files, defaultFilename)
 		}
 	}
 
 	if profile != "" {
-		if err := configor.New(&configor.Config{Environment: profile}).Load(out, existFiles...); err != nil {
+		if err := configor.New(&configor.Config{Environment: profile}).Load(out, files...); err != nil {
 			panic(errors.Errorf("parse config file of config env %s error: %v", profile, err))
 		}
 		return

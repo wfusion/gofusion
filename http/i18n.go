@@ -1,15 +1,31 @@
 package http
 
 import (
-	"github.com/pkg/errors"
+	"strings"
+	"sync"
 
+	"github.com/gin-gonic/gin/binding"
+	"github.com/go-playground/locales/en"
+	"github.com/go-playground/locales/zh"
+	"github.com/go-playground/validator/v10"
+	"github.com/pkg/errors"
+	"golang.org/x/text/language"
+
+	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/i18n"
+
+	ut "github.com/go-playground/universal-translator"
+	enT "github.com/go-playground/validator/v10/translations/en"
+	zhT "github.com/go-playground/validator/v10/translations/zh"
 )
 
 var (
 	I18n  i18n.Localizable[Errcode]
 	i18ns map[string]i18n.Localizable[Errcode]
+
+	ginBindingI18nOnce       = new(sync.Once)
+	ginBindingI18nTranslator ut.Translator
 )
 
 func Localizable(opts ...utils.OptionExtender) i18n.Localizable[Errcode] {
@@ -22,4 +38,39 @@ func Localizable(opts ...utils.OptionExtender) i18n.Localizable[Errcode] {
 		panic(errors.Errorf("http i18n not founc: %s", opt.appName))
 	}
 	return i
+}
+
+func ginBindingValidatorI18n(appName string) {
+	ginBindingI18nOnce.Do(func() {
+		var ok bool
+		engine, ok := binding.Validator.Engine().(*validator.Validate)
+		if !ok {
+			return
+		}
+
+		enLocales := en.New()
+		zhLocales := zh.New()
+		switch lang := i18n.DefaultLang(i18n.AppName(appName)); lang {
+		case language.English:
+			ginBindingI18nTranslator, ok = ut.New(enLocales, zhLocales, enLocales).GetTranslator(lang.String())
+			if !ok {
+				return
+			}
+			utils.MustSuccess(enT.RegisterDefaultTranslations(engine, ginBindingI18nTranslator))
+		default:
+			ginBindingI18nTranslator, ok = ut.New(zhLocales, zhLocales, enLocales).GetTranslator(lang.String())
+			if !ok {
+				return
+			}
+			utils.MustSuccess(zhT.RegisterDefaultTranslations(engine, ginBindingI18nTranslator))
+		}
+	})
+}
+
+func parseGinBindingValidatorError(src error) (dst error) {
+	e, ok := src.(validator.ValidationErrors)
+	if !ok || ginBindingI18nTranslator == nil {
+		return src
+	}
+	return errors.New(strings.Join(utils.MapValues(e.Translate(ginBindingI18nTranslator)), constant.LineBreak))
 }

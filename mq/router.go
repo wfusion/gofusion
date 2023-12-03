@@ -402,7 +402,7 @@ func (r *router) addEventDispatchHandler(consumerName string) {
 						inspect.SetField(event, "pd", data)
 
 						ctx := fusCtx.New(fusCtx.Watermill(msg.Metadata))
-						ctx = log.SetContextFields(ctx, log.Fields{
+						ctx = log.SetCtxFields(ctx, log.Fields{
 							keyEntityID:  msg.Metadata[keyEntityID],
 							keyEventType: msg.Metadata[keyEventType],
 						})

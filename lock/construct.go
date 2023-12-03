@@ -130,5 +130,5 @@ func UseReentrant(ctx context.Context, name string, opts ...utils.OptionExtender
 }
 
 func init() {
-	config.AddComponent(config.ComponentLock, Construct)
+	config.AddComponent(config.ComponentLock, Construct, config.WithFlag(&flagString))
 }

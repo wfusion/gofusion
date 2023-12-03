@@ -45,6 +45,8 @@ base:
     colorful_console: false
     # 可配置 http response body: {"code": 0, "message": "ok", "data": {}} 中成功返回时 code 的值
     success_code: 0
+    # 可配置 http response body: {"code": -1, "message": "ok", "data": {}} 中失败返回时 code 的值
+    error_code: -1
     # 是否开启 pprof, 可使用 http 端口获取 golang 程序状态
     pprof: false
     read_timeout: 10s

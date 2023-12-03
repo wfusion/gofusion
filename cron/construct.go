@@ -109,5 +109,5 @@ func Use(name string, opts ...utils.OptionExtender) IRouter {
 }
 
 func init() {
-	config.AddComponent(config.ComponentCron, Construct)
+	config.AddComponent(config.ComponentCron, Construct, config.WithFlag(&flagString))
 }

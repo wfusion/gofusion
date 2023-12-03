@@ -77,5 +77,5 @@ func DefaultLang(opts ...utils.OptionExtender) (lang language.Tag) {
 }
 
 func init() {
-	config.AddComponent(config.ComponentI18n, Construct)
+	config.AddComponent(config.ComponentI18n, Construct, config.WithFlag(&flagString))
 }

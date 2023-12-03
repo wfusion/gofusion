@@ -180,5 +180,5 @@ func mysqlSoftDelete(db *orm.DB, conf *Conf) {
 }
 
 func init() {
-	config.AddComponent(config.ComponentDB, Construct)
+	config.AddComponent(config.ComponentDB, Construct, config.WithFlag(&flagString))
 }

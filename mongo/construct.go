@@ -95,5 +95,5 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 }
 
 func init() {
-	config.AddComponent(config.ComponentMongo, Construct)
+	config.AddComponent(config.ComponentMongo, Construct, config.WithFlag(&flagString))
 }

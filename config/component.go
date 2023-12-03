@@ -72,26 +72,29 @@ func indexComponent(name string) (idx int) {
 }
 
 type Component struct {
-	Name                 string
-	Tag                  string
-	Constructor          reflect.Value
-	ConstructorInputType reflect.Type
+	name                 string
+	tag                  string
+	constructor          reflect.Value
+	constructorInputType reflect.Type
 	isCore               bool
+	flagString           *string
 }
 
 func (c *Component) Clone() (r *Component) {
 	return &Component{
-		Name:                 c.Name,
-		Tag:                  c.Tag,
-		Constructor:          c.Constructor,
-		ConstructorInputType: c.ConstructorInputType,
+		name:                 c.name,
+		tag:                  c.tag,
+		constructor:          c.constructor,
+		constructorInputType: c.constructorInputType,
 		isCore:               c.isCore,
+		flagString:           c.flagString,
 	}
 }
 
 type options struct {
-	TagList         []string
-	IsCoreComponent bool
+	tagList         []string
+	isCoreComponent bool
+	flagValue       *string
 }
 
 type ComponentOption func(*options)
@@ -103,14 +106,20 @@ func newOptions() *options {
 // WithTag set component struct tags
 func WithTag(name, val string) ComponentOption {
 	return func(opt *options) {
-		opt.TagList = append(opt.TagList, fmt.Sprintf(`%s:"%s"`, name, val))
+		opt.tagList = append(opt.tagList, fmt.Sprintf(`%s:"%s"`, name, val))
 	}
 }
 
 // WithCore mark component as core component, they must be init first
 func WithCore() ComponentOption {
 	return func(opt *options) {
-		opt.IsCoreComponent = true
+		opt.isCoreComponent = true
+	}
+}
+
+func WithFlag(flagValue *string) ComponentOption {
+	return func(o *options) {
+		o.flagValue = flagValue
 	}
 }
 

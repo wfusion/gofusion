@@ -192,5 +192,5 @@ func Internal(opts ...utils.OptionExtender) (sinks []Sink) {
 }
 
 func init() {
-	config.AddComponent(config.ComponentMetrics, Construct)
+	config.AddComponent(config.ComponentMetrics, Construct, config.WithFlag(&flagString))
 }

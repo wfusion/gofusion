@@ -13,6 +13,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
+	"github.com/wfusion/gofusion/common/utils/serialize/json"
 
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/utils"
@@ -104,15 +105,15 @@ func Debug() utils.OptionFunc[initOption] {
 	}
 }
 
-func (p *registry) Init(businessConfig any, opts ...utils.OptionExtender) (gracefully func()) {
+func (r *registry) Init(businessConfig any, opts ...utils.OptionExtender) (gracefully func()) {
 	initLocker.Lock()
 	defer initLocker.Unlock()
 
-	p.initWg.Add(1)
-	p.initOnce.Do(func() {
+	r.initWg.Add(1)
+	r.initOnce.Do(func() {
 		opt := utils.ApplyOptions[initOption](opts...)
-		p.debug = opt.debug
-		p.closeCh = make(chan struct{})
+		r.debug = opt.debug
+		r.closeCh = make(chan struct{})
 
 		// context
 		parent := context.Background()
@@ -126,29 +127,29 @@ func (p *registry) Init(businessConfig any, opts ...utils.OptionExtender) (grace
 			loadFn = opt.customLoadFunc
 		}
 
-		gracefully = p.initByConfigFile(parent, businessConfig, loadFn, opts...)
+		gracefully = r.initByConfigFile(parent, businessConfig, loadFn, opts...)
 	})
 	if gracefully == nil {
 		// give back
-		reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(p.businessConfig))
+		reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(r.businessConfig))
 
 		once := new(sync.Once)
 		gracefully = func() {
 			once.Do(func() {
-				p.initWg.Done()
+				r.initWg.Done()
 			})
 		}
 	}
 	return
 }
 
-func (p *registry) AddComponent(name string, constructor any, opts ...ComponentOption) {
+func (r *registry) AddComponent(name string, constructor any, opts ...ComponentOption) {
 	if name[0] < 'A' || name[0] > 'Z' {
 		panic("component name should start with A-Z")
 	}
-	for idx, com := range p.componentList {
-		if com.Name == name {
-			p.componentList = append(p.componentList[:idx], p.componentList[idx+1:]...)
+	for idx, com := range r.componentList {
+		if com.name == name {
+			r.componentList = append(r.componentList[:idx], r.componentList[idx+1:]...)
 		}
 	}
 	opt := newOptions()
@@ -157,14 +158,15 @@ func (p *registry) AddComponent(name string, constructor any, opts ...ComponentO
 	}
 
 	com := &Component{
-		Name:   name,
-		isCore: opt.IsCoreComponent,
+		name:       name,
+		isCore:     opt.isCoreComponent,
+		flagString: opt.flagValue,
 	}
 
 	hasYamlTag := false
 	hasJsonTag := false
 	hasTomlTag := false
-	for _, tag := range opt.TagList {
+	for _, tag := range opt.tagList {
 		hasYamlTag = strings.HasPrefix(tag, "`yaml:")
 		hasJsonTag = strings.HasPrefix(tag, "`json:")
 		hasTomlTag = strings.HasPrefix(tag, "`toml:")
@@ -174,24 +176,24 @@ func (p *registry) AddComponent(name string, constructor any, opts ...ComponentO
 		lowerName = strings.ToLower(name)
 	}
 	if !hasYamlTag {
-		opt.TagList = append(opt.TagList, fmt.Sprintf(`yaml:"%s"`, lowerName))
+		opt.tagList = append(opt.tagList, fmt.Sprintf(`yaml:"%s"`, lowerName))
 	}
 	if !hasJsonTag {
-		opt.TagList = append(opt.TagList, fmt.Sprintf(`json:"%s"`, lowerName))
+		opt.tagList = append(opt.tagList, fmt.Sprintf(`json:"%s"`, lowerName))
 	}
 	if !hasTomlTag {
-		opt.TagList = append(opt.TagList, fmt.Sprintf(`toml:"%s"`, lowerName))
+		opt.tagList = append(opt.tagList, fmt.Sprintf(`toml:"%s"`, lowerName))
 	}
-	if len(opt.TagList) > 0 {
-		com.Tag = strings.Join(opt.TagList, " ")
+	if len(opt.tagList) > 0 {
+		com.tag = strings.Join(opt.tagList, " ")
 	}
 
-	com.Constructor, com.ConstructorInputType = parseConstructor(constructor)
+	com.constructor, com.constructorInputType = parseConstructor(constructor)
 
-	p.addComponent(com)
+	r.addComponent(com)
 }
 
-func (p *registry) LoadComponentConfig(name string, componentConfig any) (err error) {
+func (r *registry) LoadComponentConfig(name string, componentConfig any) (err error) {
 	val := reflect.ValueOf(componentConfig)
 	typ := val.Type()
 	if typ.Kind() != reflect.Ptr {
@@ -199,8 +201,8 @@ func (p *registry) LoadComponentConfig(name string, componentConfig any) (err er
 	}
 
 	var found bool
-	for _, com := range p.componentList {
-		if com.Name == name {
+	for _, com := range r.componentList {
+		if com.name == name {
 			found = true
 			break
 		}
@@ -210,10 +212,10 @@ func (p *registry) LoadComponentConfig(name string, componentConfig any) (err er
 	}
 
 	// load config
-	if p.componentConfigs == nil {
+	if r.componentConfigs == nil {
 		return
 	}
-	componentConfigsValue := utils.IndirectValue(reflect.ValueOf(clone.Clone(p.componentConfigs)))
+	componentConfigsValue := utils.IndirectValue(reflect.ValueOf(clone.Clone(r.componentConfigs)))
 	if !componentConfigsValue.IsValid() {
 		return errors.Errorf("component configs not initialize now [%s]", name)
 	}
@@ -242,12 +244,12 @@ func (p *registry) LoadComponentConfig(name string, componentConfig any) (err er
 	return decoder.Decode(componentConfigValue.Interface())
 }
 
-func (p *registry) GetAllConfigs() any {
-	val := reflect.New(p.makeAllConfigStruct())
+func (r *registry) GetAllConfigs() any {
+	val := reflect.New(r.makeAllConfigStruct())
 	derefVal := reflect.Indirect(val)
 
 	// business configs
-	businessConfigsVal := reflect.Indirect(reflect.ValueOf(p.businessConfig))
+	businessConfigsVal := reflect.Indirect(reflect.ValueOf(r.businessConfig))
 	numFields := businessConfigsVal.NumField()
 	for i := 0; i < numFields; i++ {
 		derefVal.Field(i + 1).Set(businessConfigsVal.Field(i))
@@ -255,7 +257,7 @@ func (p *registry) GetAllConfigs() any {
 
 	// component configs
 	derefComponentConfigsVal := derefVal.FieldByName(componentConfigFieldName)
-	componentConfigsVal := reflect.Indirect(reflect.ValueOf(p.componentConfigs)).FieldByName(componentConfigFieldName)
+	componentConfigsVal := reflect.Indirect(reflect.ValueOf(r.componentConfigs)).FieldByName(componentConfigFieldName)
 	numFields = componentConfigsVal.NumField()
 	for i := 0; i < numFields; i++ {
 		derefComponentConfigsVal.Field(i).Set(componentConfigsVal.Field(i))
@@ -263,35 +265,42 @@ func (p *registry) GetAllConfigs() any {
 	return clone.Clone(val.Interface())
 }
 
-func (p *registry) initByConfigFile(parent context.Context, businessConfig any,
+func (r *registry) initByConfigFile(parent context.Context, businessConfig any,
 	loadFn loadConfigFunc, opts ...utils.OptionExtender) func() {
-	p.loadComponents()
-	p.checkBusinessConfig(businessConfig)
-	p.initAllConfigByLoadFunc(businessConfig, loadFn, opts...)
+	r.loadComponents()
+	r.checkBusinessConfig(businessConfig)
 
-	appName := p.AppName()
+	businessConfigVal := reflect.ValueOf(businessConfig)
+	r.businessConfigType = utils.IndirectType(businessConfigVal.Type())
+	r.businessConfig = reflect.New(r.businessConfigType).Interface()
+	r.componentConfigs = reflect.New(r.makeComponentsConfigStruct()).Interface()
+
+	r.initAllConfigByLoadFunc(loadFn, opts...)
+	r.initAllConfigByFlag()
+
+	appName := r.AppName()
 	registryLock.Lock()
 	if _, ok := registryMap[appName]; !ok {
-		registryMap[appName] = p
+		registryMap[appName] = r
 	}
 	registryLock.Unlock()
 
 	// decrypt
-	CryptoDecryptByTag(p.businessConfig, AppName(p.AppName()))
-	CryptoDecryptByTag(p.componentConfigs, AppName(p.AppName()))
+	CryptoDecryptByTag(r.businessConfig, AppName(r.AppName()))
+	CryptoDecryptByTag(r.componentConfigs, AppName(r.AppName()))
 
 	// give back
-	reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(p.businessConfig))
+	reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(r.businessConfig))
 
-	return p.initComponents(parent)
+	return r.initComponents(parent)
 }
 
-func (p *registry) getBaseObject() reflect.Value {
-	return reflect.Indirect(reflect.ValueOf(p.componentConfigs)).FieldByName(componentConfigFieldName)
+func (r *registry) getBaseObject() reflect.Value {
+	return reflect.Indirect(reflect.ValueOf(r.componentConfigs)).FieldByName(componentConfigFieldName)
 }
 
-func (p *registry) makeComponentsConfigStruct() reflect.Type {
-	fieldList := p.makeComponentsConfigFields()
+func (r *registry) makeComponentsConfigStruct() reflect.Type {
+	fieldList := r.makeComponentsConfigFields()
 	return reflect.StructOf([]reflect.StructField{
 		{
 			Name:      componentConfigFieldName,
@@ -302,21 +311,21 @@ func (p *registry) makeComponentsConfigStruct() reflect.Type {
 	})
 }
 
-func (p *registry) makeComponentsConfigFields() []reflect.StructField {
-	fieldList := make([]reflect.StructField, len(p.componentList))
-	for i := 0; i < len(p.componentList); i++ {
-		component := p.componentList[i]
+func (r *registry) makeComponentsConfigFields() []reflect.StructField {
+	fieldList := make([]reflect.StructField, len(r.componentList))
+	for i := 0; i < len(r.componentList); i++ {
+		component := r.componentList[i]
 		fieldList[i] = reflect.StructField{
-			Name: component.Name,
-			Type: component.ConstructorInputType,
-			Tag:  reflect.StructTag(component.Tag),
+			Name: component.name,
+			Type: component.constructorInputType,
+			Tag:  reflect.StructTag(component.tag),
 		}
 	}
 
 	return fieldList
 }
 
-func (p *registry) makeAllConfigStruct() reflect.Type {
+func (r *registry) makeAllConfigStruct() reflect.Type {
 	/* AllConfig struct may look like below
 	type AllConfig struct {
 		XXXBase struct {
@@ -336,37 +345,43 @@ func (p *registry) makeAllConfigStruct() reflect.Type {
 	}
 	*/
 
-	numFields := p.businessConfigType.NumField()
+	numFields := r.businessConfigType.NumField()
 	fieldList := make([]reflect.StructField, 0, numFields+1)
 	fieldList = append(fieldList, reflect.StructField{
 		Name:      componentConfigFieldName,
-		Type:      reflect.StructOf(p.makeComponentsConfigFields()),
+		Type:      reflect.StructOf(r.makeComponentsConfigFields()),
 		Tag:       `yaml:"base" json:"base" toml:"base"`,
 		Anonymous: true,
 	})
 	for i := 0; i < numFields; i++ {
-		fieldList = append(fieldList, p.businessConfigType.Field(i))
+		fieldList = append(fieldList, r.businessConfigType.Field(i))
 	}
 
 	return reflect.StructOf(fieldList)
 }
 
-func (p *registry) loadComponents() {
-	p.loadComponentsOnce.Do(func() {
+func (r *registry) loadComponents() {
+	r.loadComponentsOnce.Do(func() {
 		// app
-		p.AddComponent(ComponentApp, func(context.Context, string, ...utils.OptionExtender) func() { return nil },
-			WithTag("yaml", "app"), WithTag("json", "app"), WithTag("toml", "app"))
+		r.AddComponent(ComponentApp, func(context.Context, string, ...utils.OptionExtender) func() { return nil },
+			WithTag("yaml", "app"), WithTag("json", "app"), WithTag("toml", "app"),
+			WithFlag(utils.AnyPtr("null")),
+		)
 
 		// debug
-		p.AddComponent(ComponentDebug, func(context.Context, bool, ...utils.OptionExtender) func() { return nil },
-			WithTag("yaml", "debug"), WithTag("json", "debug"), WithTag("toml", "debug"))
+		r.AddComponent(ComponentDebug, func(context.Context, bool, ...utils.OptionExtender) func() { return nil },
+			WithTag("yaml", "debug"), WithTag("json", "debug"), WithTag("toml", "debug"),
+			WithFlag(utils.AnyPtr("null")),
+		)
 
 		// crypto
-		p.AddComponent(ComponentCrypto, CryptoConstruct,
-			WithTag("yaml", "crypto"), WithTag("json", "crypto"), WithTag("toml", "crypto"))
+		r.AddComponent(ComponentCrypto, CryptoConstruct,
+			WithTag("yaml", "crypto"), WithTag("json", "crypto"), WithTag("toml", "crypto"),
+			WithFlag(&cryptoFlagString),
+		)
 
 		for _, item := range getComponents() {
-			p.AddComponent(item.name, item.constructor, item.opt...)
+			r.AddComponent(item.name, item.constructor, item.opt...)
 		}
 
 		/* example */
@@ -375,41 +390,63 @@ func (p *registry) loadComponents() {
 	})
 }
 
-func (p *registry) initAllConfigByLoadFunc(businessConfig any, loadFn loadConfigFunc, opts ...utils.OptionExtender) {
-	businessConfigVal := reflect.ValueOf(businessConfig)
-	p.businessConfigType = utils.IndirectType(businessConfigVal.Type())
-
-	p.businessConfig = reflect.New(p.businessConfigType).Interface()
-	p.componentConfigs = reflect.New(p.makeComponentsConfigStruct()).Interface()
+func (r *registry) initAllConfigByLoadFunc(loadFn loadConfigFunc, opts ...utils.OptionExtender) {
 	if loadFn != nil {
-		loadFn(p.businessConfig, opts...)
-		loadFn(p.componentConfigs, opts...)
+		loadFn(r.businessConfig, opts...)
+		loadFn(r.componentConfigs, opts...)
 	}
 }
 
-func (p *registry) initComponents(parent context.Context) func() {
+func (r *registry) initAllConfigByFlag() {
+	configVal := utils.IndirectValue(reflect.ValueOf(r.componentConfigs)).FieldByName(componentConfigFieldName)
+	for i := 0; i < len(r.componentList); i++ {
+		com := r.componentList[i]
+		if utils.IsStrPtrBlank(com.flagString) {
+			continue
+		}
+		switch com.name {
+		case ComponentApp:
+			configVal.FieldByName(com.name).SetString(appFlagString)
+		case ComponentDebug:
+			configVal.FieldByName(com.name).SetBool(debugFlag)
+		default:
+			comValp := configVal.FieldByName(com.name).Addr()
+			utils.MustSuccess(json.Unmarshal([]byte(*com.flagString), comValp.Interface()))
+
+			// process defaults
+			_ = utils.ParseTag(comValp.Interface(), utils.ParseTagName("default"),
+				utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml))
+		}
+	}
+
+	if len(appBizFlagString) > 0 {
+		utils.MustSuccess(json.Unmarshal([]byte(appBizFlagString), &r.businessConfig))
+	}
+}
+
+func (r *registry) initComponents(parent context.Context) func() {
 	ctx, cancel := context.WithCancel(parent)
 	ctxVal := reflect.ValueOf(ctx)
-	o1 := reflect.ValueOf(utils.OptionExtender(AppName(p.appName)))
-	o2 := reflect.ValueOf(utils.OptionExtender(DI(p.di)))
+	o1 := reflect.ValueOf(utils.OptionExtender(AppName(r.appName)))
+	o2 := reflect.ValueOf(utils.OptionExtender(DI(r.di)))
 
-	baseObject := p.getBaseObject()
-	destructors := make([]reflect.Value, 0, len(p.componentList))
-	componentNames := make([]string, 0, len(p.componentList))
-	hasCallbackComponentNames := make([]string, 0, len(p.componentList))
-	for i := 0; i < len(p.componentList); i++ {
-		com := p.componentList[i]
-		comArgs := reflect.ValueOf(clone.Clone(baseObject.FieldByName(com.Name).Interface()))
-		componentNames = append(componentNames, com.Name)
-		if out := com.Constructor.Call([]reflect.Value{ctxVal, comArgs, o1, o2}); len(out) > 0 && !out[0].IsNil() {
+	baseObject := r.getBaseObject()
+	destructors := make([]reflect.Value, 0, len(r.componentList))
+	componentNames := make([]string, 0, len(r.componentList))
+	hasCallbackComponentNames := make([]string, 0, len(r.componentList))
+	for i := 0; i < len(r.componentList); i++ {
+		com := r.componentList[i]
+		comArgs := reflect.ValueOf(clone.Clone(baseObject.FieldByName(com.name).Interface()))
+		componentNames = append(componentNames, com.name)
+		if out := com.constructor.Call([]reflect.Value{ctxVal, comArgs, o1, o2}); len(out) > 0 && !out[0].IsNil() {
 			destructors = append(destructors, out[0])
-			hasCallbackComponentNames = append(hasCallbackComponentNames, com.Name)
+			hasCallbackComponentNames = append(hasCallbackComponentNames, com.name)
 		}
 	}
 
 	/* print summary to stdout */
 	pid := syscall.Getpid()
-	app := p.AppName()
+	app := r.AppName()
 	log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
 	log.Printf("%v [Gofusion] %s initialized total %d components below: %s\n",
 		pid, app, len(componentNames), strings.Join(componentNames, ", "))
@@ -420,10 +457,10 @@ func (p *registry) initComponents(parent context.Context) func() {
 			initLocker.Lock()
 			defer initLocker.Unlock()
 
-			defer close(p.closeCh)
+			defer close(r.closeCh)
 
-			p.initWg.Done()
-			p.initWg.Wait()
+			r.initWg.Done()
+			r.initWg.Wait()
 			cancel()
 			for i := len(destructors) - 1; i >= 0; i-- {
 				log.Printf("%v [Gofusion] %s %s exiting...", pid, app, hasCallbackComponentNames[i])
@@ -431,35 +468,35 @@ func (p *registry) initComponents(parent context.Context) func() {
 				log.Printf("%v [Gofusion] %s %s exited", pid, app, hasCallbackComponentNames[i])
 			}
 
-			p.di.Clear()
-			p.businessConfig = nil
-			p.componentConfigs = nil
-			p.initOnce = new(sync.Once)
+			r.di.Clear()
+			r.businessConfig = nil
+			r.componentConfigs = nil
+			r.initOnce = new(sync.Once)
 		})
 	}
 }
 
-func (p *registry) addComponent(com *Component) {
+func (r *registry) addComponent(com *Component) {
 	firstNonCoreComIndex := -1
-	for i, cp := range p.componentList {
+	for i, cp := range r.componentList {
 		if !cp.isCore {
 			firstNonCoreComIndex = i
 			break
 		}
 	}
 	if !com.isCore || firstNonCoreComIndex == -1 {
-		p.componentList = append(p.componentList, com)
-		sort.SliceStable(p.componentList, func(i, j int) bool {
+		r.componentList = append(r.componentList, com)
+		sort.SliceStable(r.componentList, func(i, j int) bool {
 			// core component would not be sorted
-			if p.componentList[i].isCore || p.componentList[j].isCore {
+			if r.componentList[i].isCore || r.componentList[j].isCore {
 				return false
 			}
 
-			orderA := indexComponent(p.componentList[i].Name)
+			orderA := indexComponent(r.componentList[i].name)
 			if orderA == -1 {
 				return false
 			}
-			orderB := indexComponent(p.componentList[j].Name)
+			orderB := indexComponent(r.componentList[j].name)
 			if orderB == -1 {
 				return true
 			}
@@ -469,21 +506,21 @@ func (p *registry) addComponent(com *Component) {
 
 		return
 	}
-	list := make([]*Component, len(p.componentList)+1)
+	list := make([]*Component, len(r.componentList)+1)
 	for i := range list {
 		if i < firstNonCoreComIndex {
-			list[i] = p.componentList[i]
+			list[i] = r.componentList[i]
 		} else if i == firstNonCoreComIndex {
 			list[i] = com
 		} else {
-			list[i] = p.componentList[i-1]
+			list[i] = r.componentList[i-1]
 		}
 	}
 
-	p.componentList = list
+	r.componentList = list
 }
 
-func (p *registry) checkBusinessConfig(businessConfig any) {
+func (r *registry) checkBusinessConfig(businessConfig any) {
 	typ := reflect.TypeOf(businessConfig)
 	if typ.Kind() != reflect.Ptr || typ.Elem().Kind() != reflect.Ptr {
 		panic(errors.New("businessConfig should be a **struct"))

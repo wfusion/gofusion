@@ -60,6 +60,7 @@ type router struct {
 	ctx          context.Context
 	appName      string
 	successCode  int
+	errorCode    Errcode
 	shutdownFunc func()
 
 	routes gin.IRoutes      `optional:"true"`
@@ -67,7 +68,7 @@ type router struct {
 	ptr    dispatch         `optional:"true"`
 }
 
-func newRouter(ctx context.Context, r gin.IRouter, appName string, successCode int) IRouter {
+func newRouter(ctx context.Context, r gin.IRouter, appName string, successCode, errorCode int) IRouter {
 	return &router{
 		IRouter:     r,
 		ctx:         ctx,
@@ -75,20 +76,23 @@ func newRouter(ctx context.Context, r gin.IRouter, appName string, successCode i
 		close:       make(chan struct{}),
 		appName:     appName,
 		successCode: successCode,
+		errorCode:   Errcode(errorCode),
 	}
 }
 
 func (r *router) Use(middlewares ...gin.HandlerFunc) IRouter {
 	return &router{
-		IRouter:     r.IRouter,
-		open:        r.open,
-		close:       r.close,
-		ctx:         r.ctx,
-		appName:     r.appName,
-		successCode: r.successCode,
-		routes:      r.use().Use(middlewares...),
-		group:       r.group,
-		ptr:         dispatchRoutes,
+		IRouter:      r.IRouter,
+		open:         r.open,
+		close:        r.close,
+		ctx:          r.ctx,
+		appName:      r.appName,
+		successCode:  r.successCode,
+		errorCode:    r.errorCode,
+		shutdownFunc: r.shutdownFunc,
+		routes:       r.use().Use(middlewares...),
+		group:        r.group,
+		ptr:          dispatchRoutes,
 	}
 }
 
@@ -139,15 +143,17 @@ func (r *router) HEAD(uri string, fn routerHandler, opts ...utils.OptionExtender
 }
 func (r *router) Group(relativePath string, handlers ...gin.HandlerFunc) IRouter {
 	return &router{
-		IRouter:     r.IRouter,
-		open:        r.open,
-		close:       r.close,
-		ctx:         r.ctx,
-		appName:     r.appName,
-		successCode: r.successCode,
-		routes:      r.routes,
-		group:       r.useIRouter().Group(relativePath, handlers...),
-		ptr:         dispatchGroup,
+		IRouter:      r.IRouter,
+		open:         r.open,
+		close:        r.close,
+		ctx:          r.ctx,
+		appName:      r.appName,
+		successCode:  r.successCode,
+		errorCode:    r.errorCode,
+		shutdownFunc: r.shutdownFunc,
+		routes:       r.routes,
+		group:        r.useIRouter().Group(relativePath, handlers...),
+		ptr:          dispatchGroup,
 	}
 }
 
@@ -455,6 +461,7 @@ func (r *router) parseReqFromBody(c *gin.Context, typ reflect.Type) (dst reflect
 	dst = reflect.Indirect(reflect.New(typ))
 	if err = c.ShouldBind(dst.Addr().Interface()); err != nil &&
 		!(errors.Is(err, binding.ErrConvertToMapString) || (errors.Is(err, binding.ErrConvertMapStringSlice))) {
+		err = parseGinBindingValidatorError(err)
 		return
 	}
 	defer func() { c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) }()
@@ -505,10 +512,12 @@ func (r *router) parseReqFromQuery(c *gin.Context, typ reflect.Type) (dst reflec
 	dst = reflect.Indirect(reflect.New(typ))
 	if err = c.ShouldBindUri(dst.Addr().Interface()); err != nil &&
 		!(errors.Is(err, binding.ErrConvertToMapString) || (errors.Is(err, binding.ErrConvertMapStringSlice))) {
+		err = parseGinBindingValidatorError(err)
 		return
 	}
 	if err = c.ShouldBindQuery(dst.Addr().Interface()); err != nil &&
 		!(errors.Is(err, binding.ErrConvertToMapString) || (errors.Is(err, binding.ErrConvertMapStringSlice))) {
+		err = parseGinBindingValidatorError(err)
 		return
 	}
 	// support query with json tag
@@ -552,9 +561,9 @@ func (r *router) wrapHandlerFunc(handler routerHandler, reqParse routerRequestPa
 			switch e := err.(type) {
 			case *json.UnmarshalTypeError:
 				msg := fmt.Sprintf(": %s field type should be %s", e.Value, e.Type.String())
-				r.rspError(c, nil, Err(c, errParam, Param(map[string]any{"err": msg})))
+				r.rspError(c, nil, Err(c, r.errorCode, Param(map[string]any{"err": msg})))
 			default:
-				r.rspError(c, nil, Err(c, errParam,
+				r.rspError(c, nil, Err(c, r.errorCode,
 					Param(map[string]any{"err": fmt.Sprintf(": %s", err.Error())})))
 			}
 			c.Next()
@@ -642,7 +651,6 @@ func (r *router) rspEmbed(c *gin.Context, rspVal reflect.Value, rspType reflect.
 		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, cast.ToInt(code),
 			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 	}
-
 }
 
 // 0: return error
@@ -681,7 +689,7 @@ func parseRspError(rspVals []reflect.Value, err error) (code int, data any, page
 	case *bizErr:
 		code, msg = int(e.code), e.Error()
 	default:
-		code, msg = http.StatusBadRequest, e.Error()
+		code, msg = int(errParam), e.Error()
 	}
 
 	data, page, count, retMsg := parseRspSuccess(rspVals)

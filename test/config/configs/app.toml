@@ -24,6 +24,7 @@ tls = false
 next_protos = ["http/1.1"]
 colorful_console = false
 success_code = 0
+error_code = -1
 pprof = false
 read_timeout = "10s"
 write_timeout = "10s"

@@ -49,5 +49,5 @@ func addInstance(ctx context.Context, conf *Conf) {
 }
 
 func init() {
-	config.AddComponent(config.ComponentCache, Construct)
+	config.AddComponent(config.ComponentCache, Construct, config.WithFlag(&flagString))
 }

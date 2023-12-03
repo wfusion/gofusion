@@ -161,5 +161,5 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 }
 
 func init() {
-	config.AddComponent(config.ComponentLog, Construct)
+	config.AddComponent(config.ComponentLog, Construct, config.WithFlag(&flagString))
 }

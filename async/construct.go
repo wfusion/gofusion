@@ -162,5 +162,5 @@ func P(name string, opts ...utils.OptionExtender) Producable {
 }
 
 func init() {
-	config.AddComponent(config.ComponentAsync, Construct)
+	config.AddComponent(config.ComponentAsync, Construct, config.WithFlag(&flagString))
 }

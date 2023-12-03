@@ -55,7 +55,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 	}
 
 	exitRouterFn := addRouter(ctx, conf, logger, opt)
-	exitI18nFn := addI18n(opt)
+	exitI18nFn := addI18n(conf, opt)
 	exitClientFn := addClient(ctx, conf, logger, opt)
 
 	// gracefully exit outside gofusion
@@ -75,7 +75,10 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 		middleware.Logging(ctx, opt.AppName, logger),
 		middleware.Cors(),
 		middleware.XSS(conf.XSSWhiteURLList),
-		middleware.Recover(opt.AppName, logger),
+		middleware.Recover(opt.AppName, logger, map[string]any{
+			"code":    Errcode(conf.ErrorCode),
+			"message": "service internal error",
+		}),
 	)
 	if config.Use(opt.AppName).Debug() {
 		gin.SetMode(gin.DebugMode)
@@ -96,7 +99,7 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 			msg = fmt.Sprintf("Cannot find method: %s", c.Request.Method)
 		}
 
-		rspError(c, opt.AppName, -1, nil, 0, 0, msg)
+		rspError(c, opt.AppName, Errcode(conf.ErrorCode), nil, 0, 0, msg)
 	})
 	engine.NoRoute(func(c *gin.Context) {
 		c.Status(http.StatusNotFound)
@@ -104,13 +107,13 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 		if tag != language.Chinese {
 			msg = fmt.Sprintf("Cannot find URL content: %s", c.Request.URL.String())
 		}
-		rspError(c, opt.AppName, -1, nil, 0, 0, msg)
+		rspError(c, opt.AppName, Errcode(conf.ErrorCode), nil, 0, 0, msg)
 	})
 
 	if conf.Pprof {
 		pprof.Register(engine)
 	}
-	instance := newRouter(ctx, engine, opt.AppName, conf.SuccessCode)
+	instance := newRouter(ctx, engine, opt.AppName, conf.SuccessCode, conf.ErrorCode)
 
 	locker.Lock()
 	defer locker.Unlock()
@@ -153,7 +156,7 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 	}
 }
 
-func addI18n(opt *config.InitOption) func() {
+func addI18n(conf Conf, opt *config.InitOption) func() {
 	bundle := i18n.NewBundle[Errcode](i18n.DefaultLang(i18n.AppName(opt.AppName)))
 	if I18n == nil {
 		I18n = bundle
@@ -165,7 +168,7 @@ func addI18n(opt *config.InitOption) func() {
 	i18ns[opt.AppName] = bundle
 
 	// initialize http internal error
-	bundle.AddMessages(errParam, map[language.Tag]*i18n.Message{
+	bundle.AddMessages(Errcode(conf.ErrorCode), map[language.Tag]*i18n.Message{
 		language.English: {Other: "Invalid request parameters{{.err}}"},
 		language.Chinese: {Other: "请求参数错误{{.err}}"},
 	}, i18n.Var("err"))
@@ -173,6 +176,10 @@ func addI18n(opt *config.InitOption) func() {
 	if opt.DI != nil {
 		opt.DI.MustProvide(func() i18n.Localizable[Errcode] { return bundle })
 	}
+
+	errParam = Errcode(conf.ErrorCode)
+
+	ginBindingValidatorI18n(opt.AppName)
 
 	return func() {
 		locker.Lock()
@@ -258,5 +265,5 @@ func Use(opts ...utils.OptionExtender) IRouter {
 }
 
 func init() {
-	config.AddComponent(config.ComponentHttp, Construct)
+	config.AddComponent(config.ComponentHttp, Construct, config.WithFlag(&flagString))
 }

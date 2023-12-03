@@ -50,6 +50,8 @@ base:
     colorful_console: false
     # Configurable http response body: {"code": 0, "message": "ok", "data": {}} for successful return, the value of code
     success_code: 0
+    # Configurable http response body: {"code": -1, "message": "ok", "data": {}} for failed return, the value of code
+    error_code: -1
     # Enable pprof, golang program status can be obtained using http port
     pprof: false
     read_timeout: 10s

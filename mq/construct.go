@@ -246,5 +246,5 @@ func Use(name string, opts ...utils.OptionExtender) IRouter {
 }
 
 func init() {
-	config.AddComponent(config.ComponentMessageQueue, Construct)
+	config.AddComponent(config.ComponentMessageQueue, Construct, config.WithFlag(&flagString))
 }

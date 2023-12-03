@@ -282,7 +282,7 @@ func (d *dal[T, TS]) Transaction(ctx context.Context, fc func(context.Context) e
 func (d *dal[T, TS]) ReadDB(ctx context.Context) *gorm.DB {
 	o, _ := ctx.Value(fusCtx.KeyDALOption).(*mysqlDALOption)
 	if orm := GetCtxGormDB(ctx); orm != nil && orm.Name == d.readDBName {
-		return d.unscopedGormDB(orm.Model(d.Model()), o)
+		return d.unscopedGormDB(orm.Model(d.Model()), o).WithContext(ctx)
 	}
 
 	dbName := d.readDBName
@@ -294,7 +294,7 @@ func (d *dal[T, TS]) ReadDB(ctx context.Context) *gorm.DB {
 func (d *dal[T, TS]) WriteDB(ctx context.Context) *gorm.DB {
 	o, _ := ctx.Value(fusCtx.KeyDALOption).(*mysqlDALOption)
 	if orm := GetCtxGormDB(ctx); orm != nil && orm.Name == d.writeDBName {
-		return d.unscopedGormDB(orm.Model(d.Model()), o)
+		return d.unscopedGormDB(orm.Model(d.Model()), o).WithContext(ctx)
 	}
 
 	return d.unscopedGormDB(Use(ctx, d.writeDBName, AppName(d.appName)).WithContext(ctx).Model(d.Model()), o)

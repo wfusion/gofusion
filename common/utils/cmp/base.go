@@ -102,7 +102,7 @@ type _comparable[T any] interface {
 	Equals(other T) bool
 }
 
-func Slice[T _comparable[T], TS ~[]T](a, b TS, sortFn func(i, j T) int) bool {
+func Slice[T _comparable[T], TS ~[]T](a, b TS, sortFn func(i, j T) bool) bool {
 	if a == nil && b == nil {
 		return true
 	}
@@ -123,7 +123,7 @@ func Slice[T _comparable[T], TS ~[]T](a, b TS, sortFn func(i, j T) int) bool {
 	return true
 }
 
-func SliceAny[T any, TS ~[]T](a, b TS, sortFn func(i, j T) int) bool {
+func SliceAny[T any, TS ~[]T](a, b TS, sortFn func(i, j T) bool) bool {
 	if a == nil && b == nil {
 		return true
 	}

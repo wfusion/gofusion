@@ -10,27 +10,27 @@ import (
 	"github.com/wfusion/gofusion/common/utils/encode"
 )
 
-func (p *registry) Debug() (debug bool) {
-	if p.appName != "" {
-		return p.debug
+func (r *registry) Debug() (debug bool) {
+	if r.appName != "" {
+		return r.debug
 	}
-	_ = p.LoadComponentConfig(ComponentDebug, &debug)
+	_ = r.LoadComponentConfig(ComponentDebug, &debug)
 	return
 }
 
-func (p *registry) AppName() (name string) {
-	if p.appName != "" {
-		return p.appName
+func (r *registry) AppName() (name string) {
+	if r.appName != "" {
+		return r.appName
 	}
-	_ = p.LoadComponentConfig(ComponentApp, &name)
+	_ = r.LoadComponentConfig(ComponentApp, &name)
 	return
 }
 
-func (p *registry) DI() di.DI { return p.di }
+func (r *registry) DI() di.DI { return r.di }
 
-func (p *registry) cryptoConfig() (conf *CryptoConf) {
+func (r *registry) cryptoConfig() (conf *CryptoConf) {
 	conf = new(CryptoConf)
-	if err := p.LoadComponentConfig(ComponentCrypto, &conf); err != nil {
+	if err := r.LoadComponentConfig(ComponentCrypto, &conf); err != nil {
 		return
 	}
 	parseCfgFunc := func(c *cryptoConf) {

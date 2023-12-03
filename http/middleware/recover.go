@@ -21,7 +21,7 @@ import (
 	fusCtx "github.com/wfusion/gofusion/context"
 )
 
-func Recover(appName string, logger resty.Logger) gin.HandlerFunc {
+func Recover(appName string, logger resty.Logger, errMsg map[string]any) gin.HandlerFunc {
 	tag := i18n.DefaultLang(i18n.AppName(appName))
 	return func(c *gin.Context) {
 		defer func() {
@@ -80,10 +80,7 @@ func Recover(appName string, logger resty.Logger) gin.HandlerFunc {
 					log.Printf(buffer.String())
 				}
 
-				c.AbortWithStatusJSON(http.StatusInternalServerError, map[string]any{
-					"code":    http.StatusInternalServerError,
-					"message": "service internal error",
-				})
+				c.AbortWithStatusJSON(http.StatusInternalServerError, errMsg)
 			}
 		}()
 		c.Next()

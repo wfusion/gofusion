@@ -1,5 +1,5 @@
 - English README version: you are reading now =。= translated by openai chat gpt4
-- 中文 README: https://github.com/wfusion/gofusion/blob/master/assets/docs/zh/README.md
+- 中文 README: [README.md](assets/docs/zh/README.md)
 
 # Usage Limitations
 
@@ -35,7 +35,7 @@
 
 > Gofusion quick start
 
-- Copy [test/config/configs/app.yml](https://github.com/wfusion/gofusion/blob/master/test/config/configs/app.yml) to the `configs` directory in your business repository, or specify another location
+- Copy [test/config/configs/app.yml](test/config/configs/app.yml) to the `configs` directory in your business repository, or specify another location
   at startup with the `-configPath` parameter.
 - Initialize gofusion with the following code:
 
@@ -90,8 +90,8 @@ Use "fus [command] --help" for more information about a command.
 
 # Unit Testing
 
-- Unit test report generated based on allure, [test result](assets/unittest/complete.html)
-- Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 59.8%
+- Unit test report generated based on allure, [test result](assets/unittest/unittest.html)
+- Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 60%
 
 ![go-cover-treemap](assets/unittest/coverage.svg)
 
@@ -108,11 +108,12 @@ Use "fus [command] --help" for more information about a command.
   the `base` node in the yml file.
 - Components are automatically registered and gracefully exited in order based on business dependencies.
 - Supports specifying configuration files based on environmental variables.
-- Supports yaml, json, toml format configuration files.
-- Supports multiple configuration file priorities -configPath > app.local.yml > app.$env.yml > app.yml.
+- Supports yaml, json, toml format configuration files (for example [app.yml](test/config/configs/app.yml)).
+- Supports Command line args (for example [args](test/config/configs/full_commandline_args.example)).
+- Supports multiple configuration priorities command line args > --configPath > app.local.yml > app.$env.yml > app.yml.
 - Supports global debug, correspondingly enables debug mode for gorm, gin.
-- Configurations support defining default values (yaml format content).
-- Supports specifying configuration files using -configPath.
+- Configurations support defining default values (`default: "{yaml format value}"`).
+- Supports specifying multiple configuration files using --configPath.
 - Supports auto reload of configuration content (mod time + sha256).
 - Automatically calls flag.Parse, so no need for business to call it manually.
 - Supports business objects implementing BeforeLoad and AfterLoad for callbacks before and after configuration loading.
@@ -174,7 +175,6 @@ mysql, postgres, sqlserver all passed tests.
 - Supports various middlewares: cors cross-domain, original logic; logging for recording desensitized request logs; xss
   defense; trace id propagation, enhanced original logic; recover for exception capture, original logic; string-based
   middleware customization supported, yet this feature is temporarily unavailable.
-- Supports i18n error codes.
 - Error message texts support i18n.
 - Error message texts support parameters (based on official golang text/template).
 - Supports custom responses, use http.Response directly or inherit http.Embed for customization, mainly for

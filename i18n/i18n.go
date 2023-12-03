@@ -21,8 +21,8 @@ var (
 	locker               sync.RWMutex
 	defaultLang          = language.Chinese
 	defaultErrorMessages = map[language.Tag]string{
-		language.Chinese: "系统错误，请稍后重试，如需帮助可联系您的客户经理！",
-		language.English: "System error! Please try again later and contact your account manager if you need help!",
+		language.Chinese: "系统错误，请稍后重试",
+		language.English: "System error! Please try again later",
 	}
 )
 
@@ -60,12 +60,12 @@ func Var(vars ...string) utils.OptionFunc[addMessagesOption] {
 }
 
 func (i *bundle[T]) AddMessages(code T, trans map[language.Tag]*Message, opts ...utils.OptionExtender) Localizable[T] {
-	o := utils.ApplyOptions[addMessagesOption](opts...)
+	i.checkDuplicated(code, trans)
 
 	i.mutex.Lock()
 	defer i.mutex.Unlock()
-	i.checkDuplicated(code, trans)
 
+	o := utils.ApplyOptions[addMessagesOption](opts...)
 	id := cast.ToString(code)
 	i.vars[code] = o.vars
 	for lang, msg := range trans {

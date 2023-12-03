@@ -43,8 +43,8 @@ base:
       user: root
       password: ci
       timeout: 5s
-      read_timeout: 2s
-      write_timeout: 2s
+      read_timeout: 5s
+      write_timeout: 5s
       max_idle_conns: 20
       max_open_conns: 20
       enable_logger: true
@@ -86,8 +86,8 @@ base:
       user: root
       password: ci
       timeout: 5s
-      read_timeout: 2s
-      write_timeout: 2s
+      read_timeout: 5s
+      write_timeout: 5s
       max_idle_conns: 20
       max_open_conns: 20
       enable_logger: true
@@ -129,8 +129,8 @@ base:
       user: postgres
       password: ci
       timeout: 5s
-      read_timeout: 2s
-      write_timeout: 2s
+      read_timeout: 5s
+      write_timeout: 5s
       max_idle_conns: 20
       max_open_conns: 20
       enable_logger: true
@@ -173,8 +173,8 @@ base:
       user: gaussdb
       password: openGauss@123
       timeout: 5s
-      read_timeout: 2s
-      write_timeout: 2s
+      read_timeout: 5s
+      write_timeout: 5s
       max_idle_conns: 2
       max_open_conns: 2
       enable_logger: true
@@ -216,8 +216,8 @@ base:
       user: SA
       password: MyPass@word
       timeout: 5s
-      read_timeout: 2s
-      write_timeout: 2s
+      read_timeout: 5s
+      write_timeout: 5s
       max_idle_conns: 20
       max_open_conns: 20
       enable_logger: true
@@ -255,8 +255,8 @@ base:
       driver: sqlite
       db: ./configs/sqlite.db
       timeout: 5s
-      read_timeout: 2s
-      write_timeout: 2s
+      read_timeout: 5s
+      write_timeout: 5s
       max_idle_conns: 20
       max_open_conns: 20
       enable_logger: true

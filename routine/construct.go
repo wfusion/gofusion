@@ -119,5 +119,5 @@ func forceSync(appName string) bool {
 }
 
 func init() {
-	config.AddComponent(config.ComponentGoroutinePool, Construct)
+	config.AddComponent(config.ComponentGoroutinePool, Construct, config.WithFlag(&flagString))
 }

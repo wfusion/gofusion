@@ -1,7 +1,11 @@
-> 框架使用限制：
-> - golang: 1.18 - 1.21
-> - os: windows / darwin / linux
-> - arch: amd64 / arm64 / loong64
+- English README version: [README.md](../../../README.md)
+- 中文 README: 您当前正在阅读此文档
+- 
+# 框架使用限制：
+
+- golang: 1.18 - 1.21
+- os: windows / darwin / linux
+- arch: amd64 / arm64 / loong64
 
 # 框架简介
 
@@ -25,7 +29,7 @@
 
 > Gofusion quick start
 
-- 拷贝 [test/config/configs/app_zh.yml](https://github.com/wfusion/gofusion/blob/master/test/config/configs/app_zh.yml) 到业务仓库 configs 目录中并重命名为 app.yml, 或者其他位置在启动时通过 -configPath 参数指定
+- 拷贝 [test/config/configs/app_zh.yml](test/config/configs/app_zh.yml) 到业务仓库 configs 目录中并重命名为 app.yml, 或者其他位置在启动时通过 -configPath 参数指定
 - 通过如下代码初始化 gofusion
 
 ```go
@@ -78,8 +82,8 @@ Use "fus [command] --help" for more information about a command.
 
 # 单元测试
 
-- 基于 allure 的单测用例报告, [test result](../../unittest/complete.html)
-- 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 59.8%
+- 基于 allure 的单测用例报告, [test result](../../unittest/unittest.html)
+- 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 60%
 
 ![go-cover-treemap](../../unittest/coverage.svg)
 
@@ -94,11 +98,12 @@ Use "fus [command] --help" for more information about a command.
 - 业务配置类无需再声明依赖的配置，配置全在 yml 配置文件的 base 节点下
 - 组件根据业务依赖自动注册和按顺序优雅退出的能力
 - 支持根据环境变量指定配置文件
-- 支持 yaml, json, toml 格式的配置文件
-- 支持多配置文件优先级 -configPath > app.local.yml > app.$env.yml > app.yml
+- 支持 yaml, json, toml 格式的配置文件 (示例见 [app.yml](../../../test/config/configs/app_zh.yml))
+- 支持命令行指定配置参数  (示例见 [app.yml](../../../test/config/configs/full_commandline_args.example))
+- 多项配置覆盖优先级: 命令行参数 > --configPath > app.local.yml > app."${ENV}".yml > app.yml
 - 支持全局 debug，对应会对 gorm, gin 开启 debug 模式
-- 配置支持定义默认值（yaml 格式内容）
-- 支持 -configPath 指定配置文件的方式
+- 配置支持定义默认值（`default: "{yaml 格式的内容}"`）
+- 支持 --configPath 指定多个配置文件的方式
 - 支持 auto reload 的配置内容的自动重载 (mod time + sha256)
 - 自动调用 flag.Parse 所以无需业务自行调用
 - 支持业务对象实现 BeforeLoad 和 AfterLoad 在配置加载前后进行回调
@@ -146,7 +151,6 @@ Use "fus [command] --help" for more information about a command.
   error 和数据解析返回数据
 - 支持多种中间件: cors 跨域，原逻辑; logging 记录请求的脱敏日志; xss 防御; trace id 透传，原有逻辑增强; recover 异常捕获，原有逻辑;
   可支持基于字符串的中间件自定义，暂未开放此功能
-- 支持 i18n 错误码
 - 错误码文案支持 i18n
 - 错误码文案支持带参数（基于 golang 官方 text/template）
 - 支持自定义 response，直接使用 http.Response 或者继承 http.Embed 即可使用自定义，主要是为了兼容业务的各种使用

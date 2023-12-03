@@ -16,6 +16,7 @@ touch "${OUTPUT}"/coverage.out
 go install gotest.tools/gotestsum@latest
 go install github.com/axw/gocov/gocov@latest
 go install github.com/matm/gocov-html/cmd/gocov-html@latest
+go install github.com/tdewolff/minify/v2/cmd/minify@v2.20.7
 if ! type -p allure; then
   brew install allure
 fi
@@ -34,15 +35,17 @@ while [ ! -d "${OUTPUT}"/allure ]; do
   sleep 1
 done
 allure-combine --remove-temp-files --ignore-utf8-errors "${OUTPUT}"/allure --dest "${OUTPUT}"
+minify -r -o "${OUTPUT}"/unittest.html "${OUTPUT}"/complete.html || true
 
 # export test coverage report
 echo "export coverage.html"
 gocov convert "${OUTPUT}"/coverage.out > "${OUTPUT}"/coverage.json
-gocov-html < "${OUTPUT}"/coverage.json > "${OUTPUT}"/coverage.html
+gocov-html < "${OUTPUT}"/coverage.json > "${OUTPUT}"/gocov.html
+minify -r -o "${OUTPUT}"/coverage.html "${OUTPUT}"/gocov.html || true
 
 echo "export coverage.svg"
 go-cover-treemap -coverprofile "${OUTPUT}"/coverage.out -only-folders > "${OUTPUT}"/coverage.svg
 
 # remove temps
-rm "${OUTPUT}"/coverage.out "${OUTPUT}"/coverage.json "${OUTPUT}"/junit.xml
+rm "${OUTPUT}"/coverage.out "${OUTPUT}"/coverage.json "${OUTPUT}"/junit.xml "${OUTPUT}"/gocov.html "${OUTPUT}"/complete.html
 rm -rf "${OUTPUT}"/allure

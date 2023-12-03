@@ -87,7 +87,7 @@ func (c *Configor) getConfigurationFileWithENVPrefix(file, env string) (string, 
 	return "", time.Now(), "", fmt.Errorf("failed to find file %v", file)
 }
 
-func (c *Configor) getConfigurationFiles(config *Config, watchMode bool, files ...string) (
+func (c *Configor) getConfigurationFiles(watchMode bool, files ...string) (
 	[]string, map[string]time.Time, map[string]string) {
 	resultKeys := make([]string, 0, len(files))
 	hashResult := make(map[string]string, len(files))
@@ -352,7 +352,7 @@ func (c *Configor) load(config any, watchMode bool, files ...string) (err error,
 		}
 	}()
 
-	configFiles, configModTimeMap, hashMap := c.getConfigurationFiles(c.Config, watchMode, files...)
+	configFiles, configModTimeMap, hashMap := c.getConfigurationFiles(watchMode, files...)
 	if watchMode && len(configModTimeMap) == len(c.configModTimes) && len(hashMap) == len(c.configHash) {
 		var changed bool
 		for f, curModTime := range configModTimeMap {

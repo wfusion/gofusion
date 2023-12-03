@@ -50,6 +50,7 @@ type Conf struct {
 	Key             string                 `yaml:"key" json:"key" toml:"key"`
 	NextProtos      []string               `yaml:"next_protos" json:"next_protos" toml:"next_protos" default:"[http/1.1]"` // h2, http/1.1 is ok
 	SuccessCode     int                    `yaml:"success_code" json:"success_code" toml:"success_code"`
+	ErrorCode       int                    `yaml:"error_code" json:"error_code" toml:"error_code" default:"-1"`
 	Pprof           bool                   `yaml:"pprof" json:"pprof" toml:"pprof"`
 	XSSWhiteURLList []string               `yaml:"xss_white_url_list" json:"xss_white_url_list" toml:"xss_white_url_list" default:"[]"`
 	ColorfulConsole bool                   `yaml:"colorful_console" json:"colorful_console" toml:"colorful_console" default:"false"`

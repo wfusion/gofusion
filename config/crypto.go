@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	"github.com/spf13/pflag"
 
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/cipher"
@@ -19,6 +20,14 @@ import (
 const (
 	cryptoTagKey = "encrypted"
 )
+
+var (
+	cryptoFlagString string
+)
+
+func init() {
+	pflag.StringVarP(&cryptoFlagString, "crypto-config", "", "", "json string for crypto config")
+}
 
 type CryptoConf struct {
 	Config *cryptoConf            `yaml:"config" json:"config" toml:"config"`
