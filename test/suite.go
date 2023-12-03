@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	"github.com/stretchr/testify/suite"
-	"github.com/wfusion/gofusion/common/constant"
 
+	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
