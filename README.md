@@ -36,7 +36,7 @@
 > Gofusion quick start
 
 - Copy [test/config/configs/app.yml](test/config/configs/app.yml) to the `configs` directory in your business repository, or specify another location
-  at startup with the `-configPath` parameter.
+  at startup with the `--configPath` parameter.
 - Initialize gofusion with the following code:
 
 ```go
@@ -109,7 +109,7 @@ Use "fus [command] --help" for more information about a command.
 - Components are automatically registered and gracefully exited in order based on business dependencies.
 - Supports specifying configuration files based on environmental variables.
 - Supports yaml, json, toml format configuration files (for example [app.yml](test/config/configs/app.yml)).
-- Supports Command line args (for example [args](test/config/configs/full_commandline_args.example)).
+- Supports Command line args (for example [args.example](test/config/configs/full_commandline_args.example)).
 - Supports multiple configuration priorities command line args > --configPath > app.local.yml > app.$env.yml > app.yml.
 - Supports global debug, correspondingly enables debug mode for gorm, gin.
 - Configurations support defining default values (`default: "{yaml format value}"`).

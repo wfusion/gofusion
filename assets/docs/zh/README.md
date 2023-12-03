@@ -1,6 +1,6 @@
 - English README version: [README.md](../../../README.md)
 - 中文 README: 您当前正在阅读此文档
-- 
+
 # 框架使用限制：
 
 - golang: 1.18 - 1.21
@@ -29,7 +29,7 @@
 
 > Gofusion quick start
 
-- 拷贝 [test/config/configs/app_zh.yml](test/config/configs/app_zh.yml) 到业务仓库 configs 目录中并重命名为 app.yml, 或者其他位置在启动时通过 -configPath 参数指定
+- 拷贝 [test/config/configs/app_zh.yml](../../../test/config/configs/app_zh.yml) 到业务仓库 configs 目录中并重命名为 app.yml, 或者其他位置在启动时通过 --configPath 参数指定
 - 通过如下代码初始化 gofusion
 
 ```go
@@ -99,7 +99,7 @@ Use "fus [command] --help" for more information about a command.
 - 组件根据业务依赖自动注册和按顺序优雅退出的能力
 - 支持根据环境变量指定配置文件
 - 支持 yaml, json, toml 格式的配置文件 (示例见 [app.yml](../../../test/config/configs/app_zh.yml))
-- 支持命令行指定配置参数  (示例见 [app.yml](../../../test/config/configs/full_commandline_args.example))
+- 支持命令行指定配置参数  (示例见 [args.example](../../../test/config/configs/full_commandline_args.example))
 - 多项配置覆盖优先级: 命令行参数 > --configPath > app.local.yml > app."${ENV}".yml > app.yml
 - 支持全局 debug，对应会对 gorm, gin 开启 debug 模式
 - 配置支持定义默认值（`default: "{yaml 格式的内容}"`）
