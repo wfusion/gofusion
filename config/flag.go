@@ -14,7 +14,7 @@ var (
 )
 
 func init() {
-	pflag.StringSliceVar(&customConfigPath, "configPath", nil, "specify config file path, e.g. configs/app.yml")
+	pflag.StringSliceVar(&customConfigPath, "config-file", nil, "specify config file path, e.g. configs/app.yml")
 	pflag.StringVarP(&appFlagString, "app", "", "", "app name")
 	pflag.BoolVarP(&debugFlag, "debug", "", false,
 		"enable debug mode, only works for http and db component now")
