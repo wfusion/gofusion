@@ -6,6 +6,8 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/wfusion/gofusion/common/constant"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func IsStrBlank(s string) bool {
@@ -38,7 +40,7 @@ func FuzzyKeyword(keyword string) []string {
 	compact := strings.Join(words, "")
 	lowerWords := SliceMapping(words, func(s string) string { return strings.ToLower(s) })
 	upperWords := SliceMapping(words, func(s string) string { return strings.ToUpper(s) })
-	titleWords := SliceMapping(words, func(s string) string { return strings.Title(s) })
+	titleWords := SliceMapping(words, func(s string) string { return cases.Title(language.English).String(s) })
 
 	s := NewSet(keyword)
 	s.Insert(

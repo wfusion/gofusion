@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/iancoleman/strcase"
 	"github.com/spf13/cast"
 
 	"github.com/wfusion/gofusion/config"
@@ -14,12 +15,12 @@ var (
 	metricsCodeTotalKey = []string{"http", "code", "total"}
 )
 
-func metricsCode(ctx context.Context, appName, path, method string, code, status, rspSize int, reqSize int64) {
+func metricsCode(ctx context.Context, appName, path, method string, headerLabels map[string]string,
+	code, status, rspSize int, reqSize int64) {
 	select {
 	case <-ctx.Done():
 		return
 	default:
-
 	}
 
 	// skip health check logging
@@ -36,6 +37,10 @@ func metricsCode(ctx context.Context, appName, path, method string, code, status
 		{Key: "req_size", Value: cast.ToString(reqSize)},
 		{Key: "rsp_size", Value: cast.ToString(rspSize)},
 	}
+	for k, v := range headerLabels {
+		labels = append(labels, metrics.Label{Key: strcase.ToSnake(k), Value: v})
+	}
+
 	totalKey := append([]string{app}, metricsCodeTotalKey...)
 	for _, m := range metrics.Internal(metrics.AppName(appName)) {
 		select {

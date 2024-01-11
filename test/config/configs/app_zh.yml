@@ -103,7 +103,10 @@ base:
         # 可配置自定义的实现 github.com/go-resty/resty/v2.OnRetryFunc 函数声明的对象
         # 自定义配置可能因为没有直接引用导致找不到对象, 所以业务配置时需要定义对应对象或函数的全局 reflect.Type 类型避免编译器忽略
         retry_hooks: [ ]
-
+    # http metrics 配置
+    metrics:
+      # 从请求 header 中提取需要在打点中作为 label 上报的 kv
+      header_labels: [ ]
   # 国际化配置
   i18n:
     # 默认语言, 支持 golang.org/x/text/language 中定义的语言

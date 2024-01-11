@@ -214,6 +214,7 @@ func Promise(fn any, async bool, opts ...utils.OptionExtender) *Future {
 }
 
 // wrapPromise support function:
+// *Future
 // func() error
 // func() (any, error)
 // func(Canceller)
@@ -224,7 +225,10 @@ func Promise(fn any, async bool, opts ...utils.OptionExtender) *Future {
 // func(t1 T1, t2 T2, t3 T3, tx ...Tx) (any, error)
 func wrapPromise(fn any, async bool, opts ...utils.OptionExtender) *Future {
 	// check supported function
-	switch fn.(type) {
+	switch act := fn.(type) {
+	case *Future:
+		return act
+
 	case func(),
 		func() error,
 		func() (any, error),
@@ -305,6 +309,11 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 	}
 
 	chFails, chDones := make(chan anyPromiseResult), make(chan anyPromiseResult)
+	// close the channel for avoid the sender be blocked
+	closeChan := func(c chan anyPromiseResult) {
+		defer func() { _ = recover() }()
+		close(c)
+	}
 
 	Go(func() {
 		for i, f := range fs {
@@ -337,12 +346,17 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 				_ = nf.Reject(newNoMatchedError1(r.result))
 			}
 		}
+
+		closeChan(chFails)
+		closeChan(chDones)
 	} else {
 		Go(func() {
 			defer func() {
 				if e := recover(); e != nil {
 					_ = nf.Reject(newErrorWithStacks(e))
 				}
+				closeChan(chFails)
+				closeChan(chDones)
 			}()
 
 			j := 0
@@ -351,36 +365,27 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 				case r := <-chFails:
 					rs[r.i] = getError(r.result)
 				case r := <-chDones:
-					if predicate(r.result) {
+					if !predicate(r.result) {
+						rs[r.i] = r.result
+					} else {
 						// try to cancel other futures
 						for _, f := range fs {
 							_ = f.Cancel()
 						}
 
-						// close the channel for avoid the sender be blocked
-						closeChan := func(c chan anyPromiseResult) {
-							defer func() { _ = recover() }()
-							close(c)
-						}
-						closeChan(chDones)
-						closeChan(chFails)
-
 						// resolve the future and return result
 						_ = nf.Resolve(r.result)
 						return
-					} else {
-						rs[r.i] = r.result
 					}
 				}
 
 				if j++; j == len(fs) {
 					m := 0
 					for _, r := range rs {
-						switch val := r.(type) {
+						switch r.(type) {
 						case CancelledError:
 						default:
 							m++
-							_ = val
 						}
 					}
 					if m > 0 {
@@ -506,12 +511,12 @@ func whenAllFuture(fs []*Future, opts ...utils.OptionExtender) *Future {
 //	other value:
 //	   Future will be resolved with value immediately
 func start(act any, async bool, opts ...utils.OptionExtender) *Future {
-	p := NewPromise()
 	if f, ok := act.(*Future); ok {
 		return f
 	}
 
 	opt := utils.ApplyOptions[candyOption](opts...)
+	p := NewPromise()
 	p.AppName = opt.appName
 	if action := getAct(p, act); action != nil {
 		if !async {

@@ -72,7 +72,7 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 		gin.Recovery(),
 		middleware.Gateway,
 		middleware.Trace(),
-		middleware.Logging(ctx, opt.AppName, logger),
+		middleware.Logging(ctx, opt.AppName, conf.Metrics.HeaderLabels, logger),
 		middleware.Cors(),
 		middleware.XSS(conf.XSSWhiteURLList),
 		middleware.Recover(opt.AppName, logger, map[string]any{
@@ -114,6 +114,7 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 		pprof.Register(engine)
 	}
 	instance := newRouter(ctx, engine, opt.AppName, conf.SuccessCode, conf.ErrorCode)
+	instance.(*router).metricsConf = conf.Metrics
 
 	locker.Lock()
 	defer locker.Unlock()

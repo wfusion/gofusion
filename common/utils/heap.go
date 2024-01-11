@@ -11,11 +11,11 @@ var (
 
 type _heap[E any] struct {
 	d   []E
-	cmp func(e1, e2 E) int
+	cmp func(e1, e2 E) bool
 }
 
 func (h *_heap[E]) Len() int           { return len(h.d) }
-func (h *_heap[E]) Less(i, j int) bool { v := h.cmp(h.d[i], h.d[j]); return v < 0 }
+func (h *_heap[E]) Less(i, j int) bool { return h.cmp(h.d[i], h.d[j]) }
 func (h *_heap[E]) Swap(i, j int)      { h.d[i], h.d[j] = h.d[j], h.d[i] }
 func (h *_heap[E]) Push(x any)         { v := append(h.d, x.(E)); h.d = v }
 func (h *_heap[E]) Pop() (x any)       { x, h.d = h.d[len(h.d)-1], h.d[0:len(h.d)-1]; return x }
@@ -56,7 +56,7 @@ func (h *Heap[E]) Copy() *Heap[E] {
 }
 
 // NewHeap return an initial Heap pointer
-func NewHeap[E any](t []E, cmp func(e1, e2 E) int) *Heap[E] {
+func NewHeap[E any](t []E, cmp func(e1, e2 E) bool) *Heap[E] {
 	ret := &_heap[E]{d: t, cmp: cmp}
 	heap.Init(ret)
 	return &Heap[E]{data: ret}

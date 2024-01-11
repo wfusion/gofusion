@@ -61,6 +61,7 @@ type Conf struct {
 	Logger          string                 `yaml:"logger" json:"logger" toml:"logger" default:"github.com/wfusion/gofusion/log/customlogger.httpLogger"`
 	Asynq           []asynqConf            `yaml:"asynq" json:"asynq" toml:"asynq"`
 	Clients         map[string]*clientConf `yaml:"clients" json:"clients" toml:"clients"`
+	Metrics         metricsConf            `yaml:"metrics" json:"metrics" toml:"metrics"`
 }
 
 type asynqConf struct {
@@ -91,6 +92,12 @@ type clientConf struct {
 	RetryMaxWaitTime      string   `yaml:"retry_max_wait_time" json:"retry_max_wait_time" toml:"retry_max_wait_time" default:"2s"`
 	RetryConditionFuncs   []string `yaml:"retry_condition_funcs" json:"retry_condition_funcs" toml:"retry_condition_funcs"`
 	RetryHooks            []string `yaml:"retry_hooks" json:"retry_hooks" toml:"retry_hooks"`
+}
+
+// metricsConf http metrics configure
+
+type metricsConf struct {
+	HeaderLabels []string `yaml:"header_labels" json:"header_labels" toml:"header_labels"`
 }
 
 type OutputConf struct {

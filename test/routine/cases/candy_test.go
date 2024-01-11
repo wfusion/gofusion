@@ -5,8 +5,11 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/suite"
+	"go.uber.org/atomic"
 
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/routine"
@@ -260,5 +263,30 @@ func (t *Candy) TestLoopWithArgs() {
 		}, routine.Args(&i), routine.WaitGroup(wg), routine.AppName(t.AppName()))
 		wg.Wait()
 		t.Equal(expected, i)
+	})
+}
+
+func (t *Candy) TestWhenAllWithFuture() {
+	t.Catch(func() {
+		sum, expected := atomic.NewInt64(0), 10
+		futures := make([]any, 0, 10)
+		for i := 0; i < expected; i++ {
+			future := routine.Promise(
+				func(args ...any) {
+					sum.Add(cast.ToInt64(args[0]))
+				},
+				true,
+				routine.Args(2, 3, 4, 5),
+				routine.AppName(t.AppName()),
+			)
+
+			futures = append(futures, future)
+		}
+
+		futures = append(futures, routine.AppName(t.AppName()))
+		_, timeout, err := routine.WhenAll(futures...).GetOrTimeout(time.Second)
+		t.False(timeout)
+		t.NoError(err)
+		t.EqualValues(expected*2, sum.Load())
 	})
 }

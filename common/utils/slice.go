@@ -15,3 +15,23 @@ func SliceReverse[T any, TS ~[]T](s TS) {
 		s[i], s[opp] = s[opp], s[i]
 	}
 }
+
+// SliceSplit Separate objects into several size
+func SliceSplit[T any, TS ~[]T](arr TS, size int) []TS {
+	if size <= 0 {
+		return []TS{arr}
+	}
+
+	chunkSet := make([]TS, 0, len(arr)/size+1)
+
+	var chunk TS
+	for len(arr) > size {
+		chunk, arr = arr[:size], arr[size:]
+		chunkSet = append(chunkSet, chunk)
+	}
+	if len(arr) > 0 {
+		chunkSet = append(chunkSet, arr[:])
+	}
+
+	return chunkSet
+}

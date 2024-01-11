@@ -69,6 +69,9 @@
                     "retry_condition_funcs": [],
                     "retry_hooks": []
                 }
+            },
+            "metrics": {
+                "header_labels": []
             }
         },
         "i18n": {

@@ -62,6 +62,7 @@ type router struct {
 	successCode  int
 	errorCode    Errcode
 	shutdownFunc func()
+	metricsConf  metricsConf
 
 	routes gin.IRoutes      `optional:"true"`
 	group  *gin.RouterGroup `optional:"true"`
@@ -602,16 +603,16 @@ func (r *router) rspError(c *gin.Context, rspVals []reflect.Value, err error) {
 	code, data, page, count, msg := parseRspError(rspVals, err)
 	rspError(c, r.appName, code, data, page, count, msg)
 
-	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, cast.ToInt(code),
-		c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.parseHeaderMetrics(c),
+		cast.ToInt(code), c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 }
 
 func (r *router) rspSuccess(c *gin.Context, rspVals []reflect.Value) {
 	data, page, count, msg := parseRspSuccess(rspVals)
 	rspSuccess(c, r.successCode, data, page, count, msg)
 
-	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.successCode,
-		c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.parseHeaderMetrics(c),
+		r.successCode, c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 }
 
 func (r *router) rspEmbed(c *gin.Context, rspVal reflect.Value, rspType reflect.Type, err error) {
@@ -626,11 +627,11 @@ func (r *router) rspEmbed(c *gin.Context, rspVal reflect.Value, rspType reflect.
 
 	switch rsp := data.(type) {
 	case Response:
-		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, rsp.Code,
-			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.parseHeaderMetrics(c),
+			rsp.Code, c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 	case *Response:
-		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, rsp.Code,
-			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.parseHeaderMetrics(c),
+			rsp.Code, c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 	default:
 		rspData := make(map[string]any)
 		dec, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -648,9 +649,17 @@ func (r *router) rspEmbed(c *gin.Context, rspVal reflect.Value, rspType reflect.
 		if code == nil {
 			code = -2
 		}
-		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, cast.ToInt(code),
-			c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+		go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.parseHeaderMetrics(c),
+			cast.ToInt(code), c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
 	}
+}
+
+func (r *router) parseHeaderMetrics(c *gin.Context) (headerLabels map[string]string) {
+	headerLabels = make(map[string]string, len(r.metricsConf.HeaderLabels))
+	for _, metricsHeader := range r.metricsConf.HeaderLabels {
+		headerLabels[metricsHeader] = c.Request.Header.Get(metricsHeader)
+	}
+	return
 }
 
 // 0: return error

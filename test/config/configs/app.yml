@@ -111,6 +111,11 @@ base:
         # Custom configurations may not be found due to not being directly referenced, so when configuring,
         # you need to define the corresponding object or function's global reflect.Type to avoid being ignored by the compiler
         retry_hooks: [ ]
+    # HTTP metrics configuration
+    metrics:
+      # Extract key-value pairs from the request header that need to be reported as labels in telemetry,
+      # as part of the Golang framework configuration.
+      header_labels: [ ]
 
   # Internationalization configuration
   i18n:

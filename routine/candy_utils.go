@@ -48,18 +48,18 @@ func (e *AggregateError) Error() string {
 		return e.s
 	} else {
 		buf := bytes.NewBufferString(e.s)
-		buf.WriteString("\n\n")
+		_, _ = buf.WriteString("\n\n")
 		for i, ie := range e.InnerErrs {
 			if ie == nil {
 				continue
 			}
-			buf.WriteString("error appears in Future ")
-			buf.WriteString(strconv.Itoa(i))
-			buf.WriteString(": ")
-			buf.WriteString(ie.Error())
-			buf.WriteString("\n")
+			_, _ = buf.WriteString("error appears in Future ")
+			_, _ = buf.WriteString(strconv.Itoa(i))
+			_, _ = buf.WriteString(": ")
+			_, _ = buf.WriteString(ie.Error())
+			_, _ = buf.WriteString("\n")
 		}
-		buf.WriteString("\n")
+		_, _ = buf.WriteString("\n")
 		return buf.String()
 	}
 }
@@ -71,7 +71,7 @@ func newAggregateError1(s string, e any) *AggregateError {
 func newErrorWithStacks(i any) (e error) {
 	err := getError(i)
 	buf := bytes.NewBufferString(err.Error())
-	buf.WriteString("\n")
+	_, _ = buf.WriteString("\n")
 
 	pcs := make([]uintptr, 50)
 	num := runtime.Callers(2, pcs)
@@ -123,7 +123,7 @@ func getAct(p *promise, act any) (f func(opt *candyOption) (r any, err error)) {
 	}
 
 	// If parameters of act function has a Canceller interface, the Future will be cancelled.
-	var canceller Canceller = nil
+	var canceller Canceller
 	if p != nil && canCancel {
 		canceller = p.Canceller()
 	}
@@ -163,7 +163,7 @@ func getError(i any) (e error) {
 			if s, ok := i.(stringer); ok {
 				e = errors.New(s.String())
 			} else {
-				e = errors.New(fmt.Sprintf("%v", i))
+				e = fmt.Errorf("%v", i)
 			}
 		}
 	}
@@ -172,7 +172,7 @@ func getError(i any) (e error) {
 
 func writeStrings(buf *bytes.Buffer, strings []string) {
 	for _, s := range strings {
-		buf.WriteString(s)
+		_, _ = buf.WriteString(s)
 	}
 }
 
@@ -185,25 +185,26 @@ func startPipe(r *Result, pipeTask func(v any) *Future, pipePromise *promise) {
 			_ = pipePromise.Reject(getError(v))
 		})
 	}
-
 }
 
 func getFutureReturnVal(r *Result) (any, error) {
-	if r.Typ == ResultSuccess {
+	switch r.Typ {
+	case ResultSuccess:
 		return r.Result, nil
-	} else if r.Typ == ResultFailure {
+	case ResultFailure:
 		return nil, getError(r.Result)
-	} else {
-		return nil, getError(r.Result) //&CancelledError{}
+	default:
+		return nil, getError(r.Result) // &CancelledError{}
 	}
 }
 
-func execCallback(r *Result,
+func execCallback(
+	r *Result,
 	dones []func(v any),
 	fails []func(v any),
 	always []func(v any),
-	cancels []func()) {
-
+	cancels []func(),
+) {
 	if r.Typ == ResultCancelled {
 		for _, f := range cancels {
 			func() {
@@ -232,7 +233,6 @@ func execCallback(r *Result,
 
 	forFs(callbacks)
 	forFs(always)
-
 }
 
 func forSlice(s []func(v any), f func(func(v any))) {

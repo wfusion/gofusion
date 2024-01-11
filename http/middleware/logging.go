@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-resty/resty/v2"
+	"github.com/iancoleman/strcase"
 	"github.com/spf13/cast"
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/metrics"
@@ -34,7 +35,8 @@ var (
 	}
 )
 
-func logging(rootCtx context.Context, c *gin.Context, logger resty.Logger, rawURL *url.URL, appName string) {
+func logging(rootCtx context.Context, c *gin.Context, logger resty.Logger, rawURL *url.URL, metricsHeaders []string,
+	appName string) {
 	ctx := fusCtx.New(fusCtx.Gin(c))
 	cost := float64(consts.GetReqCost(c)) / float64(time.Millisecond)
 	status := c.Writer.Status()
@@ -75,17 +77,21 @@ func logging(rootCtx context.Context, c *gin.Context, logger resty.Logger, rawUR
 		log.Printf(msg+" %s", utils.MustJsonMarshal(fields))
 	}
 
-	go metricsLogging(rootCtx, appName, rawURL.Path, c.Request.Method, status,
-		c.Writer.Size(), c.Request.ContentLength, cost)
+	headerLabels := make(map[string]string, len(metricsHeaders))
+	for _, metricsHeader := range metricsHeaders {
+		headerLabels[metricsHeader] = c.Request.Header.Get(metricsHeader)
+	}
+
+	go metricsLogging(rootCtx, appName, rawURL.Path, c.Request.Method, headerLabels,
+		status, c.Writer.Size(), c.Request.ContentLength, cost)
 }
 
-func metricsLogging(ctx context.Context, appName, path, method string,
+func metricsLogging(ctx context.Context, appName, path, method string, headerLabels map[string]string,
 	status, rspSize int, reqSize int64, cost float64) {
 	select {
 	case <-ctx.Done():
 		return
 	default:
-
 	}
 
 	labels := []metrics.Label{
@@ -95,6 +101,10 @@ func metricsLogging(ctx context.Context, appName, path, method string,
 		{Key: "req_size", Value: cast.ToString(reqSize)},
 		{Key: "rsp_size", Value: cast.ToString(rspSize)},
 	}
+	for k, v := range headerLabels {
+		labels = append(labels, metrics.Label{Key: strcase.ToSnake(k), Value: v})
+	}
+
 	app := config.Use(appName).AppName()
 	latencyKey := append([]string{app}, metricsLatencyKey...)
 	totalKey := append([]string{app}, metricsTotalKey...)
@@ -116,10 +126,10 @@ func metricsLogging(ctx context.Context, appName, path, method string,
 	}
 }
 
-func Logging(ctx context.Context, appName string, logger resty.Logger) gin.HandlerFunc {
+func Logging(ctx context.Context, appName string, metricsHeaders []string, logger resty.Logger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		reqURL := clone.Clone(c.Request.URL)
-		defer logging(ctx, c, logger, reqURL, appName)
+		defer logging(ctx, c, logger, reqURL, metricsHeaders, appName)
 
 		c.Next()
 	}

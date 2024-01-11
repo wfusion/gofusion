@@ -55,6 +55,9 @@ retry_max_wait_time = "2s"
 retry_condition_funcs = [ ]
 retry_hooks = [ ]
 
+[base.http.metrics]
+header_labels = [ ]
+
 [base.i18n]
 default_lang = "zh"
 

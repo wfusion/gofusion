@@ -96,15 +96,13 @@ func (f *Future) IsCancelled() bool {
 
 // SetTimeout sets the future task will be cancelled
 // if future is not complete before time out
-func (f *Future) SetTimeout(mm int) *Future {
-	if mm == 0 {
-		mm = 10
-	} else {
-		mm = mm * 1000 * 1000
+func (f *Future) SetTimeout(timeout time.Duration) *Future {
+	if timeout <= 0 {
+		timeout = 10 * time.Nanosecond
 	}
 
 	Go(func() {
-		<-time.After((time.Duration)(mm) * time.Nanosecond)
+		<-time.After(timeout)
 		_ = f.Cancel()
 	}, AppName(f.AppName))
 	return f
@@ -133,19 +131,17 @@ func (f *Future) Get() (val any, err error) {
 // GetOrTimeout is similar to Get(), but GetOrTimeout will not block after timeout.
 // If GetOrTimeout returns with a timeout, timeout value will be true in return values.
 // The unit of parameter is millisecond.
-func (f *Future) GetOrTimeout(mm uint) (val any, err error, timout bool) {
-	if mm == 0 {
-		mm = 10
-	} else {
-		mm = mm * 1000 * 1000
+func (f *Future) GetOrTimeout(timeout time.Duration) (val any, timout bool, err error) {
+	if timeout <= 0 {
+		timeout = 10 * time.Nanosecond
 	}
 
 	select {
-	case <-time.After((time.Duration)(mm) * time.Nanosecond):
-		return nil, nil, true
+	case <-time.After(timeout):
+		return nil, true, nil
 	case <-f.final:
 		r, err := getFutureReturnVal(f.loadResult())
-		return r, err, false
+		return r, false, err
 	}
 }
 
@@ -201,7 +197,7 @@ func (f *Future) Pipe(callbacks ...any) (result *Future, ok bool) {
 	}
 
 	// ensure all callback functions match the spec "func(v any) *Future"
-	cs := make([]func(v any) *Future, len(callbacks), len(callbacks))
+	cs := make([]func(v any) *Future, len(callbacks))
 	for i, callback := range callbacks {
 		switch c := callback.(type) {
 		case func(v any) *Future:
@@ -263,8 +259,8 @@ func (f *Future) Pipe(callbacks ...any) (result *Future, ok bool) {
 			newVal := *v
 			newVal.pipes = append(newVal.pipes, newPipe)
 
-			//use CAS to ensure that the state of Future is not changed,
-			//if the state is changed, will retry CAS operation.
+			// use CAS to ensure that the state of Future is not changed,
+			// if the state is changed, will retry CAS operation.
 			if atomic.CompareAndSwapPointer(&f.val, unsafe.Pointer(v), unsafe.Pointer(&newVal)) {
 				result = newPipe.pipePromise.Future
 				break
@@ -311,17 +307,17 @@ func (f *Future) setResult(r *Result) (e error) {
 		// If the state is changed, must get the latest state and try to call CAS again.
 		// No ABA issue in this case because address of all objects are different.
 		if atomic.CompareAndSwapPointer(&f.val, unsafe.Pointer(v), unsafe.Pointer(&newVal)) {
-			//Close chEnd then all Get() and GetOrTimeout() will be unblocked
+			// Close chEnd then all Get() and GetOrTimeout() will be unblocked
 			close(f.final)
 
-			//call callback functions and start the promise pipeline
+			// call callback functions and start the promise pipeline
 			if len(v.dones) > 0 || len(v.fails) > 0 || len(v.always) > 0 || len(v.cancels) > 0 {
 				Go(func() {
 					execCallback(r, v.dones, v.fails, v.always, v.cancels)
 				}, AppName(f.AppName))
 			}
 
-			//start the pipeline
+			// start the pipeline
 			if len(v.pipes) > 0 {
 				Go(func() {
 					for _, pipe := range v.pipes {
@@ -370,8 +366,8 @@ func (f *Future) addCallback(callback any, t callbackType) {
 				newVal.cancels = append(newVal.cancels, callback.(func()))
 			}
 
-			//use CAS to ensure that the state of Future is not changed,
-			//if the state is changed, will retry CAS operation.
+			// use CAS to ensure that the state of Future is not changed,
+			// if the state is changed, will retry CAS operation.
 			if atomic.CompareAndSwapPointer(&f.val, unsafe.Pointer(v), unsafe.Pointer(&newVal)) {
 				break
 			}
