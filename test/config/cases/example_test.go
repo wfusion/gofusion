@@ -24,7 +24,6 @@ import (
 	"github.com/wfusion/gofusion/mongo"
 	"github.com/wfusion/gofusion/mq"
 	"github.com/wfusion/gofusion/redis"
-	"github.com/wfusion/gofusion/routine"
 	"github.com/wfusion/gofusion/test/config"
 
 	fusCfg "github.com/wfusion/gofusion/config"
@@ -115,7 +114,6 @@ func (t *Example) TestWithoutFiles() {
 		log.Info(context.Background(), "get all configs json: %s", utils.MustJsonMarshal(allConfigs))
 		log.Info(context.Background(), "get app name: %s", fusCfg.Registry.AppName())
 		log.Info(context.Background(), "get debug: %+v", fusCfg.Registry.Debug())
-		routine.Go(func() {})
 	})
 }
 

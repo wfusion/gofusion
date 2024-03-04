@@ -3,7 +3,7 @@
 
 # Usage Limitations
 
-- golang: 1.18 - 1.21
+- golang: 1.18 - 1.22
 - os: windows / darwin / linux
 - arch: amd64 / arm64 / loong64
 

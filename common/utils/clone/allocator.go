@@ -8,8 +8,6 @@ import (
 	"runtime"
 	"sync"
 	"unsafe"
-
-	"github.com/wfusion/gofusion/common/utils"
 )
 
 var typeOfAllocator = reflect.TypeOf(Allocator{})
@@ -257,7 +255,7 @@ func (a *Allocator) isOpaquePointer(t reflect.Type) (ok bool) {
 //   - time.Time
 //   - reflect.Value
 func (a *Allocator) MarkAsScalar(t reflect.Type) {
-	t = utils.IndirectType(t)
+	t = indirectType(t)
 	if t.Kind() != reflect.Struct {
 		return
 	}
@@ -289,7 +287,7 @@ func (a *Allocator) SetCustomFunc(t reflect.Type, fn Func) {
 		return
 	}
 
-	t = utils.IndirectType(t)
+	t = indirectType(t)
 	if t.Kind() != reflect.Struct {
 		return
 	}

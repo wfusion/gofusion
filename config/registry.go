@@ -406,9 +406,13 @@ func (r *registry) initAllConfigByFlag() {
 		}
 		switch com.name {
 		case ComponentApp:
-			configVal.FieldByName(com.name).SetString(appFlagString)
+			if utils.IsStrNotBlank(appFlagString) {
+				configVal.FieldByName(com.name).SetString(appFlagString)
+			}
 		case ComponentDebug:
-			configVal.FieldByName(com.name).SetBool(debugFlag)
+			if debugFlag {
+				configVal.FieldByName(com.name).SetBool(debugFlag)
+			}
 		default:
 			comValp := configVal.FieldByName(com.name).Addr()
 			utils.MustSuccess(json.Unmarshal([]byte(*com.flagString), comValp.Interface()))

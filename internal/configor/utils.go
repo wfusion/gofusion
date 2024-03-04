@@ -27,7 +27,6 @@ package configor
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -36,10 +35,12 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 
 	"github.com/wfusion/gofusion/common/utils"
@@ -343,6 +344,10 @@ func (c *Configor) processTags(config any, prefixes ...string) error {
 
 func (c *Configor) load(config any, watchMode bool, files ...string) (err error, changed bool) {
 	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Errorf("panic %s =>\n%s", r, debug.Stack())
+			return
+		}
 		if c.Config.Debug || c.Config.Verbose {
 			if err != nil {
 				fmt.Printf("Failed to load configuration from %v, got %v\n", files, err)
@@ -369,13 +374,17 @@ func (c *Configor) load(config any, watchMode bool, files ...string) (err error,
 		}
 	}
 
-	type withCallback interface {
-		BeforeLoad(any)
-		AfterLoad(any)
+	type withBeforeCallback interface {
+		BeforeLoad(opts ...utils.OptionExtender)
 	}
-	if cb, ok := config.(withCallback); ok {
-		cb.BeforeLoad(config)
-		defer cb.AfterLoad(config)
+	type withAfterCallback interface {
+		AfterLoad(opts ...utils.OptionExtender)
+	}
+	if cb, ok := config.(withBeforeCallback); ok {
+		cb.BeforeLoad()
+	}
+	if cb, ok := config.(withAfterCallback); ok {
+		defer cb.AfterLoad()
 	}
 
 	for _, file := range configFiles {

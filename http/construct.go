@@ -67,6 +67,17 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 }
 
 func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.InitOption) func() {
+	if config.Use(opt.AppName).Debug() {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	if !conf.ColorfulConsole {
+		gin.DisableConsoleColor()
+	} else {
+		gin.ForceConsoleColor()
+	}
+
 	engine := gin.New()
 	engine.Use(
 		gin.Recovery(),
@@ -80,16 +91,6 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 			"message": "service internal error",
 		}),
 	)
-	if config.Use(opt.AppName).Debug() {
-		gin.SetMode(gin.DebugMode)
-	} else {
-		gin.SetMode(gin.ReleaseMode)
-	}
-	if !conf.ColorfulConsole {
-		gin.DisableConsoleColor()
-	} else {
-		gin.ForceConsoleColor()
-	}
 
 	tag := i18n.DefaultLang(i18n.AppName(opt.AppName))
 	engine.NoMethod(func(c *gin.Context) {

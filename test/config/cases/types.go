@@ -14,17 +14,17 @@ type appConf struct {
 	Forecast     forecast    `yaml:"Forecast"`
 }
 
-func (*appConf) BeforeLoad(conf any) {
-	log.Info(context.Background(), "get business configs before load: %+v", conf)
-	log.Info(context.Background(), "get business configs json before load: %s", utils.MustJsonMarshal(conf))
-	conf.(*appConf).AlgoService.Url = "before_load"
+func (a *appConf) BeforeLoad(opts ...utils.OptionExtender) {
+	log.Info(context.Background(), "get business configs before load: %+v", a)
+	log.Info(context.Background(), "get business configs json before load: %s", utils.MustJsonMarshal(a))
+	a.AlgoService.Url = "before_load"
 }
 
-func (*appConf) AfterLoad(conf any) {
-	log.Info(context.Background(), "get business configs after load: %+v", conf)
-	log.Info(context.Background(), "get business configs json after load: %s", utils.MustJsonMarshal(conf))
+func (a *appConf) AfterLoad(opts ...utils.OptionExtender) {
+	log.Info(context.Background(), "get business configs after load: %+v", a)
+	log.Info(context.Background(), "get business configs json after load: %s", utils.MustJsonMarshal(a))
+	a.DataService.Url = "after_load"
 
-	conf.(*appConf).DataService.Url = "after_load"
 }
 
 type azInfo struct {

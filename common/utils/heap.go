@@ -3,6 +3,8 @@ package utils
 import (
 	"container/heap"
 	"errors"
+
+	"github.com/wfusion/gofusion/common/utils/clone"
 )
 
 var (
@@ -43,11 +45,35 @@ func (h *Heap[E]) Element(index int) (e E, err error) {
 
 // Remove removes and returns the element at index i from the heap.
 // The complexity is O(log n) where n = h.Len().
-func (h *Heap[E]) Remove(index int) E { return heap.Remove(h.data, index).(E) }
-func (h *Heap[E]) Len() int           { return len(h.data.d) }
+func (h *Heap[E]) Remove(index int) E         { return heap.Remove(h.data, index).(E) }
+func (h *Heap[E]) Len() int                   { return len(h.data.d) }
+func (h *Heap[E]) Data() []E                  { return h.data.d }
+func (h *Heap[E]) Fix(index int)              { heap.Fix(h.data, index) }
+func (h *Heap[E]) Init()                      { heap.Init(h.data) }
+func (h *Heap[E]) CmpFn() func(e1, e2 E) bool { return h.data.cmp }
+
+// Clone heap
+func (h *Heap[E]) Clone() (r *Heap[E]) {
+	if h == nil {
+		return
+	}
+	ret := &_heap[E]{cmp: h.data.cmp, d: make([]E, 0, len(h.data.d))}
+	for _, e := range h.data.d {
+		if elem, ok := any(e).(clonable[E]); ok {
+			ret.d = append(ret.d, elem.Clone())
+		} else {
+			ret.d = append(ret.d, clone.Clone(e))
+		}
+	}
+	heap.Init(ret)
+	return &Heap[E]{data: ret}
+}
 
 // Copy heap
-func (h *Heap[E]) Copy() *Heap[E] {
+func (h *Heap[E]) Copy() (r *Heap[E]) {
+	if h == nil {
+		return
+	}
 	ret := &_heap[E]{cmp: h.data.cmp}
 	ret.d = make([]E, len(h.data.d))
 	copy(ret.d, h.data.d)

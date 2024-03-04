@@ -2,6 +2,8 @@ package utils
 
 import (
 	"sync"
+
+	"github.com/wfusion/gofusion/common/utils/clone"
 )
 
 type Set[T comparable] struct {
@@ -154,8 +156,32 @@ func (s *Set[T]) Equals(o *Set[T]) bool {
 	return true
 }
 
-func (s *Set[T]) Clone() (r *Set[T]) {
+func (s *Set[T]) Copy() (r *Set[T]) {
+	if s == nil {
+		return
+	}
+
 	s.m.RLock()
 	defer s.m.RUnlock()
 	return NewSet(s.Items()...)
+}
+
+func (s *Set[T]) Clone() (r *Set[T]) {
+	if s == nil {
+		return
+	}
+
+	s.m.RLock()
+	defer s.m.RUnlock()
+
+	r = NewSet[T]()
+	for _, e := range s.Items() {
+		if elem, ok := any(e).(clonable[T]); ok {
+			r.Insert(elem.Clone())
+		} else {
+			r.Insert(clone.Clone(e))
+		}
+	}
+
+	return
 }
