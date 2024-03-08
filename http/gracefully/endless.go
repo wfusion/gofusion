@@ -269,7 +269,16 @@ func (e *endlessServer) ListenAndServeTLS(certFile, keyFile string) (err error) 
 // after DefaultHammerTime.
 func (e *endlessServer) Shutdown() {
 	// make sure server Shutdown & log printed before Serve() return
-	defer close(e.close)
+	defer func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+		if _, ok := utils.IsChannelClosed(e.close); ok {
+			return
+		}
+		if e.close != nil {
+			close(e.close)
+		}
+	}()
 
 	if e.getState() != StateRunning {
 		return

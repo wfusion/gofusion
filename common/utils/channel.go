@@ -2,12 +2,12 @@ package utils
 
 func IsChannelClosed[T any](ch <-chan T) (data T, ok bool) {
 	select {
-	case d, closed := <-ch:
-		if closed {
+	case d, opened := <-ch:
+		if !opened {
 			ok = true
-			return
 		}
-		return d, false
+		data = d
+		return
 	default:
 		return
 	}
