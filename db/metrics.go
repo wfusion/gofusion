@@ -52,7 +52,6 @@ func metricDBStats(ctx context.Context, appName, name string, labels []metrics.L
 	case <-ctx.Done():
 		return
 	default:
-
 	}
 
 	_, _ = utils.Catch(func() {
@@ -110,7 +109,6 @@ func metricDBLatency(ctx context.Context, appName, name string, labels []metrics
 	case <-ctx.Done():
 		return
 	default:
-
 	}
 
 	_, _ = utils.Catch(func() {

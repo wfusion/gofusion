@@ -55,7 +55,6 @@ func metricRedisStats(ctx context.Context, appName, name string, labels []metric
 	case <-ctx.Done():
 		return
 	default:
-
 	}
 
 	_, _ = utils.Catch(func() {

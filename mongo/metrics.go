@@ -54,6 +54,12 @@ func startDaemonRoutines(ctx context.Context, appName, name string, conf *Conf) 
 }
 
 func metricMongoStats(ctx context.Context, appName, name string, labels []metrics.Label) {
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
+
 	_, _ = utils.Catch(func() {
 		var total, inuse int64
 		_, err := utils.Catch(func() {
@@ -95,7 +101,6 @@ func metricMongoLatency(ctx context.Context, appName, name string, labels []metr
 	case <-ctx.Done():
 		return
 	default:
-
 	}
 
 	_, _ = utils.Catch(func() {

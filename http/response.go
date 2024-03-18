@@ -35,6 +35,32 @@ var (
 	responseType = reflect.TypeOf(Response{})
 )
 
+func RspError(c *gin.Context, data any, page, count int, msg string, err error, opts ...utils.OptionExtender) {
+	var code int
+	switch e := err.(type) {
+	case Errcode:
+		code, msg = int(e), e.Error()
+	case *bizErr:
+		code, msg = int(e.code), e.Error()
+	default:
+		code, msg = int(errParam), e.Error()
+	}
+
+	r, _ := Use(opts...).(*router)
+	rspError(c, r.appName, code, data, page, count, msg)
+
+	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.parseHeaderMetrics(c),
+		cast.ToInt(code), c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+}
+
+func RspSuccess(c *gin.Context, data any, page, count int, msg string, opts ...utils.OptionExtender) {
+	r, _ := Use(opts...).(*router)
+	rspSuccess(c, r.successCode, data, page, count, msg)
+
+	go metricsCode(r.ctx, r.appName, c.Request.URL.Path, c.Request.Method, r.parseHeaderMetrics(c),
+		r.successCode, c.Writer.Status(), c.Writer.Size(), c.Request.ContentLength)
+}
+
 func rspSuccess(c *gin.Context, code int, data any, page, count int, msg string) {
 	status := c.Writer.Status()
 	if status <= 0 {

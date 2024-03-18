@@ -39,7 +39,7 @@ var (
 func startDaemonRoutines(ctx context.Context, appName string, conf *Conf) {
 	ticker := time.Tick(time.Second * 5)
 	app := config.Use(appName).AppName()
-	labels := []metrics.Label{}
+	labels := make([]metrics.Label, 0)
 	lastNumGc := atomic.NewUint32(0)
 
 	log.Printf("%v [Gofusion] %s %s metrics start", syscall.Getpid(), app, config.ComponentGoroutinePool)
@@ -60,7 +60,6 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 	case <-ctx.Done():
 		return
 	default:
-
 	}
 
 	_, _ = utils.Catch(func() {
