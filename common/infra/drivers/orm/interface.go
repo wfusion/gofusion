@@ -50,6 +50,8 @@ func (d *DB) GetDialector() gorm.Dialector {
 }
 
 func (d *DB) WithContext(ctx context.Context) *DB {
-	d.DB = d.DB.WithContext(ctx)
-	return d
+	return &DB{
+		DB:        d.DB.WithContext(ctx),
+		dialector: d.dialector,
+	}
 }

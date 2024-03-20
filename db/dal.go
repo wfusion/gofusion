@@ -281,7 +281,7 @@ func (d *dal[T, TS]) Transaction(ctx context.Context, fc func(context.Context) e
 
 func (d *dal[T, TS]) ReadDB(ctx context.Context) *gorm.DB {
 	o, _ := ctx.Value(fusCtx.KeyDALOption).(*mysqlDALOption)
-	if orm := GetCtxGormDB(ctx); orm != nil && orm.Name == d.readDBName {
+	if orm := GetCtxGormDBByName(ctx, d.readDBName); orm != nil {
 		return d.unscopedGormDB(orm.Model(d.Model()), o).WithContext(ctx)
 	}
 
@@ -293,21 +293,21 @@ func (d *dal[T, TS]) ReadDB(ctx context.Context) *gorm.DB {
 }
 func (d *dal[T, TS]) WriteDB(ctx context.Context) *gorm.DB {
 	o, _ := ctx.Value(fusCtx.KeyDALOption).(*mysqlDALOption)
-	if orm := GetCtxGormDB(ctx); orm != nil && orm.Name == d.writeDBName {
+	if orm := GetCtxGormDBByName(ctx, d.writeDBName); orm != nil {
 		return d.unscopedGormDB(orm.Model(d.Model()), o).WithContext(ctx)
 	}
 
 	return d.unscopedGormDB(Use(ctx, d.writeDBName, AppName(d.appName)).WithContext(ctx).Model(d.Model()), o)
 }
 func (d *dal[T, TS]) SetCtxReadDB(src context.Context) (dst context.Context) {
-	if orm := GetCtxGormDB(src); orm != nil && orm.Name == d.readDBName {
+	if orm := GetCtxGormDBByName(src, d.readDBName); orm != nil {
 		return src
 	}
 
 	return SetCtxGormDB(src, Use(src, d.readDBName, AppName(d.appName)))
 }
 func (d *dal[T, TS]) SetCtxWriteDB(src context.Context) (dst context.Context) {
-	if orm := GetCtxGormDB(src); orm != nil && orm.Name == d.writeDBName {
+	if orm := GetCtxGormDBByName(src, d.writeDBName); orm != nil {
 		return src
 	}
 	return SetCtxGormDB(src, Use(src, d.writeDBName, AppName(d.appName)))
@@ -382,7 +382,7 @@ func (d *dal[T, TS]) ShardingByModelList(ctx context.Context, src TS) (dst map[s
 }
 
 func (d *dal[T, TS]) writeDB(ctx context.Context) *DB {
-	if orm := GetCtxGormDB(ctx); orm != nil && orm.Name == d.writeDBName {
+	if orm := GetCtxGormDBByName(ctx, d.writeDBName); orm != nil {
 		return orm
 	}
 
