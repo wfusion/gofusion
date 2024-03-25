@@ -260,9 +260,9 @@ func (d *dal[T, TS]) Delete(ctx context.Context, query any, args ...any) (int64,
 
 func (d *dal[T, TS]) Transaction(ctx context.Context, fc func(context.Context) error,
 	opts ...utils.OptionExtender) error {
-	orm := GetCtxGormDB(ctx)
+	orm := GetCtxGormDBByNameList(ctx, []string{d.writeDBName, d.readDBName})
 	o := utils.ApplyOptions[mysqlDALOption](opts...)
-	if orm == nil || (orm.Name != d.writeDBName && orm.Name != d.readDBName) {
+	if orm == nil {
 		if o.useWriteDB {
 			orm = Use(ctx, d.writeDBName, AppName(d.appName))
 		} else {
@@ -281,13 +281,12 @@ func (d *dal[T, TS]) Transaction(ctx context.Context, fc func(context.Context) e
 
 func (d *dal[T, TS]) ReadDB(ctx context.Context) *gorm.DB {
 	o, _ := ctx.Value(fusCtx.KeyDALOption).(*mysqlDALOption)
-	if orm := GetCtxGormDBByName(ctx, d.readDBName); orm != nil {
-		return d.unscopedGormDB(orm.Model(d.Model()), o).WithContext(ctx)
-	}
-
 	dbName := d.readDBName
 	if o != nil && o.useWriteDB {
 		dbName = d.writeDBName
+	}
+	if orm := GetCtxGormDBByName(ctx, dbName); orm != nil {
+		return d.unscopedGormDB(orm.Model(d.Model()), o).WithContext(ctx)
 	}
 	return d.unscopedGormDB(Use(ctx, dbName, AppName(d.appName)).WithContext(ctx).Model(d.Model()), o)
 }

@@ -20,6 +20,15 @@ func GetCtxGormDBByName(ctx context.Context, name string) (db *DB) {
 	return
 }
 
+func GetCtxGormDBByNameList(ctx context.Context, nameList []string) (db *DB) {
+	names := utils.NewSet(nameList...)
+	utils.TravelCtx(ctx, func(ctx context.Context) bool {
+		db = utils.GetCtxAny(ctx, fusCtx.KeyGormDB, (*DB)(nil))
+		return db != nil && names.Contains(db.Name)
+	})
+	return
+}
+
 func SetCtxGormDB(ctx context.Context, db *DB) context.Context {
 	return utils.SetCtxAny(ctx, fusCtx.KeyGormDB, db)
 }
