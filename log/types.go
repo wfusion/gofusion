@@ -13,6 +13,7 @@ type Loggable interface {
 	Error(ctx context.Context, format string, args ...any)
 	Panic(ctx context.Context, format string, args ...any)
 	Fatal(ctx context.Context, format string, args ...any)
+	Level(ctx context.Context) Level
 	flush()
 }
 
@@ -20,6 +21,38 @@ const (
 	ErrDuplicatedName        utils.Error = "duplicated logger name"
 	ErrUnknownOutput         utils.Error = "unknown logger output"
 	ErrDefaultLoggerNotFound utils.Error = "default logger not found"
+)
+
+// A Level is a logging priority. Higher levels are more important.
+type Level int8
+
+const (
+	// DebugLevel logs are typically voluminous, and are usually disabled in
+	// production.
+	DebugLevel Level = iota - 1
+	// InfoLevel is the default logging priority.
+	InfoLevel
+	// WarnLevel logs are more important than Info, but don't need individual
+	// human review.
+	WarnLevel
+	// ErrorLevel logs are high-priority. If an application is running smoothly,
+	// it shouldn't generate any error-level logs.
+	ErrorLevel
+	// dPanicLevel logs are particularly important errors. In development the
+	// logger panics after writing the message.
+	dPanicLevel
+	// PanicLevel logs a message, then panics.
+	PanicLevel
+	// FatalLevel logs a message, then calls os.Exit(1).
+	FatalLevel
+
+	_minLevel = DebugLevel
+	_maxLevel = FatalLevel
+
+	// InvalidLevel is an invalid value for Level.
+	//
+	// Core implementations may panic if they see messages of this level.
+	InvalidLevel = _maxLevel + 1
 )
 
 // Conf log configure

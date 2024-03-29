@@ -134,6 +134,29 @@ func (l *logger) Fatal(ctx context.Context, format string, args ...any) {
 		lg.Fatal(ctx, msg, args...)
 	}
 }
+func (l *logger) Level(ctx context.Context) Level {
+	ctxLogger := GetCtxLogger(ctx, l)
+	lg, ok := ctxLogger.(*logger)
+	if !ok {
+		return InvalidLevel
+	}
+	switch lg.logger.Level() {
+	case zap.DebugLevel:
+		return DebugLevel
+	case zap.InfoLevel:
+		return InfoLevel
+	case zap.WarnLevel:
+		return WarnLevel
+	case zap.ErrorLevel:
+		return ErrorLevel
+	case zap.PanicLevel:
+		return PanicLevel
+	case zap.FatalLevel:
+		return FatalLevel
+	default:
+		return InfoLevel
+	}
+}
 func (l *logger) flush() {
 	ignore := func(err error) bool {
 		// ENOTTY:
