@@ -20,7 +20,7 @@ var (
 	pools         map[string]map[string]Pool
 	rwlock        sync.RWMutex
 	ignored       map[string]*atomic.Int64
-	idle          map[string]*atomic.Int64
+	idles         map[string]*atomic.Int64
 	defaultLogger map[string]ants.Logger
 )
 
@@ -104,12 +104,12 @@ func ignoreMutex() utils.OptionFunc[internalOption] {
 	}
 }
 
-func allocate(appName string, size int, o *NewPoolOption, opts ...utils.OptionExtender) {
+func allocate(appName string, delta int, o *NewPoolOption, opts ...utils.OptionExtender) {
 	oo := utils.ApplyOptions[internalOption](opts...)
-	demands := int64(size)
+	demands := int64(delta)
 	rwlock.RLock()
 	defer rwlock.RUnlock()
-	if idle[appName].Load()-demands < 0 && o.ApplyTimeout == 0 {
+	if idles[appName].Load()-demands < 0 && o.ApplyTimeout == 0 {
 		panic(ErrPoolOverload)
 	}
 
@@ -123,10 +123,10 @@ func allocate(appName string, size int, o *NewPoolOption, opts ...utils.OptionEx
 		case <-t.C:
 			panic(ErrTimeout)
 		default:
-			minuend := idle[appName].Load()
+			minuend := idles[appName].Load()
 			diff := minuend - demands
 			// main thread is a goroutine as well, so diff should be greater than 0
-			if diff <= 0 || !idle[appName].CompareAndSwap(minuend, diff) {
+			if diff <= 0 || !idles[appName].CompareAndSwap(minuend, diff) {
 				continue
 			}
 			if oo.ignoreRecycled {
@@ -140,8 +140,8 @@ func allocate(appName string, size int, o *NewPoolOption, opts ...utils.OptionEx
 
 func release(appName string, p *pool, opts ...utils.OptionExtender) {
 	o := utils.ApplyOptions[internalOption](opts...)
-	capacity := int64(1)
-	if pools == nil || pools[appName] == nil || idle == nil || idle[appName] == nil {
+	delta := int64(1)
+	if pools == nil || pools[appName] == nil || idles == nil || idles[appName] == nil {
 		return
 	}
 
@@ -151,16 +151,16 @@ func release(appName string, p *pool, opts ...utils.OptionExtender) {
 			defer rwlock.Unlock()
 		}
 		delete(pools[appName], p.name)
-		capacity = int64(p.pool.Cap())
+		delta = int64(p.pool.Cap())
 	}
 
-	alloc := idle[appName]
+	alloc := idles[appName]
 	if alloc == nil {
 		return
 	}
-	alloc.Add(capacity)
+	alloc.Add(delta)
 	if o != nil && o.ignoreRecycled {
-		alloc.Sub(capacity)
+		alloc.Sub(delta)
 	}
 }
 

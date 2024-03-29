@@ -290,3 +290,20 @@ func (t *Candy) TestWhenAllWithFuture() {
 		t.EqualValues(expected*2, sum.Load())
 	})
 }
+
+func (t *Candy) TestReachMax() {
+	t.Catch(func() {
+		futureList := make([]any, 0, 100)
+		for i := 0; i < 100; i++ {
+			futureList = append(futureList, routine.Promise(func(idx int) {
+				ctx := context.Background()
+				log.Info(ctx, "goroutine %d start", idx)
+				defer log.Info(ctx, "goroutine %d end", idx)
+
+				<-time.After(50 * time.Millisecond)
+			}, true, routine.Args(i), routine.AppName(t.AppName())))
+		}
+
+		_, _ = routine.WhenAll(append(futureList, routine.AppName(t.AppName()))...).Get()
+	})
+}

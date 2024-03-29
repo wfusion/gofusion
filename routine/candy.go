@@ -15,10 +15,11 @@ import (
 )
 
 type candyOption struct {
-	args    []any
-	ch      chan<- any
-	wg      *sync.WaitGroup
-	appName string
+	args     []any
+	ch       chan<- any
+	wg       *sync.WaitGroup
+	appName  string
+	funcName string
 }
 
 func Args(args ...any) utils.OptionFunc[candyOption] {
@@ -45,21 +46,29 @@ func AppName(name string) utils.OptionFunc[candyOption] {
 	}
 }
 
+func FuncName(name string) utils.OptionFunc[candyOption] {
+	return func(o *candyOption) {
+		o.funcName = name
+	}
+}
+
 func Go(task any, opts ...utils.OptionExtender) {
-	funcName := utils.GetFuncName(task)
 	opt := utils.ApplyOptions[candyOption](opts...)
+	if opt.funcName == "" {
+		opt.funcName = utils.GetFuncName(task)
+	}
 	allocate(opt.appName, 1, &NewPoolOption{ApplyTimeout: -1})
 	exec := func() {
 		defer func() {
 			release(opt.appName, nil, nil)
-			delRoutine(opt.appName, funcName)
+			delRoutine(opt.appName, opt.funcName)
 			if opt.wg != nil {
 				opt.wg.Done()
 			}
 			wg.Done()
 		}()
 
-		addRoutine(opt.appName, funcName)
+		addRoutine(opt.appName, opt.funcName)
 		wrapPromise(task, false, opts...).
 			OnFailure(func(v any) {
 				if opt.ch == nil {
@@ -84,20 +93,22 @@ func Go(task any, opts ...utils.OptionExtender) {
 }
 
 func Goc(ctx context.Context, task any, opts ...utils.OptionExtender) {
-	funcName := utils.GetFuncName(task)
 	opt := utils.ApplyOptions[candyOption](opts...)
+	if opt.funcName == "" {
+		opt.funcName = utils.GetFuncName(task)
+	}
 	allocate(opt.appName, 1, &NewPoolOption{ApplyTimeout: -1})
 	exec := func() {
 		defer func() {
 			release(opt.appName, nil, nil)
-			delRoutine(opt.appName, funcName)
+			delRoutine(opt.appName, opt.funcName)
 			if opt.wg != nil {
 				opt.wg.Done()
 			}
 			wg.Done()
 		}()
 
-		addRoutine(opt.appName, funcName)
+		addRoutine(opt.appName, opt.funcName)
 		select {
 		case <-ctx.Done():
 		case <-wrapPromise(task, false, opts...).
@@ -187,18 +198,7 @@ func Loopc(ctx context.Context, task any, opts ...utils.OptionExtender) {
 
 func Promise(fn any, async bool, opts ...utils.OptionExtender) *Future {
 	opt := utils.ApplyOptions[candyOption](opts...)
-	funcName := utils.GetFuncName(fn)
-	allocate(opt.appName, 1, &NewPoolOption{ApplyTimeout: -1}, ignoreRecycled())
-	defer func() {
-		release(opt.appName, nil, ignoreRecycled())
-		delRoutine(opt.appName, funcName)
-		if opt.wg != nil {
-			opt.wg.Done()
-		}
-	}()
-
-	addRoutine(opt.appName, funcName)
-	return wrapPromise(fn, async && !forceSync(opt.appName), opts...).
+	return wrapPromise(fn, async && !forceSync(opt.appName), append(opts, FuncName(utils.GetFuncName(fn)))...).
 		OnFailure(func(v any) {
 			if opt.ch == nil {
 				log.Printf("[Gofusion] %s catches an error in routine.Loop function: \n"+
@@ -297,7 +297,6 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 			acts = append(acts[:i], acts[i+1:]...)
 		}
 	}
-	opt := utils.ApplyOptions[candyOption](opts...)
 	fs := make([]*Future, len(acts))
 	for i, act := range acts {
 		fs[i] = Promise(act, true, opts...)
@@ -315,7 +314,15 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 		close(c)
 	}
 
-	Go(func() {
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				_ = nf.Reject(newErrorWithStacks(e))
+			}
+			closeChan(chFails)
+			closeChan(chDones)
+		}()
+
 		for i, f := range fs {
 			k := i
 			f.OnSuccess(func(v any) {
@@ -329,7 +336,7 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 				chFails <- anyPromiseResult{result: ErrCancelled, i: k}
 			})
 		}
-	}, AppName(opt.appName))
+	}()
 
 	if len(fs) == 1 {
 		select {
@@ -350,7 +357,7 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 		closeChan(chFails)
 		closeChan(chDones)
 	} else {
-		Go(func() {
+		go func() {
 			defer func() {
 				if e := recover(); e != nil {
 					_ = nf.Reject(newErrorWithStacks(e))
@@ -396,7 +403,7 @@ func WhenAnyMatched(predicate func(any) bool, acts ...any) *Future {
 					break
 				}
 			}
-		}, AppName(opt.appName))
+		}()
 	}
 	return nf.Future
 }
@@ -454,7 +461,13 @@ func whenAllFuture(fs []*Future, opts ...utils.OptionExtender) *Future {
 			}
 		}
 
-		Go(func() {
+		go func() {
+			defer func() {
+				if e := recover(); e != nil {
+					_ = wf.Reject(newErrorWithStacks(e))
+				}
+			}()
+
 			isCancelled := int32(0)
 			for i, f := range fs {
 				j := i
@@ -483,7 +496,7 @@ func whenAllFuture(fs []*Future, opts ...utils.OptionExtender) *Future {
 					}
 				})
 			}
-		}, AppName(opt.appName))
+		}()
 	}
 
 	return wf.Future

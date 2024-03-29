@@ -3,7 +3,7 @@ base:
   app: gofusion
   goroutine_pool:
     force_sync: false
-    max_routine_amount: -1
+    max_routine_amount: 10
     enabled_logger: true
 
   log:

@@ -64,8 +64,8 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 
 	_, _ = utils.Catch(func() {
 		var routineNum int64
-		if idle != nil && idle[appName] != nil {
-			routineNum = int64(conf.MaxRoutineAmount) - idle[appName].Load()
+		if idles != nil && idles[appName] != nil {
+			routineNum = int64(conf.MaxRoutineAmount) - idles[appName].Load()
 		}
 
 		// export number of Goroutines

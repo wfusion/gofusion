@@ -101,10 +101,20 @@ func (f *Future) SetTimeout(timeout time.Duration) *Future {
 		timeout = 10 * time.Nanosecond
 	}
 
-	Go(func() {
-		<-time.After(timeout)
+	go func() {
+		defer func() {
+			if e := recover(); e != nil {
+				err := newErrorWithStacks(e)
+				fmt.Println("error happens:\n ", err)
+			}
+		}()
+
+		timer := time.NewTimer(timeout)
+		defer timer.Stop()
+		<-timer.C
+
 		_ = f.Cancel()
-	}, AppName(f.AppName))
+	}()
 	return f
 }
 
@@ -136,8 +146,12 @@ func (f *Future) GetOrTimeout(timeout time.Duration) (val any, timout bool, err 
 		timeout = 10 * time.Nanosecond
 	}
 
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
 	select {
-	case <-time.After(timeout):
+	case <-timer.C:
+		_ = f.Cancel()
 		return nil, true, nil
 	case <-f.final:
 		r, err := getFutureReturnVal(f.loadResult())
@@ -312,19 +326,31 @@ func (f *Future) setResult(r *Result) (e error) {
 
 			// call callback functions and start the promise pipeline
 			if len(v.dones) > 0 || len(v.fails) > 0 || len(v.always) > 0 || len(v.cancels) > 0 {
-				Go(func() {
+				go func() {
+					defer func() {
+						if e := recover(); e != nil {
+							err := newErrorWithStacks(e)
+							fmt.Println("error happens:\n ", err)
+						}
+					}()
 					execCallback(r, v.dones, v.fails, v.always, v.cancels)
-				}, AppName(f.AppName))
+				}()
 			}
 
 			// start the pipeline
 			if len(v.pipes) > 0 {
-				Go(func() {
+				go func() {
+					defer func() {
+						if e := recover(); e != nil {
+							err := newErrorWithStacks(e)
+							fmt.Println("error happens:\n ", err)
+						}
+					}()
 					for _, pipe := range v.pipes {
 						pipeTask, pipePromise := pipe.getPipe(r.Typ == ResultSuccess)
 						startPipe(r, pipeTask, pipePromise)
 					}
-				}, AppName(f.AppName))
+				}()
 			}
 			e = nil
 			break
