@@ -1,9 +1,9 @@
 package utils
 
 func SliceRemove[T any, TS ~[]T](s TS, filter func(t T) bool) (d TS) {
-	for i, item := range s {
-		if filter(item) {
-			s = append(s[i:], s[i+1:]...)
+	for i := len(s) - 1; i >= 0; i-- {
+		if filter(s[i]) {
+			s = append(s[:i], s[i+1:]...)
 		}
 	}
 	return s
