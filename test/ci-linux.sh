@@ -49,7 +49,7 @@ export JAVA_TOOL_OPTIONS='-Dfile.encoding="UTF-8" -Dsun.jnu.encoding="UTF-8"'
 GOBIN=$(go env GOPATH)/bin
 
 # run test
-COVER_PKG=$(find -type d -printf '%P\n' | egrep -v '^$|^.git/*|^test/*|^assets/*|^.idea/*|^common/fus/*|^common/infra/drivers/orm/opengauss/*|^common/infra/asynq/*|^common/infra/metrics/*|^common/infra/watermill/*|^common/infra/rotatelog/*|^common/utils/gomonkey/*|^common/utils/sqlparser/*' | awk '{print "github.com/wfusion/gofusion/" $0}' | sed ':a;N;$!ba;s/\n/,/g')
+COVER_PKG=$(find -type d -printf '%P\n' | egrep -v '^$|^.git/*|^test/*|^assets/*|^.idea/*|^common/fus/*|^common/infra/drivers/orm/opengauss/*|^common/infra/drivers/orm/sqlite/*|^common/infra/asynq/*|^common/infra/metrics/*|^common/infra/watermill/*|^common/infra/rotatelog/*|^common/utils/gomonkey/*|^common/utils/sqlparser/*' | awk '{print "github.com/wfusion/gofusion/" $0}' | sed ':a;N;$!ba;s/\n/,/g')
 "${GOBIN}"/gotestsum --junitfile "${OUTPUT}"/junit.xml -- -timeout 30m -parallel 1 ./test/... -coverpkg="${COVER_PKG}" -coverprofile="${OUTPUT}"/coverage.out -covermode count || true
 
 # export test report

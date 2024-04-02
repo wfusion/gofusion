@@ -83,7 +83,7 @@ Use "fus [command] --help" for more information about a command.
 # 单元测试
 
 - 基于 allure 的单测用例报告, [test result](../../unittest/unittest.html)
-- 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 58.7%
+- 基于 github.com/nikolaydubina/go-cover-treemap 生成的单测覆盖率报告, 当前覆盖率为 60%
 
 ![go-cover-treemap](../../unittest/coverage.svg)
 
@@ -342,7 +342,7 @@ Use "fus [command] --help" for more information about a command.
 - [jinzhu/configor](https://github.com/jinzhu/configor)
 - [go-gorm/postgres](https://github.com/go-gorm/postgres)
 - [natefinch/lumberjack](https://github.com/natefinch/lumberjack)
-
+- [glebarez/sqlite](https://github.com/glebarez/sqlite)
 # Todo List
 
 - [ ] metrics each component
