@@ -15,16 +15,42 @@ import (
 )
 
 var (
-	metricsRuntimeTotalGoroutinesKey     = []string{"runtime", "total_goroutines"}
-	metricsRuntimeGoroutinesKey          = []string{"runtime", "fus_goroutines"}
-	metricsRuntimeAllocBytesKey          = []string{"runtime", "alloc_bytes"}
-	metricsRuntimeSysBytesKey            = []string{"runtime", "sys_bytes"}
-	metricsRuntimeMallocCountKey         = []string{"runtime", "malloc_count"}
-	metricsRuntimeFreeCountKey           = []string{"runtime", "free_count"}
-	metricsRuntimeHeapObjectsKey         = []string{"runtime", "heap_objects"}
-	metricsRuntimeGCRunsKey              = []string{"runtime", "total_gc_runs"}
-	metricsRuntimeTotalSTWLatencyKey     = []string{"runtime", "total_gc_pause_ns"}
-	metricsRuntimeTotalSTWLatencyBuckets = []float64{
+	metricsRuntimeCpuGoroutinesKey = []string{"runtime", "cpu", "goroutines"}
+	metricsRuntimeCpuCgoCallsKey   = []string{"runtime", "cpu", "cgo_calls"}
+	metricsRuntimeFusGoroutinesKey = []string{"runtime", "fus", "goroutines"}
+
+	metricsRuntimeMemAllocKey   = []string{"runtime", "mem", "alloc"}
+	metricsRuntimeMemTotalKey   = []string{"runtime", "mem", "total"}
+	metricsRuntimeMemSysKey     = []string{"runtime", "mem", "sys"}
+	metricsRuntimeMemLookupsKey = []string{"runtime", "mem", "lookups"}
+	metricsRuntimeMemMallocKey  = []string{"runtime", "mem", "malloc"}
+	metricsRuntimeMemFreesKey   = []string{"runtime", "mem", "frees"}
+
+	metricsRuntimeHeapAllocKey    = []string{"runtime", "heap", "alloc"}
+	metricsRuntimeHeapSysKey      = []string{"runtime", "heap", "sys"}
+	metricsRuntimeHeapIdleKey     = []string{"runtime", "heap", "idle"}
+	metricsRuntimeHeapInuseKey    = []string{"runtime", "heap", "inuse"}
+	metricsRuntimeHeapReleasedKey = []string{"runtime", "heap", "released"}
+	metricsRuntimeHeapObjectsKey  = []string{"runtime", "heap", "objects"}
+
+	metricsRuntimeStackInuseKey  = []string{"runtime", "stack", "inuse"}
+	metricsRuntimeStackSysKey    = []string{"runtime", "stack", "sys"}
+	metricsRuntimeMSpanInuseKey  = []string{"runtime", "mspan", "inuse"}
+	metricsRuntimeMSpanSysKey    = []string{"runtime", "mspan", "sys"}
+	metricsRuntimeMCacheInuseKey = []string{"runtime", "mcache", "inuse"}
+	metricsRuntimeMCacheSysKey   = []string{"runtime", "mcache", "sys"}
+
+	metricsRuntimeOtherSysKey = []string{"runtime", "other", "sys"}
+
+	metricsRuntimeGCSysKey        = []string{"runtime", "gc", "sys"}
+	metricsRuntimeGCNextKey       = []string{"runtime", "gc", "next"}
+	metricsRuntimeGCLastKey       = []string{"runtime", "gc", "last"}
+	metricsRuntimeGCCountKey      = []string{"runtime", "gc", "count"}
+	metricsRuntimeGCForceCountKey = []string{"runtime", "gc", "force", "count"}
+	metricsRuntimeGCPauseNSKey    = []string{"runtime", "gc", "pause_ns"}
+	metricsRuntimeGCPauseTotalKey = []string{"runtime", "gc", "pause_total"}
+
+	metricsRuntimeGCPauseNSBuckets = []float64{
 		1000, 2500, 5000, 7500, 9000, 9500, 9900, // 1μs - 9.9μs
 		10000, 25000, 50000, 75000, 90000, 95000, 99000, // 0.01ms - 0.099ms
 		100000, 250000, 500000, 750000, 900000, 950000, 990000, // 0.1ms - 0.99ms
@@ -70,6 +96,7 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 
 		// export number of Goroutines
 		totalRoutineNum := runtime.NumGoroutine()
+		totalCgoCallsNum := runtime.NumCgoCall()
 
 		// export memory stats
 		var stats runtime.MemStats
@@ -87,46 +114,124 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 		}
 
 		app := config.Use(appName).AppName()
-		totalGoRoutinesKey := append([]string{app}, metricsRuntimeTotalGoroutinesKey...)
-		goroutineKey := append([]string{app}, metricsRuntimeGoroutinesKey...)
-		allocBytesKey := append([]string{app}, metricsRuntimeAllocBytesKey...)
-		sysBytesKey := append([]string{app}, metricsRuntimeSysBytesKey...)
-		mallocCountKey := append([]string{app}, metricsRuntimeMallocCountKey...)
-		freeCountKey := append([]string{app}, metricsRuntimeFreeCountKey...)
-		heapObjectsKey := append([]string{app}, metricsRuntimeHeapObjectsKey...)
-		gcRunsKey := append([]string{app}, metricsRuntimeGCRunsKey...)
-		totalSTWLatencyKey := append([]string{app}, metricsRuntimeTotalSTWLatencyKey...)
 
+		cpuGoRoutinesKey := append([]string{app}, metricsRuntimeCpuGoroutinesKey...)
+		cpuCgoCallsKey := append([]string{app}, metricsRuntimeCpuCgoCallsKey...)
+		fusGoroutineKey := append([]string{app}, metricsRuntimeFusGoroutinesKey...)
+
+		memAllocKey := append([]string{app}, metricsRuntimeMemAllocKey...)
+		memTotalKey := append([]string{app}, metricsRuntimeMemTotalKey...)
+		memSysKey := append([]string{app}, metricsRuntimeMemSysKey...)
+		memLookupsKey := append([]string{app}, metricsRuntimeMemLookupsKey...)
+		memMallocKey := append([]string{app}, metricsRuntimeMemMallocKey...)
+		memFreesKey := append([]string{app}, metricsRuntimeMemFreesKey...)
+
+		heapAllocKey := append([]string{app}, metricsRuntimeHeapAllocKey...)
+		heapSysKey := append([]string{app}, metricsRuntimeHeapSysKey...)
+		heapIdleKey := append([]string{app}, metricsRuntimeHeapIdleKey...)
+		heapInuseKey := append([]string{app}, metricsRuntimeHeapInuseKey...)
+		heapReleasedKey := append([]string{app}, metricsRuntimeHeapReleasedKey...)
+		heapObjectsKey := append([]string{app}, metricsRuntimeHeapObjectsKey...)
+
+		stackInuseKey := append([]string{app}, metricsRuntimeStackInuseKey...)
+		stackSysKey := append([]string{app}, metricsRuntimeStackSysKey...)
+		mspanInuseKey := append([]string{app}, metricsRuntimeMSpanInuseKey...)
+		mspanSysKey := append([]string{app}, metricsRuntimeMSpanSysKey...)
+		mcacheInuseKey := append([]string{app}, metricsRuntimeMCacheInuseKey...)
+		mcacheSysKey := append([]string{app}, metricsRuntimeMCacheSysKey...)
+
+		otherSysKey := append([]string{app}, metricsRuntimeOtherSysKey...)
+
+		gcSysKey := append([]string{app}, metricsRuntimeGCSysKey...)
+		gcNextKey := append([]string{app}, metricsRuntimeGCNextKey...)
+		gcLastKey := append([]string{app}, metricsRuntimeGCLastKey...)
+		gcCountKey := append([]string{app}, metricsRuntimeGCCountKey...)
+		gcForceCountKey := append([]string{app}, metricsRuntimeGCForceCountKey...)
+		gcPauseNSKey := append([]string{app}, metricsRuntimeGCPauseNSKey...)
+		gcPauseTotalKey := append([]string{app}, metricsRuntimeGCPauseTotalKey...)
+
+		metricsLabels := metrics.Labels(labels)
 		for _, m := range metrics.Internal(metrics.AppName(appName)) {
 			select {
 			case <-ctx.Done():
 				return
 			default:
 				if m.IsEnableServiceLabel() {
-					m.SetGauge(ctx, totalGoRoutinesKey, float64(totalRoutineNum), metrics.Labels(labels))
-					m.SetGauge(ctx, goroutineKey, float64(routineNum), metrics.Labels(labels))
-					m.SetGauge(ctx, allocBytesKey, float64(stats.Alloc), metrics.Labels(labels))
-					m.SetGauge(ctx, sysBytesKey, float64(stats.Sys), metrics.Labels(labels))
-					m.SetGauge(ctx, mallocCountKey, float64(stats.Mallocs), metrics.Labels(labels))
-					m.SetGauge(ctx, freeCountKey, float64(stats.Frees), metrics.Labels(labels))
-					m.SetGauge(ctx, heapObjectsKey, float64(stats.HeapObjects), metrics.Labels(labels))
-					m.SetGauge(ctx, gcRunsKey, float64(stats.NumGC), metrics.Labels(labels))
+					m.SetGauge(ctx, cpuGoRoutinesKey, float64(totalRoutineNum), metricsLabels)
+					m.SetGauge(ctx, cpuCgoCallsKey, float64(totalCgoCallsNum), metricsLabels)
+					m.SetGauge(ctx, fusGoroutineKey, float64(routineNum), metricsLabels)
+
+					m.SetGauge(ctx, memAllocKey, float64(stats.Alloc), metricsLabels)
+					m.SetGauge(ctx, memTotalKey, float64(stats.TotalAlloc), metricsLabels)
+					m.SetGauge(ctx, memSysKey, float64(stats.Sys), metricsLabels)
+					m.SetGauge(ctx, memLookupsKey, float64(stats.Lookups), metricsLabels)
+					m.SetGauge(ctx, memMallocKey, float64(stats.Mallocs), metricsLabels)
+					m.SetGauge(ctx, memFreesKey, float64(stats.Frees), metricsLabels)
+
+					m.SetGauge(ctx, heapAllocKey, float64(stats.HeapAlloc), metricsLabels)
+					m.SetGauge(ctx, heapSysKey, float64(stats.HeapSys), metricsLabels)
+					m.SetGauge(ctx, heapIdleKey, float64(stats.HeapIdle), metricsLabels)
+					m.SetGauge(ctx, heapInuseKey, float64(stats.HeapInuse), metricsLabels)
+					m.SetGauge(ctx, heapReleasedKey, float64(stats.HeapReleased), metricsLabels)
+					m.SetGauge(ctx, heapObjectsKey, float64(stats.HeapObjects), metricsLabels)
+
+					m.SetGauge(ctx, stackInuseKey, float64(stats.StackInuse), metricsLabels)
+					m.SetGauge(ctx, stackSysKey, float64(stats.StackSys), metricsLabels)
+					m.SetGauge(ctx, mspanInuseKey, float64(stats.MSpanInuse), metricsLabels)
+					m.SetGauge(ctx, mspanSysKey, float64(stats.MSpanSys), metricsLabels)
+					m.SetGauge(ctx, mcacheInuseKey, float64(stats.MCacheInuse), metricsLabels)
+					m.SetGauge(ctx, mcacheSysKey, float64(stats.MCacheSys), metricsLabels)
+
+					m.SetGauge(ctx, otherSysKey, float64(stats.OtherSys), metricsLabels)
+
+					m.SetGauge(ctx, gcSysKey, float64(stats.GCSys), metricsLabels)
+					m.SetGauge(ctx, gcNextKey, float64(stats.NextGC), metricsLabels)
+					m.SetGauge(ctx, gcLastKey, float64(stats.LastGC), metricsLabels)
+					m.SetGauge(ctx, gcCountKey, float64(stats.NumGC), metricsLabels)
+					m.SetGauge(ctx, gcForceCountKey, float64(stats.NumForcedGC), metricsLabels)
+					m.SetGauge(ctx, gcPauseTotalKey, float64(stats.PauseTotalNs), metricsLabels)
 					for i := lastNumGc.Load(); i < stats.NumGC; i++ {
-						m.AddSample(ctx, totalSTWLatencyKey, float64(stats.PauseNs[i%256]), metrics.Labels(labels))
+						m.AddSample(ctx, gcPauseNSKey, float64(stats.PauseNs[i%256]),
+							metricsLabels, metrics.PrometheusBuckets(metricsRuntimeGCPauseNSBuckets))
 					}
 				} else {
-					m.SetGauge(ctx, metricsRuntimeTotalGoroutinesKey, float64(totalRoutineNum), metrics.Labels(labels))
-					m.SetGauge(ctx, metricsRuntimeGoroutinesKey, float64(routineNum), metrics.Labels(labels))
-					m.SetGauge(ctx, metricsRuntimeAllocBytesKey, float64(stats.Alloc), metrics.Labels(labels))
-					m.SetGauge(ctx, metricsRuntimeSysBytesKey, float64(stats.Sys), metrics.Labels(labels))
-					m.SetGauge(ctx, metricsRuntimeMallocCountKey, float64(stats.Mallocs), metrics.Labels(labels))
-					m.SetGauge(ctx, metricsRuntimeFreeCountKey, float64(stats.Frees), metrics.Labels(labels))
-					m.SetGauge(ctx, metricsRuntimeHeapObjectsKey, float64(stats.HeapObjects), metrics.Labels(labels))
-					m.SetGauge(ctx, metricsRuntimeGCRunsKey, float64(stats.NumGC), metrics.Labels(labels))
+					m.SetGauge(ctx, metricsRuntimeCpuGoroutinesKey, float64(totalRoutineNum), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeCpuCgoCallsKey, float64(totalCgoCallsNum), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeFusGoroutinesKey, float64(routineNum), metricsLabels)
+
+					m.SetGauge(ctx, metricsRuntimeMemAllocKey, float64(stats.Alloc), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMemTotalKey, float64(stats.TotalAlloc), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMemSysKey, float64(stats.Sys), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMemLookupsKey, float64(stats.Lookups), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMemMallocKey, float64(stats.Mallocs), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMemFreesKey, float64(stats.Frees), metricsLabels)
+
+					m.SetGauge(ctx, metricsRuntimeHeapAllocKey, float64(stats.HeapAlloc), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeHeapSysKey, float64(stats.HeapSys), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeHeapIdleKey, float64(stats.HeapIdle), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeHeapInuseKey, float64(stats.HeapInuse), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeHeapReleasedKey, float64(stats.HeapReleased), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeHeapObjectsKey, float64(stats.HeapObjects), metricsLabels)
+
+					m.SetGauge(ctx, metricsRuntimeStackInuseKey, float64(stats.StackInuse), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeStackSysKey, float64(stats.StackSys), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMSpanInuseKey, float64(stats.MSpanInuse), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMSpanSysKey, float64(stats.MSpanSys), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMCacheInuseKey, float64(stats.MCacheInuse), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeMCacheSysKey, float64(stats.MCacheSys), metricsLabels)
+
+					m.SetGauge(ctx, metricsRuntimeOtherSysKey, float64(stats.OtherSys), metricsLabels)
+
+					m.SetGauge(ctx, metricsRuntimeGCSysKey, float64(stats.GCSys), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeGCNextKey, float64(stats.NextGC), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeGCLastKey, float64(stats.LastGC), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeGCCountKey, float64(stats.NumGC), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeGCForceCountKey, float64(stats.NumForcedGC), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeGCPauseTotalKey, float64(stats.PauseTotalNs), metricsLabels)
 					for i := lastNumGc.Load(); i < stats.NumGC; i++ {
-						m.AddSample(ctx, metricsRuntimeTotalSTWLatencyKey, float64(stats.PauseNs[i%256]),
-							metrics.Labels(labels),
-							metrics.PrometheusBuckets(metricsRuntimeTotalSTWLatencyBuckets),
+						m.AddSample(ctx, metricsRuntimeGCPauseNSKey, float64(stats.PauseNs[i%256]),
+							metricsLabels,
+							metrics.PrometheusBuckets(metricsRuntimeGCPauseNSBuckets),
 						)
 					}
 				}
