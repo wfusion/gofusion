@@ -198,7 +198,13 @@ func Loopc(ctx context.Context, task any, opts ...utils.OptionExtender) {
 
 func Promise(fn any, async bool, opts ...utils.OptionExtender) *Future {
 	opt := utils.ApplyOptions[candyOption](opts...)
-	return wrapPromise(fn, async && !forceSync(opt.appName), append(opts, FuncName(utils.GetFuncName(fn)))...).
+	async = async && !forceSync(opt.appName)
+	defer func() {
+		if !async && opt.wg != nil {
+			opt.wg.Done()
+		}
+	}()
+	return wrapPromise(fn, async, append(opts, FuncName(utils.GetFuncName(fn)))...).
 		OnFailure(func(v any) {
 			if opt.ch == nil {
 				log.Printf("[Gofusion] %s catches an error in routine.Loop function: \n"+
@@ -557,7 +563,7 @@ func start(act any, async bool, opts ...utils.OptionExtender) *Future {
 						_ = p.Reject(err)
 					}
 				}
-			}, AppName(opt.appName))
+			}, opts...)
 		}
 	}
 

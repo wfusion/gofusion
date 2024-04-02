@@ -6,7 +6,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/glebarez/sqlite"
 	"github.com/pkg/errors"
 	"gorm.io/driver/clickhouse"
 	"gorm.io/driver/mysql"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/infra/drivers/orm/opengauss"
+	"github.com/wfusion/gofusion/common/infra/drivers/orm/sqlite"
 	"github.com/wfusion/gofusion/common/utils"
 )
 

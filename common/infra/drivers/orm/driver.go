@@ -1,7 +1,7 @@
 package orm
 
 import (
-	"github.com/glebarez/sqlite"
+	"github.com/wfusion/gofusion/common/infra/drivers/orm/sqlite"
 )
 
 type driver string

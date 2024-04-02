@@ -38,8 +38,10 @@ func BuildCreateSQL(db *gorm.DB) {
 
 	if db.Statement.SQL.Len() == 0 {
 		db.Statement.SQL.Grow(180)
+
 		db.Statement.AddClauseIfNotExists(clause.Insert{})
 		db.Statement.AddClause(callbacks.ConvertToCreateValues(db.Statement))
+		delete(db.Statement.Clauses, clause.From{}.Name())
 
 		db.Statement.Build(db.Statement.BuildClauses...)
 	}
@@ -55,6 +57,7 @@ func BuildUpdateSQL(db *gorm.DB) {
 	if db.Statement.SQL.Len() == 0 {
 		db.Statement.SQL.Grow(180)
 		db.Statement.AddClauseIfNotExists(clause.Update{})
+		delete(db.Statement.Clauses, clause.From{}.Name())
 		if _, ok := db.Statement.Clauses["SET"]; !ok {
 			if set := callbacks.ConvertToAssignments(db.Statement); len(set) != 0 {
 				db.Statement.AddClause(set)
@@ -80,50 +83,30 @@ func BuildDeleteSQL(db *gorm.DB) {
 
 	stmt := db.Statement
 	stmt.SQL.Grow(180)
-	if softdelete.IsClausesWithSoftDelete(db.Statement.Clauses) {
-		stmt.AddClauseIfNotExists(clause.Update{})
+	if stmt.Schema != nil {
+		_, queryValues := schema.GetIdentityFieldValuesMap(stmt.Context, stmt.ReflectValue, stmt.Schema.PrimaryFields)
+		column, values := schema.ToQueryValues(stmt.Table, stmt.Schema.PrimaryFieldDBNames, queryValues)
 
-		if stmt.Schema != nil {
-			_, queryValues := schema.GetIdentityFieldValuesMap(stmt.Context, stmt.ReflectValue, stmt.Schema.PrimaryFields)
-			column, values := schema.ToQueryValues(stmt.Table, stmt.Schema.PrimaryFieldDBNames, queryValues)
+		if len(values) > 0 {
+			stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.IN{Column: column, Values: values}}})
+		}
+
+		if stmt.ReflectValue.CanAddr() && stmt.Dest != stmt.Model && stmt.Model != nil {
+			_, queryValues = schema.GetIdentityFieldValuesMap(stmt.Context, reflect.ValueOf(stmt.Model), stmt.Schema.PrimaryFields)
+			column, values = schema.ToQueryValues(stmt.Table, stmt.Schema.PrimaryFieldDBNames, queryValues)
 
 			if len(values) > 0 {
 				stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.IN{Column: column, Values: values}}})
 			}
-
-			if stmt.ReflectValue.CanAddr() && stmt.Dest != stmt.Model && stmt.Model != nil {
-				_, queryValues = schema.GetIdentityFieldValuesMap(stmt.Context, reflect.ValueOf(stmt.Model), stmt.Schema.PrimaryFields)
-				column, values = schema.ToQueryValues(stmt.Table, stmt.Schema.PrimaryFieldDBNames, queryValues)
-
-				if len(values) > 0 {
-					stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.IN{Column: column, Values: values}}})
-				}
-			}
 		}
+	}
 
-		stmt.AddClauseIfNotExists(clause.From{})
+	if softdelete.IsClausesWithSoftDelete(db.Statement.Clauses) {
+		stmt.AddClauseIfNotExists(clause.Update{})
+		delete(stmt.Clauses, clause.From{}.Name())
 		stmt.Build(stmt.DB.Callback().Update().Clauses...)
 	} else {
 		stmt.AddClauseIfNotExists(clause.Delete{})
-
-		if stmt.Schema != nil {
-			_, queryValues := schema.GetIdentityFieldValuesMap(stmt.Context, stmt.ReflectValue, stmt.Schema.PrimaryFields)
-			column, values := schema.ToQueryValues(stmt.Table, stmt.Schema.PrimaryFieldDBNames, queryValues)
-
-			if len(values) > 0 {
-				stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.IN{Column: column, Values: values}}})
-			}
-
-			if stmt.ReflectValue.CanAddr() && stmt.Dest != stmt.Model && stmt.Model != nil {
-				_, queryValues = schema.GetIdentityFieldValuesMap(stmt.Context, reflect.ValueOf(stmt.Model), stmt.Schema.PrimaryFields)
-				column, values = schema.ToQueryValues(stmt.Table, stmt.Schema.PrimaryFieldDBNames, queryValues)
-
-				if len(values) > 0 {
-					stmt.AddClause(clause.Where{Exprs: []clause.Expression{clause.IN{Column: column, Values: values}}})
-				}
-			}
-		}
-
 		stmt.AddClauseIfNotExists(clause.From{})
 		stmt.Build(stmt.BuildClauses...)
 	}

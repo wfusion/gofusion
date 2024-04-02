@@ -91,7 +91,7 @@ Use "fus [command] --help" for more information about a command.
 # Unit Testing
 
 - Unit test report generated based on allure, [test result](assets/unittest/unittest.html)
-- Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 60%
+- Unit test coverage report generated based on github.com/nikolaydubina/go-cover-treemap, current coverage is 58.7%
 
 ![go-cover-treemap](assets/unittest/coverage.svg)
 
