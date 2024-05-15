@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	metricsRuntimeCpuGoroutinesKey = []string{"runtime", "cpu", "goroutines"}
-	metricsRuntimeCpuCgoCallsKey   = []string{"runtime", "cpu", "cgo_calls"}
-	metricsRuntimeFusGoroutinesKey = []string{"runtime", "fus", "goroutines"}
+	metricsRuntimeCpuGoroutinesKey    = []string{"runtime", "cpu", "goroutines"}
+	metricsRuntimeCpuCgoCallsKey      = []string{"runtime", "cpu", "cgo_calls"}
+	metricsRuntimeCpuThreadCreatedKey = []string{"runtime", "cpu", "thread", "created"}
+	metricsRuntimeFusGoroutinesKey    = []string{"runtime", "fus", "goroutines"}
 
 	metricsRuntimeMemAllocKey   = []string{"runtime", "mem", "alloc"}
 	metricsRuntimeMemTotalKey   = []string{"runtime", "mem", "total"}
@@ -113,10 +114,13 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 			lastNumGc.Store(stats.NumGC - 255)
 		}
 
+		threadCreated, _ := runtime.ThreadCreateProfile(nil)
+
 		app := config.Use(appName).AppName()
 
 		cpuGoRoutinesKey := append([]string{app}, metricsRuntimeCpuGoroutinesKey...)
 		cpuCgoCallsKey := append([]string{app}, metricsRuntimeCpuCgoCallsKey...)
+		cpuThreadCreatedKey := append([]string{app}, metricsRuntimeCpuThreadCreatedKey...)
 		fusGoroutineKey := append([]string{app}, metricsRuntimeFusGoroutinesKey...)
 
 		memAllocKey := append([]string{app}, metricsRuntimeMemAllocKey...)
@@ -159,6 +163,7 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 				if m.IsEnableServiceLabel() {
 					m.SetGauge(ctx, cpuGoRoutinesKey, float64(totalRoutineNum), metricsLabels)
 					m.SetGauge(ctx, cpuCgoCallsKey, float64(totalCgoCallsNum), metricsLabels)
+					m.SetGauge(ctx, cpuThreadCreatedKey, float64(threadCreated), metricsLabels)
 					m.SetGauge(ctx, fusGoroutineKey, float64(routineNum), metricsLabels)
 
 					m.SetGauge(ctx, memAllocKey, float64(stats.Alloc), metricsLabels)
@@ -197,6 +202,7 @@ func metricsRuntime(ctx context.Context, appName string, lastNumGc *atomic.Uint3
 				} else {
 					m.SetGauge(ctx, metricsRuntimeCpuGoroutinesKey, float64(totalRoutineNum), metricsLabels)
 					m.SetGauge(ctx, metricsRuntimeCpuCgoCallsKey, float64(totalCgoCallsNum), metricsLabels)
+					m.SetGauge(ctx, metricsRuntimeCpuThreadCreatedKey, float64(threadCreated), metricsLabels)
 					m.SetGauge(ctx, metricsRuntimeFusGoroutinesKey, float64(routineNum), metricsLabels)
 
 					m.SetGauge(ctx, metricsRuntimeMemAllocKey, float64(stats.Alloc), metricsLabels)

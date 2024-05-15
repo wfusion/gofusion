@@ -29,8 +29,6 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"go.uber.org/atomic"
-
 	"github.com/wfusion/gofusion/common/utils"
 )
 
@@ -83,7 +81,7 @@ type Logger struct {
 
 	// MaxSize is the maximum size in megabytes of the log file before it gets
 	// rotated. It defaults to 100 megabytes.
-	MaxSize int64 `json:"maxsize" yaml:"maxsize" toml:"maxsize"`
+	MaxSize uint64 `json:"maxsize" yaml:"maxsize" toml:"maxsize"`
 
 	// MaxAge is the maximum number of days to retain old log files based on the
 	// timestamp encoded in their filename.  Note that may not exactly correspond
@@ -105,7 +103,7 @@ type Logger struct {
 	// using gzip. The default is not to perform compression.
 	Compress bool `json:"compress" yaml:"compress" toml:"compress"`
 
-	size atomic.Int64
+	size uint64
 	file *os.File
 	mu   sync.Mutex
 
@@ -129,7 +127,7 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	writeLen := int64(len(p))
+	writeLen := uint64(len(p))
 	if writeLen > l.max() {
 		return 0, fmt.Errorf(
 			"write length %d exceeds maximum file size %d", writeLen, l.max(),
@@ -137,19 +135,19 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 	}
 
 	if l.file == nil {
-		if err = l.openExistingOrNew(len(p)); err != nil {
+		if err = l.openExistingOrNew(writeLen); err != nil {
 			return 0, err
 		}
 	}
 
-	if l.size.Load()+writeLen > l.max() {
+	if l.size+writeLen > l.max() {
 		if err := l.rotate(); err != nil {
 			return 0, err
 		}
 	}
 
 	n, err = l.file.Write(p)
-	l.size.Add(int64(n))
+	l.size += uint64(n)
 
 	return n, err
 }
@@ -158,6 +156,10 @@ func (l *Logger) Write(p []byte) (n int, err error) {
 func (l *Logger) Close() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	if l.millCh != nil {
+		close(l.millCh)
+		l.millCh = nil
+	}
 	return l.close()
 }
 
@@ -180,6 +182,15 @@ func (l *Logger) Rotate() error {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	return l.rotate()
+}
+
+func (l *Logger) Sync() error {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.file == nil {
+		return nil
+	}
+	return l.file.Sync()
 }
 
 // rotate closes the current file, moves it aside with a timestamp in the name,
@@ -206,19 +217,14 @@ func (l *Logger) openNew() error {
 
 	name := l.filename()
 	mode := os.FileMode(0600)
-	info, err := osStat(name)
-	if err == nil {
+	info, infoErr := osStat(name)
+	if infoErr == nil {
 		// Copy the mode off the old logfile.
 		mode = info.Mode()
 		// move the existing file
 		newname := backupName(name, l.LocalTime)
 		if err := os.Rename(name, newname); err != nil {
 			return fmt.Errorf("can't rename log file: %s", err)
-		}
-
-		// this is a no-op anywhere but linux
-		if err := chown(name, info); err != nil {
-			return err
 		}
 	}
 
@@ -229,8 +235,14 @@ func (l *Logger) openNew() error {
 	if err != nil {
 		return fmt.Errorf("can't open new logfile: %s", err)
 	}
+
+	// this is a no-op anywhere but linux
+	if infoErr == nil {
+		_ = chown(name, info)
+	}
+
 	l.file = f
-	l.size.Store(0)
+	l.size = 0
 	return nil
 }
 
@@ -254,7 +266,7 @@ func backupName(name string, local bool) string {
 // openExistingOrNew opens the logfile if it exists and if the current write
 // would not put it over MaxSize.  If there is no such file or the write would
 // put it over the MaxSize, a new file is created.
-func (l *Logger) openExistingOrNew(writeLen int) error {
+func (l *Logger) openExistingOrNew(writeLen uint64) error {
 	l.mill()
 
 	filename := l.filename()
@@ -266,7 +278,7 @@ func (l *Logger) openExistingOrNew(writeLen int) error {
 		return fmt.Errorf("error getting log file info: %s", err)
 	}
 
-	if info.Size()+int64(writeLen) >= l.max() {
+	if utils.Max(0, uint64(info.Size()))+writeLen >= l.max() {
 		return l.rotate()
 	}
 
@@ -277,7 +289,7 @@ func (l *Logger) openExistingOrNew(writeLen int) error {
 		return l.openNew()
 	}
 	l.file = file
-	l.size.Store(0)
+	l.size = utils.Max(0, uint64(info.Size()))
 	return nil
 }
 
@@ -432,9 +444,9 @@ func (l *Logger) timeFromName(filename, prefix, ext string) (time.Time, error) {
 }
 
 // max returns the maximum size in bytes of log files before rolling.
-func (l *Logger) max() int64 {
+func (l *Logger) max() uint64 {
 	if l.MaxSize == 0 {
-		return int64(defaultMaxSize * humanize.MiByte)
+		return uint64(defaultMaxSize * humanize.MiByte)
 	}
 	return l.MaxSize
 }

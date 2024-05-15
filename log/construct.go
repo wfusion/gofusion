@@ -108,13 +108,13 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 				conf.FileOutputOption.RotationMaxAge, name, err))
 		}
 
-		writer := zapcore.AddSync(&rotatelog.Logger{
+		writer := zapcore.AddSync(zapcore.Lock(&rotatelog.Logger{
 			Filename:   path.Join(filepath.Clean(conf.FileOutputOption.Path), logName),
-			MaxSize:    int64(rotationSize),
+			MaxSize:    rotationSize,
 			MaxBackups: conf.FileOutputOption.RotationCount,
 			MaxAge:     maxAge,
 			Compress:   conf.FileOutputOption.Compress,
-		})
+		}))
 		logLevel := newZapLogLevel(opt.AppName, name, "enable_file_output", "log_level")
 		cores = append(cores, zapcore.NewCore(encoder, writer, logLevel))
 	}
