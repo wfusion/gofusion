@@ -45,3 +45,17 @@ func (t *Log) TestLevel() {
 		t.EqualValues(log.DebugLevel, logger.Level(ctx))
 	})
 }
+
+func (t *Log) TestTimeElapsed() {
+	t.Catch(func() {
+		logger := log.Use("default", log.AppName(t.AppName()))
+
+		// When
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Then
+		log.TimeElapsed(ctx, logger, func() {}, "with args %s %v", "1", 2)
+		log.TimeElapsed(ctx, logger, func() {}, "without args")
+	})
+}

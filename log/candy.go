@@ -21,10 +21,11 @@ func TimeElapsed(ctx context.Context, logger Loggable, fn func(), format string,
 		if r := recover(); r != nil {
 			panic(r)
 		}
+		args = append([]any{zap.Any("latency", elapsed)}, args...)
 		if logger != nil {
-			logger.Info(ctx, format, append(args, zap.Any("latency", elapsed))...)
+			logger.Info(ctx, format, args...)
 		} else {
-			Info(ctx, format, append(args, zap.Any("latency", elapsed))...)
+			Info(ctx, format, args...)
 		}
 	}()
 

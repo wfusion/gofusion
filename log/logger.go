@@ -187,8 +187,12 @@ func (l *logger) sweeten(ctx context.Context, format string, raw ...any) (
 	args := make([]any, 0, len(raw))
 	fields = getContextZapFields(ctx)
 	for _, arg := range raw {
-		if f, ok := arg.(Fields); ok {
+		switch f := arg.(type) {
+		case Fields:
 			fields = append(fields, convertFieldsToZapFields(f)...)
+			continue
+		case zap.Field:
+			fields = append(fields, f)
 			continue
 		}
 		args = append(args, arg)
