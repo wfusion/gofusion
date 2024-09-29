@@ -37,6 +37,27 @@
             "xss_white_url_list": [
                 ""
             ],
+            "cors": {
+                "allow_origins": [
+                    "localhost"
+                ],
+                "allow_methods": [
+                    "POST",
+                    "GET",
+                    "PUT",
+                    "DELETE",
+                    "OPTIONS"
+                ],
+                "allow_credentials": "true",
+                "allow_headers": [
+                    "Content-Length"
+                ],
+                "expose_headers": [
+                    "Content-Length"
+                ],
+                "options_response": "nothing",
+                "forbidden_response": ""
+            },
             "enable_logger": true,
             "log_instance": "default",
             "logger": "github.com/wfusion/gofusion/log/customlogger.httpLogger",

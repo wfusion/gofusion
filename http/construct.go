@@ -78,13 +78,15 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 		gin.ForceConsoleColor()
 	}
 
+	cors := conf.CORS
 	engine := gin.New()
 	engine.Use(
 		gin.Recovery(),
 		middleware.Gateway,
 		middleware.Trace(),
 		middleware.Logging(ctx, opt.AppName, conf.Metrics.HeaderLabels, logger),
-		middleware.Cors(),
+		middleware.Cors(cors.AllowOrigins, cors.AllowMethods, cors.AllowHeaders,
+			cors.ExposeHeaders, cors.AllowCredentials, cors.OptionsResponse, cors.ForbiddenResponse),
 		middleware.XSS(conf.XSSWhiteURLList),
 		middleware.Recover(opt.AppName, logger, map[string]any{
 			"code":    Errcode(conf.ErrorCode),

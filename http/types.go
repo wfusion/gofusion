@@ -53,6 +53,7 @@ type Conf struct {
 	ErrorCode       int                    `yaml:"error_code" json:"error_code" toml:"error_code" default:"-1"`
 	Pprof           bool                   `yaml:"pprof" json:"pprof" toml:"pprof"`
 	XSSWhiteURLList []string               `yaml:"xss_white_url_list" json:"xss_white_url_list" toml:"xss_white_url_list" default:"[]"`
+	CORS            corsConf               `yaml:"cors" json:"cors" toml:"cors"`
 	ColorfulConsole bool                   `yaml:"colorful_console" json:"colorful_console" toml:"colorful_console" default:"false"`
 	ReadTimeout     string                 `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"10s"`
 	WriteTimeout    string                 `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"10s"`
@@ -62,6 +63,16 @@ type Conf struct {
 	Asynq           []asynqConf            `yaml:"asynq" json:"asynq" toml:"asynq"`
 	Clients         map[string]*clientConf `yaml:"clients" json:"clients" toml:"clients"`
 	Metrics         metricsConf            `yaml:"metrics" json:"metrics" toml:"metrics"`
+}
+
+type corsConf struct {
+	AllowOrigins      []string `yaml:"allow_origins" json:"allow_origins" toml:"allow_origins"`
+	AllowMethods      []string `yaml:"allow_methods" json:"allow_methods" toml:"allow_methods"`
+	AllowCredentials  string   `yaml:"allow_credentials" json:"allow_credentials" toml:"allow_credentials"`
+	AllowHeaders      []string `yaml:"allow_headers" json:"allow_headers" toml:"allow_headers"`
+	ExposeHeaders     []string `yaml:"expose_headers" json:"expose_headers" toml:"expose_headers"`
+	OptionsResponse   string   `yaml:"options_response" json:"options_response" toml:"options_response"`
+	ForbiddenResponse string   `yaml:"forbidden_response" json:"forbidden_response" toml:"forbidden_response"`
 }
 
 type asynqConf struct {

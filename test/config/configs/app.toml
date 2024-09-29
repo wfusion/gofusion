@@ -36,6 +36,15 @@ asynq = [
     { "path" = "/asynq", "instance" = "default", "instance_type" = "redis", "readonly" = false, "prometheus_address" = "" },
 ]
 
+[base.http.cors]
+allow_origins = [ "localhost" ]
+allow_methods = [ "POST", "GET", "PUT", "DELETE", "OPTIONS" ]
+allow_credentials = "true"
+allow_headers = [ "Content-Length" ]
+expose_headers = [ "Content-Length" ]
+options_response = "nothing"
+forbidden_response = ""
+
 [base.http.clients.default]
 mock = true
 timeout = "30s"

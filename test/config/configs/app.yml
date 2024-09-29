@@ -67,6 +67,23 @@ base:
     logger: github.com/wfusion/gofusion/log/customlogger.httpLogger
     # White list for xss defense middleware
     xss_white_url_list: [ "" ]
+    # CORS configuration
+    cors:
+      # Configures Access-Control-Allow-Origin. If not configured or empty, allows all origins.
+      allow_origins: [ "localhost" ]
+      # Configures Access-Control-Allow-Methods. If not configured or empty, allows POST, OPTIONS, GET, PUT, DELETE.
+      allow_methods: [ "POST", "GET", "PUT", "DELETE", "OPTIONS" ]
+      # Configures Access-Control-Allow-Credentials. If not configured or empty, allows "true".
+      allow_credentials: "true"
+      # Configures Access-Control-Allow-Headers. If not configured or empty, allows all headers in the request.
+      allow_headers: [ "Content-Length" ]
+      # Configures Access-Control-Expose-Headers. If not configured or empty, defaults to:
+      # Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type
+      expose_headers: [ "Content-Length" ]
+      # Configures the response string for HTTP OPTIONS requests. Defaults to "no content".
+      options_response: "nothing"
+      # Configures the body string returned when a cross-origin request is not allowed. Defaults to none body returned.
+      forbidden_response: ""
     # Asynq monitoring configuration
     asynq:
       # HTTP path

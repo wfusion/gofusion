@@ -61,6 +61,23 @@ base:
     logger: github.com/wfusion/gofusion/log/customlogger.httpLogger
     # xss 防御中间件白名单
     xss_white_url_list: [ "" ]
+    # cors 配置
+    cors:
+      # 配置 Access-Control-Allow-Origin, 未配置或为空时允许所有 origin
+      allow_origins: [ "localhost" ]
+      # 配置 Access-Control-Allow-Methods, 未配置或为空时允许 POST, OPTIONS, GET, PUT, DELETE
+      allow_methods: [ "POST", "GET", "PUT", "DELETE", "OPTIONS" ]
+      # 配置 Access-Control-Allow-Credentials, 未配置或为空时允许 true
+      allow_credentials: "true"
+      # 配置 Access-Control-Allow-Headers, 未配置或为空时允许请求中所有的 headers
+      allow_headers: [ "Content-Length" ]
+      # 配置 Access-Control-Expose-Headers, 未配置或为空时默认为如下:
+      # Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type
+      expose_headers: [ "Content-Length" ]
+      # 配置 Http Options 请求时返回的字符串, 默认返回 no content
+      options_response: "nothing"
+      # 配置不允许跨域请求时返回的 body 字符串, 默认不返回 body
+      forbidden_response: ""
     # asynq 监控配置
     asynq:
         # http 路径
