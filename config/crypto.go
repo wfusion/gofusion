@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	pflag.StringVarP(&cryptoFlagString, "crypto-config", "", "", "json string for crypto config")
+	pflag.StringVarP(&cryptoFlagString, "crypto-conf", "", "", "json string for crypto config")
 }
 
 type CryptoConf struct {

@@ -80,7 +80,7 @@ func init() {
 	outputFlags.Bool("trace", false, "If true, trace output is enabled from the logger")
 	utils.MustSuccess(viper.BindPFlag("trace", outputFlags.Lookup("trace")))
 
-	outputFlags.String("write-config", "", "Write the config of the current command as yaml to the specified path")
+	outputFlags.String("write-conf", "", "Write the config of the current command as yaml to the specified path")
 	utils.MustSuccess(viper.BindPFlag("writeConfig", outputFlags.Lookup("write-config")))
 
 	rootCmd.PersistentFlags().AddFlagSet(outputFlags)
