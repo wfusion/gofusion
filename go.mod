@@ -58,7 +58,7 @@ require (
 	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.mongodb.org/mongo-driver v1.14.0
 	go.uber.org/atomic v1.11.0
-	go.uber.org/dig v1.16.1
+	go.uber.org/dig v1.18.0
 	go.uber.org/multierr v1.9.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.21.0

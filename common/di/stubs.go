@@ -3,7 +3,6 @@ package di
 import (
 	"fmt"
 	"reflect"
-
 	_ "unsafe"
 )
 

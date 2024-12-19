@@ -13,6 +13,7 @@ type DI interface {
 	MustProvide(fn any, opts ...utils.OptionExtender) DI
 	Decorate(decorator any) error
 	MustDecorate(decorator any) DI
+	Scope(name string, opts ...utils.OptionExtender) DI
 	String() string
 	Clear()
 	Preload()

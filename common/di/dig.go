@@ -23,17 +23,18 @@ var (
 )
 
 type _dig struct {
-	*dig.Container
+	scope  *dig.Scope
 	fields []reflect.StructField
 }
 
 func NewDI() DI {
-	return &_dig{Container: dig.New()}
+	return &_dig{scope: inspect.GetField[*dig.Scope](dig.New(), "scope")}
 }
 
 type provideOption struct {
-	name  string
-	group string
+	name   string
+	group  string
+	export bool
 }
 
 func Name(name string) utils.OptionFunc[provideOption] {
@@ -48,8 +49,14 @@ func Group(group string) utils.OptionFunc[provideOption] {
 	}
 }
 
-func (d *_dig) Invoke(fn any) error { return d.Container.Invoke(fn) }
-func (d *_dig) MustInvoke(fn any)   { utils.MustSuccess(d.Container.Invoke(fn)) }
+func Export() utils.OptionFunc[provideOption] {
+	return func(p *provideOption) {
+		p.export = true
+	}
+}
+
+func (d *_dig) Invoke(fn any) error { return d.scope.Invoke(fn) }
+func (d *_dig) MustInvoke(fn any)   { utils.MustSuccess(d.scope.Invoke(fn)) }
 func (d *_dig) Provide(ctor any, opts ...utils.OptionExtender) (err error) {
 	opt := utils.ApplyOptions[provideOption](opts...)
 	digOpts := make([]dig.ProvideOption, 0, 2)
@@ -59,26 +66,39 @@ func (d *_dig) Provide(ctor any, opts ...utils.OptionExtender) (err error) {
 	if opt.group != "" {
 		digOpts = append(digOpts, dig.Group(opt.group))
 	}
+	if opt.export {
+		digOpts = append(digOpts, dig.Export(true))
+	}
 
 	defer d.addFields(ctor, opt)
-	return d.Container.Provide(ctor, digOpts...)
+	return d.scope.Provide(ctor, digOpts...)
 }
 func (d *_dig) MustProvide(ctor any, opts ...utils.OptionExtender) DI {
 	utils.MustSuccess(d.Provide(ctor, opts...))
 	return d
 }
-func (d *_dig) Decorate(decorator any) error { return d.Container.Decorate(decorator) }
+func (d *_dig) Decorate(decorator any) error { return d.scope.Decorate(decorator) }
 func (d *_dig) MustDecorate(decorator any) DI {
-	utils.MustSuccess(d.Container.Decorate(decorator))
+	utils.MustSuccess(d.scope.Decorate(decorator))
 	return d
 }
 
+type scopeOption struct {
+}
+
+func (d *_dig) Scope(name string, opts ...utils.OptionExtender) DI {
+	return &_dig{
+		scope:  d.scope.Scope(name),
+		fields: d.fields,
+	}
+}
+
 func (d *_dig) String() string {
-	return d.Container.String()
+	return d.scope.String()
 }
 
 func (d *_dig) Clear() {
-	d.Container = dig.New()
+	d.scope = inspect.GetField[*dig.Scope](dig.New(), "scope")
 }
 
 // Preload prevent invoke concurrently because invoke is not concurrent safe
@@ -108,11 +128,10 @@ func (d *_dig) Preload() {
 	structType := reflect.StructOf(fields)
 
 	// FIXME: we cannot declare function param type dynamic now
-	scope := inspect.GetField[*dig.Scope](d.Container, "scope")
 	containerStoreType := inspect.TypeOf("go.uber.org/dig.containerStore")
-	containerStoreVal := reflect.ValueOf(scope).Convert(containerStoreType)
+	containerStoreVal := reflect.ValueOf(d.scope).Convert(containerStoreType)
 
-	fakeParam := utils.Must(newParam(structType, scope))
+	fakeParam := utils.Must(newParam(structType, d.scope))
 	paramType := inspect.TypeOf("go.uber.org/dig.param")
 	paramVal := reflect.ValueOf(fakeParam).Convert(paramType)
 	buildFn := paramVal.MethodByName("Build")
