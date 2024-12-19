@@ -81,7 +81,7 @@ func init() {
 	utils.MustSuccess(viper.BindPFlag("trace", outputFlags.Lookup("trace")))
 
 	outputFlags.String("write-conf", "", "Write the config of the current command as yaml to the specified path")
-	utils.MustSuccess(viper.BindPFlag("writeConfig", outputFlags.Lookup("write-config")))
+	utils.MustSuccess(viper.BindPFlag("write-conf", outputFlags.Lookup("write-conf")))
 
 	rootCmd.PersistentFlags().AddFlagSet(outputFlags)
 }
