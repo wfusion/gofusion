@@ -14,9 +14,9 @@ touch "${OUTPUT}"/coverage.out
 
 # dep install
 go install gotest.tools/gotestsum@latest
-go install github.com/axw/gocov/gocov@latest
-go install github.com/matm/gocov-html/cmd/gocov-html@latest
-go install github.com/tdewolff/minify/v2/cmd/minify@v2.20.7
+go install github.com/axw/gocov/gocov@v1.1.0
+go install github.com/matm/gocov-html/cmd/gocov-html@v1.4.0
+go install github.com/tdewolff/minify/v2/cmd/minify@v2.21.2
 if ! type -p allure; then
   brew install allure
 fi

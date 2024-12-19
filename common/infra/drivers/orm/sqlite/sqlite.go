@@ -5,16 +5,14 @@ import (
 	"database/sql"
 	"strconv"
 
-	"gorm.io/gorm/callbacks"
-
-	gosqlite "github.com/glebarez/go-sqlite"
-	sqlite3 "modernc.org/sqlite/lib"
-
 	"gorm.io/gorm"
+	"gorm.io/gorm/callbacks"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/migrator"
 	"gorm.io/gorm/schema"
+
+	gosqlite "github.com/glebarez/go-sqlite"
 )
 
 // DriverName is the default driver name for SQLite.
@@ -239,11 +237,11 @@ func (dialector Dialector) Translate(err error) error {
 	switch terr := err.(type) {
 	case *gosqlite.Error:
 		switch terr.Code() {
-		case sqlite3.SQLITE_CONSTRAINT_UNIQUE:
+		case constraintUnique:
 			return gorm.ErrDuplicatedKey
-		case sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY:
+		case constraintPrimarykey:
 			return gorm.ErrDuplicatedKey
-		case sqlite3.SQLITE_CONSTRAINT_FOREIGNKEY:
+		case constraintForeignkey:
 			return gorm.ErrForeignKeyViolated
 		}
 	}
