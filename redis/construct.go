@@ -6,12 +6,13 @@ import (
 	"reflect"
 	"syscall"
 
-	rdsDrv "github.com/redis/go-redis/v9"
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/infra/drivers/redis"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
+
+	rdsDrv "github.com/redis/go-redis/v9"
 
 	fusLog "github.com/wfusion/gofusion/log"
 
@@ -81,6 +82,12 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 
 	if opt.DI != nil {
 		opt.DI.MustProvide(func() rdsDrv.UniversalClient { return Use(ctx, name, AppName(opt.AppName)) }, di.Name(name))
+	}
+	if opt.App != nil {
+		opt.App.MustProvide(
+			func() rdsDrv.UniversalClient { return Use(ctx, name, AppName(opt.AppName)) },
+			di.Name(name),
+		)
 	}
 
 	go startDaemonRoutines(ctx, opt.AppName, name, conf)

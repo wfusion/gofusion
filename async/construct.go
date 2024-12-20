@@ -95,6 +95,12 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 				di.Name(name),
 			)
 		}
+		if opt.App != nil {
+			opt.App.MustProvide(
+				func() Consumable { return C(name, AppName(opt.AppName)) },
+				di.Name(name),
+			)
+		}
 	}
 
 	if producer != nil {
@@ -112,6 +118,12 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		// ioc
 		if opt.DI != nil {
 			opt.DI.MustProvide(
+				func() Producable { return P(name) },
+				di.Name(name),
+			)
+		}
+		if opt.App != nil {
+			opt.App.MustProvide(
 				func() Producable { return P(name) },
 				di.Name(name),
 			)

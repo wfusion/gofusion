@@ -90,6 +90,14 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			di.Name(name),
 		)
 	}
+	if opt.App != nil {
+		opt.App.MustProvide(
+			func() *mgoDrv.Database {
+				return Use(name, AppName(opt.AppName)).Database
+			},
+			di.Name(name),
+		)
+	}
 
 	go startDaemonRoutines(ctx, opt.AppName, name, conf)
 }

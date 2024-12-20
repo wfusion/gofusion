@@ -12,16 +12,24 @@ type Configurable interface {
 	Debug() (debug bool)
 	AppName() (name string)
 	DI() di.DI
+	App() di.App
 }
 
 type InitOption struct {
 	DI      di.DI
+	App     di.App
 	AppName string
 }
 
 func AppName(name string) utils.OptionFunc[InitOption] {
 	return func(o *InitOption) {
 		o.AppName = name
+	}
+}
+
+func App(app di.App) utils.OptionFunc[InitOption] {
+	return func(o *InitOption) {
+		o.App = app
 	}
 }
 

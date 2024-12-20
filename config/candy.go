@@ -28,6 +28,8 @@ func (r *registry) AppName() (name string) {
 
 func (r *registry) DI() di.DI { return r.di }
 
+func (r *registry) App() di.App { return r.app }
+
 func (r *registry) cryptoConfig() (conf *CryptoConf) {
 	conf = new(CryptoConf)
 	if err := r.LoadComponentConfig(ComponentCrypto, &conf); err != nil {

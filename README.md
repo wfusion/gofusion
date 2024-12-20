@@ -3,7 +3,7 @@
 
 # Usage Limitations
 
-- golang: 1.18 - 1.22
+- golang: 1.18 - 1.22, 1.23+ should compile with option `-ldflags='-checklinkname=0'` to avoid `//go:linkname` check
 - os: windows / darwin / linux
 - arch: amd64 / arm64 / loong64
 

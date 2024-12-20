@@ -149,7 +149,11 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 				MustProvide(func() Subscriber { return sub(name, AppName(opt.AppName)) }, di.Name(name)).
 				MustProvide(func() IRouter { return Use(name, AppName(opt.AppName)) }, di.Name(name))
 		}
-
+		if opt.App != nil {
+			opt.App.
+				MustProvide(func() Subscriber { return sub(name, AppName(opt.AppName)) }, di.Name(name)).
+				MustProvide(func() IRouter { return Use(name, AppName(opt.AppName)) }, di.Name(name))
+		}
 	}
 
 	if puber != nil {
@@ -167,6 +171,9 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		// ioc
 		if opt.DI != nil {
 			opt.DI.MustProvide(func() Publisher { return Pub(name, AppName(opt.AppName)) }, di.Name(name))
+		}
+		if opt.App != nil {
+			opt.App.MustProvide(func() Publisher { return Pub(name, AppName(opt.AppName)) }, di.Name(name))
 		}
 	}
 }

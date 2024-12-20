@@ -12,8 +12,6 @@ import (
 )
 
 var (
-	Dig = NewDI()
-
 	inType     = reflect.TypeOf(In{})
 	outType    = reflect.TypeOf(Out{})
 	digInType  = reflect.TypeOf(dig.In{})
@@ -25,34 +23,6 @@ var (
 type _dig struct {
 	scope  *dig.Scope
 	fields []reflect.StructField
-}
-
-func NewDI() DI {
-	return &_dig{scope: inspect.GetField[*dig.Scope](dig.New(), "scope")}
-}
-
-type provideOption struct {
-	name   string
-	group  string
-	export bool
-}
-
-func Name(name string) utils.OptionFunc[provideOption] {
-	return func(p *provideOption) {
-		p.name = name
-	}
-}
-
-func Group(group string) utils.OptionFunc[provideOption] {
-	return func(p *provideOption) {
-		p.group = group
-	}
-}
-
-func Export() utils.OptionFunc[provideOption] {
-	return func(p *provideOption) {
-		p.export = true
-	}
 }
 
 func (d *_dig) Invoke(fn any) error { return d.scope.Invoke(fn) }
@@ -82,9 +52,8 @@ func (d *_dig) MustDecorate(decorator any) DI {
 	utils.MustSuccess(d.scope.Decorate(decorator))
 	return d
 }
-
-type scopeOption struct {
-}
+func (d *_dig) Populate(objs ...any) error  { return d.populate(objs...) }
+func (d *_dig) MustPopulate(objs ...any) DI { utils.MustSuccess(d.Populate(objs...)); return d }
 
 func (d *_dig) Scope(name string, opts ...utils.OptionExtender) DI {
 	return &_dig{
@@ -181,4 +150,49 @@ func (d *_dig) addFields(ctor any, opt *provideOption) {
 			d.fields = append(d.fields, f)
 		}
 	}
+}
+
+func (d *_dig) populate(targets ...any) error {
+	// Validate all targets are non-nil pointers.
+	fields := make([]reflect.StructField, len(targets)+1)
+	fields[0] = reflect.StructField{
+		Name:      "In",
+		Type:      reflect.TypeOf(In{}),
+		Anonymous: true,
+	}
+	for i, t := range targets {
+		if t == nil {
+			return fmt.Errorf("failed to Populate: target %v is nil", i+1)
+		}
+		var (
+			rt  = reflect.TypeOf(t)
+			tag reflect.StructTag
+		)
+		if rt.Kind() != reflect.Ptr {
+			return fmt.Errorf("failed to Populate: target %v is not a pointer type, got %T", i+1, t)
+		}
+		fields[i+1] = reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: rt.Elem(),
+			Tag:  tag,
+		}
+	}
+
+	// Build a function that looks like:
+	//
+	// func(t1 T1, t2 T2, ...) {
+	//   *targets[0] = t1
+	//   *targets[1] = t2
+	//   [...]
+	// }
+	//
+	fnType := reflect.FuncOf([]reflect.Type{reflect.StructOf(fields)}, nil, false /* variadic */)
+	fn := reflect.MakeFunc(fnType, func(args []reflect.Value) []reflect.Value {
+		arg := args[0]
+		for i, target := range targets {
+			reflect.ValueOf(target).Elem().Set(arg.Field(i + 1))
+		}
+		return nil
+	})
+	return d.Invoke(fn.Interface())
 }

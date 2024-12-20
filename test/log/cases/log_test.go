@@ -4,9 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"go.uber.org/fx"
 
+	"github.com/stretchr/testify/suite"
+	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/log"
+	"github.com/wfusion/gofusion/log/customlogger"
 
 	testLog "github.com/wfusion/gofusion/test/log"
 )
@@ -57,5 +60,19 @@ func (t *Log) TestTimeElapsed() {
 		// Then
 		log.TimeElapsed(ctx, logger, func() {}, "with args %s %v", "1", 2)
 		log.TimeElapsed(ctx, logger, func() {}, "without args")
+	})
+}
+
+func (t *Log) TestCustomLoggerFx() {
+	t.Catch(func() {
+		logger := log.Use("default", log.AppName(t.AppName()))
+
+		app := config.Use(t.AppName()).App()
+		app.Options(fx.WithLogger(customlogger.FxWithLoggerProvider(logger)))
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		t.NoError(app.Start(ctx))
+		t.NoError(app.Stop(ctx))
 	})
 }

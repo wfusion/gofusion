@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	Registry = &registry{di: di.Dig, initOnce: new(sync.Once), closeCh: make(chan struct{})}
+	Registry = &registry{di: di.Dig, app: di.Fx, initOnce: new(sync.Once), closeCh: make(chan struct{})}
 
 	initLocker   sync.RWMutex
 	registryLock sync.RWMutex
@@ -51,6 +51,7 @@ func New(appName string) Configurable {
 
 	reg := &registry{
 		di:       di.NewDI(),
+		app:      di.New(),
 		appName:  appName,
 		initOnce: new(sync.Once),
 		closeCh:  make(chan struct{}),
@@ -61,6 +62,7 @@ func New(appName string) Configurable {
 
 type registry struct {
 	di                 di.DI
+	app                di.App
 	appName            string
 	debug              bool
 	loadComponentsOnce sync.Once
@@ -433,6 +435,7 @@ func (r *registry) initComponents(parent context.Context) func() {
 	ctxVal := reflect.ValueOf(ctx)
 	o1 := reflect.ValueOf(utils.OptionExtender(AppName(r.appName)))
 	o2 := reflect.ValueOf(utils.OptionExtender(DI(r.di)))
+	o3 := reflect.ValueOf(utils.OptionExtender(App(r.app)))
 
 	baseObject := r.getBaseObject()
 	destructors := make([]reflect.Value, 0, len(r.componentList))
@@ -442,7 +445,7 @@ func (r *registry) initComponents(parent context.Context) func() {
 		com := r.componentList[i]
 		comArgs := reflect.ValueOf(clone.Clone(baseObject.FieldByName(com.name).Interface()))
 		componentNames = append(componentNames, com.name)
-		if out := com.constructor.Call([]reflect.Value{ctxVal, comArgs, o1, o2}); len(out) > 0 && !out[0].IsNil() {
+		if out := com.constructor.Call([]reflect.Value{ctxVal, comArgs, o1, o2, o3}); len(out) > 0 && !out[0].IsNil() {
 			destructors = append(destructors, out[0])
 			hasCallbackComponentNames = append(hasCallbackComponentNames, com.name)
 		}
@@ -473,6 +476,7 @@ func (r *registry) initComponents(parent context.Context) func() {
 			}
 
 			r.di.Clear()
+			r.app.Clear()
 			r.businessConfig = nil
 			r.componentConfigs = nil
 			r.initOnce = new(sync.Once)

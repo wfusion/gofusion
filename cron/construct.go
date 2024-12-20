@@ -79,6 +79,12 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			di.Name(name),
 		)
 	}
+	if opt.App != nil {
+		opt.App.MustProvide(
+			func() IRouter { return Use(name, AppName(opt.AppName)) },
+			di.Name(name),
+		)
+	}
 }
 
 type useOption struct {

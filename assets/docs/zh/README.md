@@ -3,7 +3,7 @@
 
 # 框架使用限制：
 
-- golang: 1.18 - 1.22
+- golang: 1.18 - 1.22, 1.23 版本以上需要在编译时添加选项绕过`//go:linkname`检查 `-ldflags='-checklinkname=0'`
 - os: windows / darwin / linux
 - arch: amd64 / arm64 / loong64
 

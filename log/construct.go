@@ -10,6 +10,8 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -149,11 +151,22 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 
 	if opt.AppName == "" && name == config.DefaultInstanceKey {
 		globalLogger = fusLogger
+		if opt.App != nil {
+			opt.App.Options(fx.WithLogger(func() fxevent.Logger {
+				return &fxevent.ZapLogger{Logger: fusLogger.logger}
+			}))
+		}
 	}
 
 	// ioc
 	if opt.DI != nil {
 		opt.DI.MustProvide(
+			func() Loggable { return Use(name, AppName(opt.AppName)) },
+			di.Name(name),
+		)
+	}
+	if opt.App != nil {
+		opt.App.MustProvide(
 			func() Loggable { return Use(name, AppName(opt.AppName)) },
 			di.Name(name),
 		)

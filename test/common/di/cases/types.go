@@ -65,11 +65,25 @@ func (p *Person2) Show() {
 type Person3 struct {
 	di.In
 
-	Eating   Eat[string]
+	Eating   Eat[int]
 	Drinking Drink `name:"ddd"`
 }
 
 func (p *Person3) Show() {
-	p.Eating.Egg("string")
+	p.Eating.Egg(3)
+	p.Drinking.Water()
+}
+
+type Person4 struct {
+	di.In
+
+	Drinking   Drink      `name:"ddd"`
+	EatingList []Eat[int] `group:"aaa"`
+}
+
+func (p *Person4) Show() {
+	for _, el := range p.EatingList {
+		el.Egg(4)
+	}
 	p.Drinking.Water()
 }
