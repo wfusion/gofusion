@@ -1,4 +1,4 @@
-package redis
+package kv
 
 import (
 	"context"
@@ -11,15 +11,16 @@ import (
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/metrics"
+	"github.com/wfusion/gofusion/redis"
 )
 
 var (
-	metricsPoolIdleKey    = []string{"redis", "idle"}
-	metricsPoolTotalKey   = []string{"redis", "total"}
-	metricsPoolStaleKey   = []string{"redis", "stale"}
-	metricsPoolHitsKey    = []string{"redis", "hits"}
-	metricsPoolMissesKey  = []string{"redis", "misses"}
-	metricsLatencyKey     = []string{"redis", "latency"}
+	metricsPoolIdleKey    = []string{"kv", "idle"}
+	metricsPoolTotalKey   = []string{"kv", "total"}
+	metricsPoolStaleKey   = []string{"kv", "stale"}
+	metricsPoolHitsKey    = []string{"kv", "hits"}
+	metricsPoolMissesKey  = []string{"kv", "misses"}
+	metricsLatencyKey     = []string{"kv", "latency"}
 	metricsLatencyBuckets = []float64{
 		.1, .25, .5, .75, .90, .95, .99,
 		1, 2.5, 5, 7.5, 9, 9.5, 9.9,
@@ -33,10 +34,13 @@ func startDaemonRoutines(ctx context.Context, appName, name string, conf *Conf) 
 	app := config.Use(appName).AppName()
 	labels := []metrics.Label{
 		{Key: "config", Value: name},
-		{Key: "database", Value: cast.ToString(conf.DB)},
 	}
 
-	log.Printf("%v [Gofusion] %s %s %s metrics start", syscall.Getpid(), app, config.ComponentRedis, name)
+	if conf.Endpoint.DB > 0 {
+		labels = append(labels, metrics.Label{Key: "database", Value: cast.ToString(conf.Endpoint.DB)})
+	}
+
+	log.Printf("%v [Gofusion] %s %s %s metrics start", syscall.Getpid(), app, config.ComponentKV, name)
 	for {
 		select {
 		case <-ctx.Done():
@@ -44,8 +48,15 @@ func startDaemonRoutines(ctx context.Context, appName, name string, conf *Conf) 
 				syscall.Getpid(), app, config.ComponentRedis, name)
 			return
 		case <-ticker:
-			go metricRedisStats(ctx, appName, name, labels)
-			go metricRedisLatency(ctx, appName, name, labels)
+			switch conf.Type {
+			case kvTypeRedis:
+				go metricRedisStats(ctx, appName, name, labels)
+				go metricRedisLatency(ctx, appName, name, labels)
+			case kvTypeConsul:
+			case kvTypeEtcd:
+			case kvTypeZK:
+			case kvTypeEureka:
+			}
 		}
 	}
 }
@@ -76,7 +87,7 @@ func metricRedisStats(ctx context.Context, appName, name string, labels []metric
 		hitsKey := append([]string{app}, metricsPoolHitsKey...)
 		missesKey := append([]string{app}, metricsPoolMissesKey...)
 
-		rdsCli := instance.GetProxy()
+		rdsCli := instance.getProxy().(*redis.Redis)
 		stats := rdsCli.PoolStats()
 		for _, m := range metrics.Internal(metrics.AppName(appName)) {
 			select {
@@ -121,7 +132,7 @@ func metricRedisLatency(ctx context.Context, appName, name string, labels []metr
 			return
 		}
 
-		rdsCli := instance.GetProxy()
+		rdsCli := instance.getProxy().(*redis.Redis)
 		begin := time.Now()
 		if err := rdsCli.Ping(ctx); err != nil {
 			return

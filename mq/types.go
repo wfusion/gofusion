@@ -51,7 +51,7 @@ type Publisher interface {
 	// Most publishers implementations don't support atomic publishing of messages.
 	// This means that if publishing one of the messages fails, the next messages will not be published.
 	//
-	// Publish must be thread safe.
+	// Publish is thread safe.
 	Publish(ctx context.Context, opts ...utils.OptionExtender) error
 
 	// PublishRaw publishes provided raw messages to given topic.
@@ -61,7 +61,7 @@ type Publisher interface {
 	// Most publishers implementations don't support atomic publishing of messages.
 	// This means that if publishing one of the messages fails, the next messages will not be published.
 	//
-	// PublishRaw must be thread safe.
+	// PublishRaw is thread safe.
 	PublishRaw(ctx context.Context, opts ...utils.OptionExtender) error
 
 	// close should flush unsent messages, if publisher is async.
@@ -77,7 +77,7 @@ type EventPublisher[T eventual] interface {
 	// Most publishers implementations don't support atomic publishing of messages.
 	// This means that if publishing one of the messages fails, the next messages will not be published.
 	//
-	// PublishEvent must be thread safe.
+	// PublishEvent is thread safe.
 	PublishEvent(ctx context.Context, opts ...utils.OptionExtender) error
 }
 

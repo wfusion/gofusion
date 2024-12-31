@@ -21,6 +21,7 @@ const (
 	ComponentLog           = "Log"
 	ComponentDB            = "DB"
 	ComponentRedis         = "Redis"
+	ComponentKV            = "KV"
 	ComponentMongo         = "Mongo"
 	ComponentI18n          = "I18n"
 	ComponentLock          = "Lock"
@@ -45,6 +46,7 @@ var (
 		ComponentLog,
 		ComponentMetrics,
 		ComponentRedis,
+		ComponentKV,
 		ComponentCache,
 		ComponentDB,
 		ComponentMongo,
