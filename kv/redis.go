@@ -15,10 +15,9 @@ import (
 )
 
 type redisKV struct {
-	ctx     context.Context
-	cli     *redis.Redis
-	appName string
-	name    string
+	abstractKV
+
+	cli *redis.Redis
 }
 
 func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) KeyValue {
@@ -59,14 +58,14 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 		panic(err)
 	}
 
-	kv := &redisKV{
-		ctx:     ctx,
-		cli:     cli,
-		appName: opt.AppName,
-		name:    name,
+	return &redisKV{
+		cli: cli,
+		abstractKV: abstractKV{
+			ctx:     ctx,
+			appName: opt.AppName,
+			name:    name,
+		},
 	}
-
-	return kv
 }
 
 func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) Value {
@@ -74,7 +73,7 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 	return &redisValue{typ: stringRedisValueType, string: stringResult}
 }
 
-func (r *redisKV) Set(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Value {
+func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Value {
 	opt := utils.ApplyOptions[setOption](opts...)
 	statusResult := r.cli.GetProxy().Set(ctx, key, val, opt.expired)
 	return &redisValue{typ: statusRedisValueType, status: statusResult}

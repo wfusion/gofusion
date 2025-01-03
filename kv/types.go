@@ -18,7 +18,7 @@ const (
 
 type KeyValue interface {
 	Get(ctx context.Context, key string, opts ...utils.OptionExtender) Value
-	Set(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Value
+	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Value
 
 	getProxy() any
 	close() error
@@ -76,6 +76,10 @@ type endpointConf struct {
 	PoolTimeout             string   `yaml:"pool_timeout" json:"pool_timeout" toml:"pool_timeout"`
 	RedisHooks              []string `yaml:"redis_hooks" json:"redis_hooks" toml:"redis_hooks" default:"[github.com/wfusion/gofusion/log/customlogger.redisKVLogger]"`
 	RedisUnloggableCommands []string `yaml:"redis_unloggable_commands" json:"redis_unloggable_commands" toml:"redis_unloggable_commands" default:"[echo,ping]"`
+
+	// consul configure
+	Datacenter string `yaml:"datacenter" json:"datacenter" toml:"datacenter"`
+	WaitTime   string `yaml:"wait_time" json:"wait_time" toml:"wait_time"`
 }
 
 type kvType string
