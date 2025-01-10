@@ -17,15 +17,25 @@ const (
 )
 
 type KeyValue interface {
-	Get(ctx context.Context, key string, opts ...utils.OptionExtender) Value
-	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Value
+	Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal
+	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal
+	Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal
 
 	getProxy() any
 	close() error
 }
 
-type Value interface {
+type GetVal interface {
 	String() (string, error)
+}
+
+type PutVal interface {
+	LeaseID() string
+	Err() error
+}
+
+type DelVal interface {
+	Err() error
 }
 
 type getOption struct {
@@ -34,6 +44,8 @@ type getOption struct {
 type setOption struct {
 	expired time.Duration
 }
+
+type delOption struct{}
 
 func Expire(expired time.Duration) utils.OptionFunc[setOption] {
 	return func(o *setOption) {
@@ -80,6 +92,13 @@ type endpointConf struct {
 	// consul configure
 	Datacenter string `yaml:"datacenter" json:"datacenter" toml:"datacenter"`
 	WaitTime   string `yaml:"wait_time" json:"wait_time" toml:"wait_time"`
+
+	// etcd configure
+	AutoSyncInterval     string `yaml:"auto_sync_interval" json:"auto_sync_interval" toml:"auto_sync_interval"`
+	DialKeepAliveTime    string `yaml:"dial_keep_alive_time" json:"dial_keep_alive_time" toml:"dial_keep_alive_time"`
+	DialKeepAliveTimeout string `yaml:"dial_keep_alive_timeout" json:"dial_keep_alive_timeout" toml:"dial_keep_alive_timeout"`
+	RejectOldCluster     bool   `yaml:"reject_old_cluster" json:"reject_old_cluster" toml:"reject_old_cluster"`
+	PermitWithoutStream  bool   `yaml:"permit_without_stream" json:"permit_without_stream" toml:"permit_without_stream"`
 }
 
 type kvType string

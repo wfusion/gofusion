@@ -52,6 +52,7 @@ go.work*
 *local.yml
 .mod-cache
 /vendor
+.go-version
 
 # Docs
 docs/themes/

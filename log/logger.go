@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/pkg/errors"
+	"github.com/wfusion/gofusion/common/utils/clone"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -30,6 +31,9 @@ type logger struct {
 	name          string
 	logger        *zap.Logger
 	sugaredLogger *zap.SugaredLogger
+
+	conf   *Conf
+	zapCfg *zap.Config
 }
 
 type useOption struct {
@@ -82,6 +86,7 @@ func defaultLogger(colorful bool) Loggable {
 		zap.Hooks(),
 	)
 	return &logger{
+		zapCfg:        &devCfg,
 		logger:        zapLogger,
 		sugaredLogger: zapLogger.Sugar(),
 	}
@@ -157,6 +162,14 @@ func (l *logger) Level(ctx context.Context) Level {
 		return InfoLevel
 	}
 }
+
+func (l *logger) Config() *outputConf {
+	return &outputConf{
+		Config:    utils.AnyPtr(*l.conf),
+		ZapConfig: clone.Clone(l.zapCfg),
+	}
+}
+
 func (l *logger) flush() {
 	ignore := func(err error) bool {
 		// ENOTTY:

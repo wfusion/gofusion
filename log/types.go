@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/wfusion/gofusion/common/utils"
+	"go.uber.org/zap"
 )
 
 type Loggable interface {
@@ -14,6 +15,7 @@ type Loggable interface {
 	Panic(ctx context.Context, format string, args ...any)
 	Fatal(ctx context.Context, format string, args ...any)
 	Level(ctx context.Context) Level
+	Config() *outputConf
 	flush()
 }
 
@@ -77,4 +79,9 @@ type Conf struct {
 	} `yaml:"file_output_option" json:"file_output_option" toml:"file_output_option"`
 	SkipCallers     []string `yaml:"skip_callers" json:"skip_callers" toml:"skip_callers"`
 	ShorterFilepath bool     `yaml:"shorter_filepath" json:"shorter_filepath" toml:"shorter_filepath"`
+}
+
+type outputConf struct {
+	Config    *Conf
+	ZapConfig *zap.Config
 }

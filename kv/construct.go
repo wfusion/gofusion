@@ -46,7 +46,9 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	case kvTypeRedis:
 		instance = newRedisInstance(ctx, name, conf, opt)
 	case kvTypeConsul:
+		instance = newConsulInstance(ctx, name, conf, opt)
 	case kvTypeEtcd:
+		instance = NewEtcdKV(ctx, name, conf, opt)
 	case kvTypeZK:
 	case kvTypeEureka:
 	default:

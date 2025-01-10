@@ -65,7 +65,22 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		panic(ErrUnknownOutput)
 	}
 
-	var cores []zapcore.Core
+	var (
+		cores  []zapcore.Core
+		zapCfg = zap.NewProductionConfig()
+	)
+
+	zopts := []zap.Option{
+		zap.Hooks(),
+		zap.AddCaller(),
+		zap.AddStacktrace(newZapLogLevel(opt.AppName, name, "enable_file_output", "stacktrace_level")),
+	}
+
+	if config.Use(opt.AppName).Debug() {
+		zapCfg = zap.NewDevelopmentConfig()
+		zopts = append(zopts, zap.Development())
+	}
+
 	if conf.EnableConsoleOutput {
 		cfg := getEncoderConfig(conf)
 		if conf.ConsoleOutputOption.Colorful {
@@ -83,6 +98,10 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		)
 
 		cfg := getEncoderConfig(conf)
+		zapCfg.EncoderConfig = cfg
+		zapCfg.Encoding = conf.FileOutputOption.Layout
+		zapCfg.Level = utils.Must(zap.ParseAtomicLevel(conf.LogLevel))
+
 		encoder := getEncoder(conf.FileOutputOption.Layout, cfg)
 		utils.IfAny(
 			func() bool { logName = conf.FileOutputOption.Name; return utils.IsStrNotBlank(logName) },
@@ -110,31 +129,26 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 				conf.FileOutputOption.RotationMaxAge, name, err))
 		}
 
+		filename := path.Join(filepath.Clean(conf.FileOutputOption.Path), logName)
 		writer := zapcore.AddSync(zapcore.Lock(&rotatelog.Logger{
-			Filename:   path.Join(filepath.Clean(conf.FileOutputOption.Path), logName),
+			Filename:   filename,
 			MaxSize:    rotationSize,
 			MaxBackups: conf.FileOutputOption.RotationCount,
 			MaxAge:     maxAge,
 			Compress:   conf.FileOutputOption.Compress,
 		}))
 		logLevel := newZapLogLevel(opt.AppName, name, "enable_file_output", "log_level")
-		cores = append(cores, zapcore.NewCore(encoder, writer, logLevel))
-	}
 
-	zopts := []zap.Option{
-		zap.Hooks(),
-		zap.AddCaller(),
-		zap.AddStacktrace(newZapLogLevel(opt.AppName, name, "enable_file_output", "stacktrace_level")),
-	}
-	if config.Use(opt.AppName).Debug() {
-		zopts = append(zopts, zap.Development())
+		zapCfg.OutputPaths = append(zapCfg.OutputPaths, filename)
+		zapCfg.ErrorOutputPaths = append(zapCfg.ErrorOutputPaths, filename)
+		cores = append(cores, zapcore.NewCore(encoder, writer, logLevel))
 	}
 
 	zapLogger := zap.
 		New(zapcore.NewTee(cores...), zopts...).
 		Named(config.Use(opt.AppName).AppName())
 
-	fusLogger := &logger{name: name, logger: zapLogger, sugaredLogger: zapLogger.Sugar()}
+	fusLogger := &logger{name: name, conf: conf, zapCfg: &zapCfg, logger: zapLogger, sugaredLogger: zapLogger.Sugar()}
 
 	rwlock.Lock()
 	defer rwlock.Unlock()

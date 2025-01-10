@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/consul/api"
 	"github.com/spf13/cast"
-	
+
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
 )
@@ -34,14 +34,15 @@ func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config
 	}
 }
 
-func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) Value {
+func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
+	//opt := utils.ApplyOptions[getOption](opts...)
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
 	pair, meta, err := c.cli.KV().Get(key, copt)
 	return &consulValue{pair: pair, queryMeta: meta, err: err}
 }
 
-func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Value {
+func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
 	opt := utils.ApplyOptions[setOption](opts...)
 
 	copt := new(api.WriteOptions)
@@ -73,7 +74,7 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 		}
 		id, meta, err := c.cli.Session().Create(entry, copt)
 		if err != nil {
-			return &consulValue{pair: nil, writeMeta: meta, err: err}
+			return &consulValue{sessionID: id, pair: nil, writeMeta: meta, err: err}
 		}
 		pair.Session = id
 	}
@@ -82,14 +83,31 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 	return &consulValue{pair: pair, writeMeta: meta, err: err}
 }
 
+// Del TODO: how to delete key with expired?
+func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
+	//opt := utils.ApplyOptions[delOption](opts...)
+	copt := new(api.WriteOptions)
+	copt = copt.WithContext(ctx)
+	meta, err := c.cli.KV().Delete(key, copt)
+	return &consulValue{pair: nil, writeMeta: meta, err: err}
+}
+
 func (c *consulKV) getProxy() any { return c.cli }
 func (c *consulKV) close() error  { return nil }
 
 type consulValue struct {
+	sessionID string
 	pair      *api.KVPair
 	queryMeta *api.QueryMeta
 	writeMeta *api.WriteMeta
 	err       error
+}
+
+func (c *consulValue) LeaseID() string {
+	if c == nil {
+		return ""
+	}
+	return c.sessionID
 }
 
 func (c *consulValue) String() (string, error) {
@@ -100,6 +118,13 @@ func (c *consulValue) String() (string, error) {
 		return "", c.err
 	}
 	return string(c.pair.Value), nil
+}
+
+func (c *consulValue) Err() error {
+	if c == nil {
+		return ErrNilValue
+	}
+	return c.err
 }
 
 func parseConsulConfig(conf *Conf) *api.Config {

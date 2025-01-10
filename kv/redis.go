@@ -68,48 +68,62 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 	}
 }
 
-func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) Value {
-	stringResult := r.cli.GetProxy().Get(ctx, key)
-	return &redisValue{typ: stringRedisValueType, string: stringResult}
+func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
+	//opt := utils.ApplyOptions[getOption](opts...)
+	return &redisGetValue{StringCmd: r.cli.GetProxy().Get(ctx, key)}
 }
 
-func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Value {
+func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
 	opt := utils.ApplyOptions[setOption](opts...)
-	statusResult := r.cli.GetProxy().Set(ctx, key, val, opt.expired)
-	return &redisValue{typ: statusRedisValueType, status: statusResult}
+	return &redisPutValue{StatusCmd: r.cli.GetProxy().Set(ctx, key, val, opt.expired), key: key}
+}
+
+func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
+	//opt := utils.ApplyOptions[delOption](opts...)
+	return &redisDelValue{IntCmd: r.cli.GetProxy().Del(ctx, key)}
 }
 
 func (r *redisKV) getProxy() any { return r.cli }
 func (r *redisKV) close() error  { return r.cli.Close() }
 
-type redisValue struct {
-	typ    redisValueType
-	string *rdsDrv.StringCmd
-	status *rdsDrv.StatusCmd
+type redisGetValue struct {
+	*rdsDrv.StringCmd
 }
 
-func (r *redisValue) String() (string, error) {
+func (r *redisGetValue) String() (string, error) {
 	if r == nil {
 		return "", ErrNilValue
 	}
-	switch r.typ {
-	case stringRedisValueType:
-		return r.string.Result()
-	case statusRedisValueType:
-		return r.status.Result()
-	default:
-		return "", ErrUnsupportedRedisValueType
-	}
+	return r.StringCmd.Result()
 }
 
-type redisValueType int
+type redisPutValue struct {
+	*rdsDrv.StatusCmd
 
-const (
-	stringRedisValueType redisValueType = 1 + iota
-	intRedisValueType
-	floatRedisValueType
-	boolRedisValueType
-	stringSliceRedisValueType
-	statusRedisValueType
-	durationRedisValueType
-)
+	key string
+}
+
+func (r *redisPutValue) LeaseID() string {
+	if r == nil {
+		return ""
+	}
+	return r.key
+}
+
+func (r *redisPutValue) Err() error {
+	if r == nil {
+		return ErrNilValue
+	}
+	return r.StatusCmd.Err()
+}
+
+type redisDelValue struct {
+	*rdsDrv.IntCmd
+}
+
+func (r *redisDelValue) Err() error {
+	if r == nil {
+		return ErrNilValue
+	}
+	return r.IntCmd.Err()
+}
