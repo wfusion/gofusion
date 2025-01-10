@@ -17,6 +17,7 @@ var (
 		"*github.com/wfusion/gofusion*/db/plugins/*.go",
 		"*github.com/wfusion/gofusion*/db/callbacks/*.go",
 		"*github.com/wfusion/gofusion*/db/softdelete/*.go",
+		"*github.com/wfusion/gofusion*/kv/*.go",
 		"*github.com/wfusion/gofusion*/cron/log.go",
 		"*github.com/wfusion/gofusion*/async/log.go",
 		"*github.com/wfusion/gofusion*/mq/log.go",

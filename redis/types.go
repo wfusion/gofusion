@@ -27,5 +27,5 @@ type Conf struct {
 }
 
 type customLogger interface {
-	Init(log log.Loggable, appName, name string)
+	Init(log log.Loggable, appName, name, logInstance string)
 }

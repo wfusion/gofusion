@@ -27,7 +27,7 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 			hookValue := reflect.New(hookType)
 			if hookValue.Type().Implements(redisCustomLoggerType) {
 				logger := fusLog.Use(conf.LogInstance, fusLog.AppName(opt.AppName))
-				hookValue.Interface().(redisCustomLogger).Init(logger, opt.AppName, name)
+				hookValue.Interface().(redisCustomLogger).Init(logger, opt.AppName, name, conf.LogInstance)
 			}
 
 			hooks = append(hooks, hookValue.Interface().(rdsDrv.Hook))
@@ -35,23 +35,23 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 	}
 
 	ropt := redis.Option{
-		Cluster:         conf.Endpoint.Cluster,
+		Cluster:         conf.Endpoint.RedisCluster,
 		Endpoints:       conf.Endpoint.Addresses,
-		DB:              conf.Endpoint.DB,
+		DB:              conf.Endpoint.RedisDB,
 		User:            conf.Endpoint.User,
 		Password:        conf.Endpoint.Password,
 		DialTimeout:     conf.Endpoint.DialTimeout,
-		ReadTimeout:     conf.Endpoint.ReadTimeout,
-		WriteTimeout:    conf.Endpoint.WriteTimeout,
-		MinIdleConns:    conf.Endpoint.MinIdleConns,
-		MaxIdleConns:    conf.Endpoint.MaxIdleConns,
-		ConnMaxIdleTime: conf.Endpoint.ConnMaxIdleTime,
-		ConnMaxLifetime: conf.Endpoint.ConnMaxLifetime,
-		MaxRetries:      conf.Endpoint.MaxRetries,
-		MinRetryBackoff: conf.Endpoint.MinRetryBackoff,
-		MaxRetryBackoff: conf.Endpoint.MaxRetryBackoff,
-		PoolSize:        conf.Endpoint.PoolSize,
-		PoolTimeout:     conf.Endpoint.PoolTimeout,
+		ReadTimeout:     conf.Endpoint.RedisReadTimeout,
+		WriteTimeout:    conf.Endpoint.RedisWriteTimeout,
+		MinIdleConns:    conf.Endpoint.RedisMinIdleConns,
+		MaxIdleConns:    conf.Endpoint.RedisMaxIdleConns,
+		ConnMaxIdleTime: conf.Endpoint.RedisConnMaxIdleTime,
+		ConnMaxLifetime: conf.Endpoint.RedisConnMaxLifetime,
+		MaxRetries:      conf.Endpoint.RedisMaxRetries,
+		MinRetryBackoff: conf.Endpoint.RedisMinRetryBackoff,
+		MaxRetryBackoff: conf.Endpoint.RedisMaxRetryBackoff,
+		PoolSize:        conf.Endpoint.RedisPoolSize,
+		PoolTimeout:     conf.Endpoint.RedisPoolTimeout,
 	}
 	cli, err := redis.Default.New(ctx, ropt, redis.WithHook(hooks))
 	if err != nil {
@@ -95,6 +95,13 @@ func (r *redisGetValue) String() (string, error) {
 		return "", ErrNilValue
 	}
 	return r.StringCmd.Result()
+}
+
+func (r *redisGetValue) Version() (Version, error) {
+	if r == nil {
+		return nil, ErrNilValue
+	}
+	return new(emptyVersion), nil
 }
 
 type redisPutValue struct {

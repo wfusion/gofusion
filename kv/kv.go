@@ -2,6 +2,7 @@ package kv
 
 import (
 	"context"
+	"math/big"
 	"sync"
 )
 
@@ -16,3 +17,7 @@ type abstractKV struct {
 	appName string
 	name    string
 }
+
+type emptyVersion struct{}
+
+func (e *emptyVersion) Version() *big.Int { return big.NewInt(0) }

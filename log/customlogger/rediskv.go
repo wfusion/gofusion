@@ -19,6 +19,7 @@ import (
 var (
 	// RedisKVLoggerType FIXME: should not be deleted to avoid compiler optimized
 	RedisKVLoggerType = reflect.TypeOf(redisKVLogger{})
+	redisKVFields     = log.Fields{"component": strings.ToLower(config.ComponentKV)}
 )
 
 type redisKVLogger struct {
@@ -26,13 +27,15 @@ type redisKVLogger struct {
 	appName              string
 	confName             string
 	enabled              bool
+	logInstance          string
 	unloggableCommandSet *utils.Set[string]
 }
 
-func (r *redisKVLogger) Init(log log.Loggable, appName, name string) {
+func (r *redisKVLogger) Init(log log.Loggable, appName, name, logInstance string) {
 	r.log = log
 	r.appName = appName
 	r.confName = name
+	r.logInstance = logInstance
 	r.reloadConfig()
 }
 
@@ -86,11 +89,15 @@ func (r *redisKVLogger) logger() log.Loggable {
 	if r.log != nil {
 		return r.log
 	}
-	return log.Use(config.DefaultInstanceKey, log.AppName(r.appName))
+	logInstance := config.DefaultInstanceKey
+	if r.logInstance != "" {
+		logInstance = r.logInstance
+	}
+	return log.Use(logInstance, log.AppName(r.appName))
 }
 
 func (r *redisKVLogger) fields(fields log.Fields) log.Fields {
-	return utils.MapMerge(fields, redisFields)
+	return utils.MapMerge(fields, redisKVFields)
 }
 
 func (r *redisKVLogger) isLoggableCommandSet(command string) bool {
@@ -127,8 +134,8 @@ func (r *redisKVLogger) reloadConfig() {
 	if !ok {
 		return
 	}
-	enabled := cast.ToBool(cfg["enable_logger"])
-	r.enabled = enabled
+	r.enabled = cast.ToBool(cfg["enable_logger"])
+	r.logInstance = cast.ToString(cfg["log_instance"])
 
 	epConfObj, ok1 := cfg["endpoint"]
 	epConf, ok2 := epConfObj.(map[string]any)

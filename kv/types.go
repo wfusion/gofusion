@@ -2,6 +2,7 @@ package kv
 
 import (
 	"context"
+	"math/big"
 	"reflect"
 	"time"
 
@@ -14,6 +15,7 @@ const (
 	ErrUnsupportedKVType         utils.Error = "unsupported kv type"
 	ErrNilValue                  utils.Error = "nil value"
 	ErrUnsupportedRedisValueType utils.Error = "unsupported redis value type"
+	ErrInvalidExpiration         utils.Error = "invalid expiration"
 )
 
 type KeyValue interface {
@@ -27,6 +29,7 @@ type KeyValue interface {
 
 type GetVal interface {
 	String() (string, error)
+	Version() (Version, error)
 }
 
 type PutVal interface {
@@ -38,6 +41,10 @@ type DelVal interface {
 	Err() error
 }
 
+type Version interface {
+	Version() *big.Int
+}
+
 type getOption struct {
 }
 
@@ -45,11 +52,26 @@ type setOption struct {
 	expired time.Duration
 }
 
-type delOption struct{}
+type delOption struct {
+	version int
+	leaseID string
+}
+
+func Ver(v int) utils.OptionFunc[delOption] {
+	return func(o *delOption) {
+		o.version = v
+	}
+}
 
 func Expire(expired time.Duration) utils.OptionFunc[setOption] {
 	return func(o *setOption) {
 		o.expired = expired
+	}
+}
+
+func LeaseID(leaseID string) utils.OptionFunc[delOption] {
+	return func(o *delOption) {
+		o.leaseID = leaseID
 	}
 }
 
@@ -67,38 +89,43 @@ type Conf struct {
 }
 
 type endpointConf struct {
-	Addresses []string `yaml:"addresses" json:"addresses" toml:"addresses"`
-	User      string   `yaml:"user" json:"user" toml:"user"`
-	Password  string   `yaml:"password" json:"password" toml:"password" encrypted:""`
+	Addresses   []string `yaml:"addresses" json:"addresses" toml:"addresses"`
+	User        string   `yaml:"user" json:"user" toml:"user"`
+	Password    string   `yaml:"password" json:"password" toml:"password" encrypted:""`
+	DialTimeout string   `yaml:"dial_timeout" json:"dial_timeout" toml:"dial_timeout" default:"5s"`
 
 	// redis configure
-	Cluster                 bool     `yaml:"cluster" json:"cluster" toml:"cluster"`
-	DB                      uint     `yaml:"db" json:"db" toml:"db"`
-	DialTimeout             string   `yaml:"dial_timeout" json:"dial_timeout" toml:"dial_timeout" default:"5s"`
-	ReadTimeout             string   `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"3s"`
-	WriteTimeout            string   `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"3s"`
-	MinIdleConns            int      `yaml:"min_idle_conns" json:"min_idle_conns" toml:"min_idle_conns"`
-	MaxIdleConns            int      `yaml:"max_idle_conns" json:"max_idle_conns" toml:"max_idle_conns"`
-	ConnMaxIdleTime         string   `yaml:"conn_max_idle_time" json:"conn_max_idle_time" toml:"conn_max_idle_time" default:"30m"`
-	ConnMaxLifetime         string   `yaml:"conn_max_life_time" json:"conn_max_life_time" toml:"conn_max_life_time"`
-	MaxRetries              int      `yaml:"max_retries" json:"max_retries" toml:"max_retries" default:"3"`
-	MinRetryBackoff         string   `yaml:"min_retry_backoff" json:"min_retry_backoff" toml:"min_retry_backoff" default:"8ms"`
-	MaxRetryBackoff         string   `yaml:"max_retry_backoff" json:"max_retry_backoff" toml:"max_retry_backoff" default:"512ms"`
-	PoolSize                int      `yaml:"pool_size" json:"pool_size" toml:"pool_size"`
-	PoolTimeout             string   `yaml:"pool_timeout" json:"pool_timeout" toml:"pool_timeout"`
+	RedisCluster            bool     `yaml:"redis_cluster" json:"redis_cluster" toml:"redis_cluster"`
+	RedisDB                 uint     `yaml:"redis_db" json:"redis_db" toml:"redis_db"`
 	RedisHooks              []string `yaml:"redis_hooks" json:"redis_hooks" toml:"redis_hooks" default:"[github.com/wfusion/gofusion/log/customlogger.redisKVLogger]"`
 	RedisUnloggableCommands []string `yaml:"redis_unloggable_commands" json:"redis_unloggable_commands" toml:"redis_unloggable_commands" default:"[echo,ping]"`
+	RedisReadTimeout        string   `yaml:"redis_read_timeout" json:"redis_read_timeout" toml:"redis_read_timeout" default:"3s"`
+	RedisWriteTimeout       string   `yaml:"redis_write_timeout" json:"redis_write_timeout" toml:"redis_write_timeout" default:"3s"`
+	RedisMinIdleConns       int      `yaml:"redis_min_idle_conns" json:"redis_min_idle_conns" toml:"redis_min_idle_conns"`
+	RedisMaxIdleConns       int      `yaml:"redis_max_idle_conns" json:"redis_max_idle_conns" toml:"redis_max_idle_conns"`
+	RedisConnMaxIdleTime    string   `yaml:"redis_conn_max_idle_time" json:"redis_conn_max_idle_time" toml:"redis_conn_max_idle_time" default:"30m"`
+	RedisConnMaxLifetime    string   `yaml:"redis_conn_max_life_time" json:"redis_conn_max_life_time" toml:"redis_conn_max_life_time"`
+	RedisMaxRetries         int      `yaml:"redis_max_retries" json:"redis_max_retries" toml:"redis_max_retries" default:"3"`
+	RedisMinRetryBackoff    string   `yaml:"redis_min_retry_backoff" json:"redis_min_retry_backoff" toml:"redis_min_retry_backoff" default:"8ms"`
+	RedisMaxRetryBackoff    string   `yaml:"redis_max_retry_backoff" json:"redis_max_retry_backoff" toml:"redis_max_retry_backoff" default:"512ms"`
+	RedisPoolSize           int      `yaml:"redis_pool_size" json:"redis_pool_size" toml:"redis_pool_size"`
+	RedisPoolTimeout        string   `yaml:"redis_pool_timeout" json:"redis_pool_timeout" toml:"redis_pool_timeout"`
 
 	// consul configure
-	Datacenter string `yaml:"datacenter" json:"datacenter" toml:"datacenter"`
-	WaitTime   string `yaml:"wait_time" json:"wait_time" toml:"wait_time"`
+	ConsulDatacenter string `yaml:"consul_datacenter" json:"consul_datacenter" toml:"consul_datacenter"`
+	ConsulWaitTime   string `yaml:"consul_wait_time" json:"consul_wait_time" toml:"consul_wait_time"`
 
 	// etcd configure
-	AutoSyncInterval     string `yaml:"auto_sync_interval" json:"auto_sync_interval" toml:"auto_sync_interval"`
-	DialKeepAliveTime    string `yaml:"dial_keep_alive_time" json:"dial_keep_alive_time" toml:"dial_keep_alive_time"`
-	DialKeepAliveTimeout string `yaml:"dial_keep_alive_timeout" json:"dial_keep_alive_timeout" toml:"dial_keep_alive_timeout"`
-	RejectOldCluster     bool   `yaml:"reject_old_cluster" json:"reject_old_cluster" toml:"reject_old_cluster"`
-	PermitWithoutStream  bool   `yaml:"permit_without_stream" json:"permit_without_stream" toml:"permit_without_stream"`
+	EtcdAutoSyncInterval     string `yaml:"etcd_auto_sync_interval" json:"etcd_auto_sync_interval" toml:"etcd_auto_sync_interval"`
+	EtcdDialKeepAliveTime    string `yaml:"etcd_dial_keep_alive_time" json:"etcd_dial_keep_alive_time" toml:"etcd_dial_keep_alive_time"`
+	EtcdDialKeepAliveTimeout string `yaml:"etcd_dial_keep_alive_timeout" json:"etcd_dial_keep_alive_timeout" toml:"etcd_dial_keep_alive_timeout"`
+	EtcdRejectOldCluster     bool   `yaml:"etcd_reject_old_cluster" json:"etcd_reject_old_cluster" toml:"etcd_reject_old_cluster"`
+	EtcdPermitWithoutStream  bool   `yaml:"etcd_permit_without_stream" json:"etcd_permit_without_stream" toml:"etcd_permit_without_stream"`
+
+	// zookeeper configure
+	ZooMaxBufferSize     string `yaml:"zoo_max_buffer_size" json:"zoo_max_buffer_size" toml:"zoo_max_buffer_size" default:"0"`
+	ZooMaxConnBufferSize string `yaml:"zoo_max_conn_buffer_size" json:"zoo_max_conn_buffer_size" toml:"zoo_max_conn_buffer_size" default:"1.5mib"`
+	ZooLogger            string `yaml:"zoo_logger" json:"zoo_logger" toml:"zoo_logger" default:"github.com/wfusion/gofusion/log/customlogger.zookeeperKVLogger"`
 }
 
 type kvType string
@@ -112,5 +139,5 @@ const (
 )
 
 type redisCustomLogger interface {
-	Init(log log.Loggable, appName, name string)
+	Init(log log.Loggable, appName, name, logInstance string)
 }

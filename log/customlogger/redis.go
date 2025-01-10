@@ -27,13 +27,15 @@ type redisLogger struct {
 	appName              string
 	confName             string
 	enabled              bool
+	logInstance          string
 	unloggableCommandSet *utils.Set[string]
 }
 
-func (r *redisLogger) Init(log log.Loggable, appName, name string) {
+func (r *redisLogger) Init(log log.Loggable, appName, name, logInstance string) {
 	r.log = log
 	r.appName = appName
 	r.confName = name
+	r.logInstance = logInstance
 	r.reloadConfig()
 }
 
@@ -87,7 +89,11 @@ func (r *redisLogger) logger() log.Loggable {
 	if r.log != nil {
 		return r.log
 	}
-	return log.Use(config.DefaultInstanceKey, log.AppName(r.appName))
+	logInstance := config.DefaultInstanceKey
+	if r.logInstance != "" {
+		logInstance = r.logInstance
+	}
+	return log.Use(logInstance, log.AppName(r.appName))
 }
 
 func (r *redisLogger) fields(fields log.Fields) log.Fields {
@@ -128,8 +134,8 @@ func (r *redisLogger) reloadConfig() {
 	if !ok {
 		return
 	}
-	enabled := cast.ToBool(cfg["enable_logger"])
-	r.enabled = enabled
+	r.enabled = cast.ToBool(cfg["enable_logger"])
+	r.logInstance = cast.ToString(cfg["log_instance"])
 
 	unloggableCommandsObj, ok1 := cfg["unloggable_commands"]
 	unloggableCommands, ok2 := unloggableCommandsObj.([]string)

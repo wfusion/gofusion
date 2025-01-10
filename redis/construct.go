@@ -54,7 +54,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 			hookValue := reflect.New(hookType)
 			if hookValue.Type().Implements(customLoggerType) {
 				logger := fusLog.Use(conf.LogInstance, fusLog.AppName(opt.AppName))
-				hookValue.Interface().(customLogger).Init(logger, opt.AppName, name)
+				hookValue.Interface().(customLogger).Init(logger, opt.AppName, name, conf.LogInstance)
 			}
 
 			hooks = append(hooks, hookValue.Interface().(rdsDrv.Hook))

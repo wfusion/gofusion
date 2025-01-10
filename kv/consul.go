@@ -2,6 +2,7 @@ package kv
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/hashicorp/consul/api"
@@ -9,6 +10,11 @@ import (
 
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
+)
+
+const (
+	consulMinTTL = 10 * time.Second
+	consulMaxTTL = 24 * time.Hour
 )
 
 type consulKV struct {
@@ -39,7 +45,7 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
 	pair, meta, err := c.cli.KV().Get(key, copt)
-	return &consulValue{pair: pair, queryMeta: meta, err: err}
+	return &consulGetValue{pair: pair, meta: meta, err: err}
 }
 
 func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
@@ -59,13 +65,16 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 		Partition:   "",
 	}
 	if opt.expired > 0 {
+		if opt.expired < consulMinTTL || opt.expired > consulMaxTTL {
+			return &consulPutValue{err: ErrInvalidExpiration}
+		}
 		entry := &api.SessionEntry{
 			CreateIndex:   0,
 			ID:            key,
-			Name:          "",
+			Name:          key,
 			Node:          "",
 			LockDelay:     0,
-			Behavior:      "",
+			Behavior:      api.SessionBehaviorRelease,
 			TTL:           opt.expired.String(),
 			Namespace:     "",
 			Checks:        nil,
@@ -74,66 +83,114 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 		}
 		id, meta, err := c.cli.Session().Create(entry, copt)
 		if err != nil {
-			return &consulValue{sessionID: id, pair: nil, writeMeta: meta, err: err}
+			return &consulPutValue{sessionID: id, pair: pair, meta: meta, err: err}
 		}
 		pair.Session = id
 	}
 
 	meta, err := c.cli.KV().Put(pair, copt)
-	return &consulValue{pair: pair, writeMeta: meta, err: err}
+	return &consulPutValue{pair: pair, meta: meta, err: err}
 }
 
-// Del TODO: how to delete key with expired?
 func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	//opt := utils.ApplyOptions[delOption](opts...)
+	opt := utils.ApplyOptions[delOption](opts...)
 	copt := new(api.WriteOptions)
 	copt = copt.WithContext(ctx)
 	meta, err := c.cli.KV().Delete(key, copt)
-	return &consulValue{pair: nil, writeMeta: meta, err: err}
+	if err != nil {
+		return &consulDelValue{meta: meta, err: err}
+	}
+	if opt.leaseID != "" {
+		if meta, err := c.cli.Session().Destroy(opt.leaseID, copt); err != nil {
+			return &consulDelValue{meta: meta, err: err}
+		}
+	}
+	return &consulDelValue{meta: meta, err: err}
 }
 
 func (c *consulKV) getProxy() any { return c.cli }
 func (c *consulKV) close() error  { return nil }
 
-type consulValue struct {
-	sessionID string
-	pair      *api.KVPair
-	queryMeta *api.QueryMeta
-	writeMeta *api.WriteMeta
-	err       error
+type consulGetValue struct {
+	pair *api.KVPair
+	meta *api.QueryMeta
+	err  error
 }
 
-func (c *consulValue) LeaseID() string {
-	if c == nil {
-		return ""
-	}
-	return c.sessionID
-}
-
-func (c *consulValue) String() (string, error) {
+func (c *consulGetValue) String() (string, error) {
 	if c == nil {
 		return "", ErrNilValue
 	}
 	if c.err != nil {
 		return "", c.err
 	}
+	if c.pair == nil {
+		return "", ErrNilValue
+	}
 	return string(c.pair.Value), nil
 }
 
-func (c *consulValue) Err() error {
+func (c *consulGetValue) Version() (Version, error) {
+	if c == nil {
+		return nil, ErrNilValue
+	}
+	if c.err != nil {
+		return nil, c.err
+	}
+	if c.pair == nil {
+		return nil, ErrNilValue
+	}
+	return &consulVersion{KVPair: c.pair}, nil
+}
+
+type consulPutValue struct {
+	sessionID string
+	pair      *api.KVPair
+	meta      *api.WriteMeta
+	err       error
+}
+
+func (c *consulPutValue) LeaseID() string {
+	if c == nil {
+		return ""
+	}
+	return c.sessionID
+}
+
+func (c *consulPutValue) Err() error {
 	if c == nil {
 		return ErrNilValue
 	}
 	return c.err
 }
 
+type consulDelValue struct {
+	meta *api.WriteMeta
+	err  error
+}
+
+func (c *consulDelValue) Err() error {
+	if c == nil {
+		return ErrNilValue
+	}
+	return c.err
+}
+
+type consulVersion struct {
+	*api.KVPair
+}
+
+func (c *consulVersion) Version() *big.Int {
+	return big.NewInt(0).SetUint64(c.ModifyIndex)
+}
+
 func parseConsulConfig(conf *Conf) *api.Config {
 	epConf := conf.Endpoint
 	cfg := api.DefaultConfig()
 	cfg.Address = epConf.Addresses[0]
-	cfg.Datacenter = epConf.Datacenter
-	if epConf.WaitTime != "" {
-		cfg.WaitTime = utils.Must(time.ParseDuration(epConf.WaitTime))
+	cfg.Datacenter = epConf.ConsulDatacenter
+	if epConf.ConsulWaitTime != "" {
+		cfg.WaitTime = utils.Must(time.ParseDuration(epConf.ConsulWaitTime))
 	}
 
 	return cfg

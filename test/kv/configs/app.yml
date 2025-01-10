@@ -1,0 +1,68 @@
+base:
+  debug: false
+  app: gofusion
+  goroutine_pool:
+    max_routine_amount: -1
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_max_age: 24h
+        rotation_count: 10
+        rotation_size: 100mib
+        compress: false
+
+  metrics:
+    prometheus_push:
+      type: prometheus
+      mode: push
+      interval: 1s
+      endpoint:
+        addresses: [ localhost:29091 ]
+      enable_service_label: true
+      enable_internal_metrics: true
+      enable_logger: true
+      log_instance: default
+
+  kv:
+    redis:
+      type: redis
+      enable_logger: true
+      unloggable_commands: [ echo,ping ]
+      endpoint:
+        db: 0
+        addresses: ["redis:6379"]
+        password: ci
+        cluster: false
+        dial_timeout: 5s
+        read_timeout: 2s
+        write_timeout: 2s
+        min_idle_conns: 100
+        max_idle_conns: 10000
+    etcd:
+      type: etcd
+      enable_logger: true
+      endpoint:
+        addresses: [ "etcd:2379" ]
+        dial_timeout: 5s
+    consul:
+      type: consul
+      enable_logger: true
+      endpoint:
+        addresses: [ "consul:8500" ]
+        dial_timeout: 5s
+    zookeeper:
+      type: zookeeper
+      enable_logger: true
+      endpoint:
+        addresses: [ "zookeeper:2181" ]
+        dial_timeout: 5s

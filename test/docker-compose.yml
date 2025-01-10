@@ -5,6 +5,7 @@ services:
     image: docker.io/bitnami/kafka:3.6
     container_name: kafka
     networks: [ gofusion ]
+    restart: always
     ports:
       - "9092:9092"
       - "9093:9093"
@@ -21,6 +22,7 @@ services:
     image: apachepulsar/pulsar:3.1.0
     container_name: pulsar
     networks: [ gofusion ]
+    restart: always
     ports:
       - "26650:6650"
       - "28080:8080"
@@ -29,16 +31,52 @@ services:
     image: 'rabbitmq:3.12.6-management-alpine'
     container_name: rabbitmq
     networks: [ gofusion ]
+    restart: always
     ports:
       - "15672:15672"
       - "25672:5672"
     environment:
       - RABBITMQ_DEFAULT_USER=root
       - RABBITMQ_DEFAULT_PASS=ci
+  etcd:
+    image: bitnami/etcd:3.5.17
+    container_name: etcd
+    networks: [ gofusion ]
+    restart: always
+    ports:
+      - "22379:2379"
+      - "22380:2380"
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
+  consul:
+    image: consul:1.15.4
+    container_name: consul
+    networks: [ gofusion ]
+    restart: always
+    ports:
+      - "28500:8500"
+      - "28600:8600/tcp"
+      - "28600:8600/udp"
+    command: "agent -server -bootstrap-expect=1 -node=consul-node-1 -bind=0.0.0.0 -client=0.0.0.0 -datacenter=dc1 -ui -config-dir=/consul/config"
+  zookeeper:
+    image: bitnami/zookeeper:3.9.3
+    container_name: zookeeper
+    networks: [ gofusion ]
+    restart: always
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=0.0.0.0:2888:3888
+      ZOO_STANDALONE_ENABLED: true
+      ZOO_CFG_extendedTypesEnabled: true
+      ALLOW_ANONYMOUS_LOGIN: yes
+    ports:
+      - "22181:2181"
   redis:
     image: redis:7.2.2-alpine
     container_name: redis
     networks: [ gofusion ]
+    restart: always
     ports:
       - "26379:6379"
     command: --requirepass "ci"
@@ -46,6 +84,7 @@ services:
     image: mysql:latest
     container_name: mysql
     networks: [ gofusion ]
+    restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=ci
     ports:
@@ -54,6 +93,7 @@ services:
     image: postgres:16.0-alpine3.18
     container_name: postgres
     networks: [ gofusion ]
+    restart: always
     ports:
       - "25432:5432"
     environment:
@@ -63,6 +103,7 @@ services:
     container_name: opengauss
     networks: [ gofusion ]
     privileged: true
+    restart: always
     environment:
       - GS_PASSWORD=openGauss@123
     ports:
@@ -71,6 +112,7 @@ services:
     image: mcr.microsoft.com/azure-sql-edge
     container_name: sqlserver
     networks: [ gofusion ]
+    restart: always
     environment:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=MyPass@word
@@ -81,6 +123,7 @@ services:
     image: mongo:4.2
     container_name: mongo
     networks: [ gofusion ]
+    restart: always
     ports:
       - "27017:27017"
     environment:
@@ -91,6 +134,7 @@ services:
     image: prom/prometheus:v2.47.2
     container_name: prometheus
     networks: [ gofusion ]
+    restart: always
     volumes:
       - "./metrics/configs/prometheus.yml:/etc/prometheus/prometheus.yml"
     ports:
@@ -99,6 +143,7 @@ services:
     image: prom/pushgateway:v1.6.2
     container_name: prometheus_push
     networks: [ gofusion ]
+    restart: always
     ports:
       - "29091:9091"
 #  test:

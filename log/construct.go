@@ -81,14 +81,20 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		zopts = append(zopts, zap.Development())
 	}
 
+	zapCfg.Level = utils.Must(zap.ParseAtomicLevel(conf.LogLevel))
 	if conf.EnableConsoleOutput {
 		cfg := getEncoderConfig(conf)
 		if conf.ConsoleOutputOption.Colorful {
 			cfg.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		}
+		zapCfg.EncoderConfig = cfg
+		zapCfg.Encoding = conf.ConsoleOutputOption.Layout
 		encoder := getEncoder(conf.ConsoleOutputOption.Layout, cfg)
 		writer := zapcore.Lock(os.Stdout)
 		logLevel := newZapLogLevel(opt.AppName, name, "enable_console_output", "log_level")
+
+		zapCfg.OutputPaths = append(zapCfg.OutputPaths, "stdout")
+		zapCfg.ErrorOutputPaths = append(zapCfg.ErrorOutputPaths, "stdout")
 		cores = append(cores, zapcore.NewCore(encoder, writer, logLevel))
 	}
 	if conf.EnableFileOutput {
@@ -100,8 +106,6 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		cfg := getEncoderConfig(conf)
 		zapCfg.EncoderConfig = cfg
 		zapCfg.Encoding = conf.FileOutputOption.Layout
-		zapCfg.Level = utils.Must(zap.ParseAtomicLevel(conf.LogLevel))
-
 		encoder := getEncoder(conf.FileOutputOption.Layout, cfg)
 		utils.IfAny(
 			func() bool { logName = conf.FileOutputOption.Name; return utils.IsStrNotBlank(logName) },

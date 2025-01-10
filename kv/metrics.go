@@ -36,8 +36,8 @@ func startDaemonRoutines(ctx context.Context, appName, name string, conf *Conf) 
 		{Key: "config", Value: name},
 	}
 
-	if conf.Endpoint.DB > 0 {
-		labels = append(labels, metrics.Label{Key: "database", Value: cast.ToString(conf.Endpoint.DB)})
+	if conf.Endpoint.RedisDB > 0 {
+		labels = append(labels, metrics.Label{Key: "database", Value: cast.ToString(conf.Endpoint.RedisDB)})
 	}
 
 	log.Printf("%v [Gofusion] %s %s %s metrics start", syscall.Getpid(), app, config.ComponentKV, name)

@@ -25,6 +25,7 @@ require (
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/go-resty/resty/v2 v2.13.1
 	github.com/go-test/deep v1.1.1
+	github.com/go-zookeeper/zk v1.0.4
 	github.com/gobwas/glob v0.2.3
 	github.com/goccy/go-json v0.10.4
 	github.com/google/go-cmp v0.6.0
@@ -57,6 +58,8 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tjfoc/gmsm v1.4.2-0.20220114090716-36b992c51540
 	github.com/vmihailenco/msgpack/v5 v5.4.1
+	go.etcd.io/etcd/api/v3 v3.5.17
+	go.etcd.io/etcd/client/v3 v3.5.17
 	go.mongodb.org/mongo-driver v1.14.0
 	go.uber.org/atomic v1.11.0
 	go.uber.org/dig v1.18.0
@@ -175,9 +178,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.etcd.io/etcd/api/v3 v3.5.17 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.17 // indirect
-	go.etcd.io/etcd/client/v3 v3.5.17 // indirect
 	go.opentelemetry.io/otel v1.24.0 // indirect
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
@@ -201,4 +202,7 @@ require (
 	stathat.com/c/consistent v1.0.0 // indirect
 )
 
-replace github.com/jackc/puddle/v2 v2.2.1 => github.com/jackc/puddle/v2 v2.1.2
+replace (
+	github.com/jackc/puddle/v2 v2.2.1 => github.com/jackc/puddle/v2 v2.1.2
+	google.golang.org/grpc v1.59.0 => google.golang.org/grpc v1.58.2
+)
