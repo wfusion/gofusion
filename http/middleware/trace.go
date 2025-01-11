@@ -22,7 +22,7 @@ func Trace() gin.HandlerFunc {
 			},
 			func() bool { traceID = utils.NginxID(); return traceID != "" },
 		)
-		c.Header("Trace-Id", traceID)
+		c.Header("traceid", traceID)
 		c.Set(fusCtx.KeyTraceID, traceID)
 
 		utils.IfAny(
@@ -40,6 +40,7 @@ func Trace() gin.HandlerFunc {
 				return userID != ""
 			},
 		)
+		c.Header("userid", userID)
 		c.Set(fusCtx.KeyUserID, userID)
 		c.Next()
 	}

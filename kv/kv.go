@@ -16,6 +16,14 @@ type abstractKV struct {
 
 	appName string
 	name    string
+	conf    *Conf
+}
+
+func (a *abstractKV) config() *Conf {
+	if a == nil {
+		return nil
+	}
+	return a.conf
 }
 
 type emptyVersion struct{}

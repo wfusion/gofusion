@@ -36,6 +36,7 @@ func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config
 			name:    name,
 			ctx:     ctx,
 			appName: opt.AppName,
+			conf:    conf,
 		},
 	}
 }

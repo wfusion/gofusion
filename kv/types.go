@@ -25,6 +25,7 @@ type KeyValue interface {
 
 	getProxy() any
 	close() error
+	config() *Conf
 }
 
 type GetVal interface {
@@ -135,7 +136,6 @@ const (
 	kvTypeConsul kvType = "consul"
 	kvTypeEtcd   kvType = "etcd"
 	kvTypeZK     kvType = "zookeeper"
-	kvTypeEureka kvType = "eureka"
 )
 
 type redisCustomLogger interface {

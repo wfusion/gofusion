@@ -63,6 +63,7 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 			name:    name,
 			ctx:     ctx,
 			appName: opt.AppName,
+			conf:    conf,
 		},
 	}
 }

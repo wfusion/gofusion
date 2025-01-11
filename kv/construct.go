@@ -51,7 +51,6 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		instance = newEtcdInstance(ctx, name, conf, opt)
 	case kvTypeZK:
 		instance = newZKInstance(ctx, name, conf, opt)
-	case kvTypeEureka:
 	default:
 		panic(ErrUnsupportedKVType)
 	}

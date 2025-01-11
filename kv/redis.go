@@ -64,6 +64,7 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 			ctx:     ctx,
 			appName: opt.AppName,
 			name:    name,
+			conf:    conf,
 		},
 	}
 }

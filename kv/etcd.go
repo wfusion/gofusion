@@ -33,6 +33,7 @@ func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.I
 			name:    name,
 			ctx:     ctx,
 			appName: opt.AppName,
+			conf:    conf,
 		},
 	}
 }

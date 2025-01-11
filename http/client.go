@@ -134,10 +134,10 @@ func NewRequest(ctx context.Context, opts ...utils.OptionExtender) *resty.Reques
 func traceHeaderMiddleware(cli *resty.Client, req *resty.Request) (err error) {
 	ctx := req.Context()
 	if userID := fusCtx.GetUserID(ctx); utils.IsStrNotBlank(userID) {
-		req.SetHeader("User-ID", userID)
+		req.SetHeader("userid", userID)
 	}
 	if traceID := fusCtx.GetTraceID(ctx); utils.IsStrNotBlank(traceID) {
-		req.SetHeader("Trace-ID", traceID)
+		req.SetHeader("traceid", traceID)
 	}
 	return
 }
