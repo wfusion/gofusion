@@ -9,21 +9,21 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/go-zookeeper/zk"
 	"github.com/spf13/cast"
-	"github.com/wfusion/gofusion/common/utils/inspect"
-	"github.com/wfusion/gofusion/log"
 
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
+	"github.com/wfusion/gofusion/log"
 )
 
 type zkKV struct {
 	abstractKV
 
-	cli *zk.Conn
-	ech <-chan zk.Event
+	cli     *zk.Conn
+	closeCh <-chan zk.Event
 }
 
-func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) KeyValue {
+func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
 	var (
 		conn *zk.Conn
 		ech  <-chan zk.Event
@@ -57,8 +57,8 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 	}
 
 	return &zkKV{
-		cli: conn,
-		ech: ech,
+		cli:     conn,
+		closeCh: ech,
 		abstractKV: abstractKV{
 			name:    name,
 			ctx:     ctx,
@@ -69,9 +69,64 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 }
 
 func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	//opt := utils.ApplyOptions[getOption](opts...)
-	val, stat, err := z.cli.Get(key)
-	return &zkGetValue{stat: stat, value: string(val), err: err}
+	opt := utils.ApplyOptions[queryOption](opts...)
+	if !opt.withPrefix {
+		val, stat, err := z.cli.Get(key)
+		return &zkGetValue{key: key, value: string(val), stat: stat, err: err}
+	}
+
+	result := &zkGetValue{
+		key:   key,
+		keys:  []string{key},
+		stat:  new(zk.Stat),
+		multi: map[string]*zkGetValue{key: {key: key}},
+	}
+	for _, descendant := range result.keys {
+		select {
+		case <-ctx.Done():
+			result.err = ctx.Err()
+			return result
+		default:
+		}
+		next, stat, err := z.cli.Children(descendant)
+		if len(result.keys) == 1 {
+			result.stat = stat
+		}
+		if err != nil {
+			result.err = err
+			return result
+		}
+		for _, desc := range next {
+			result.multi[desc] = &zkGetValue{key: desc}
+		}
+		result.keys = append(result.keys, next...)
+		if opt.limit > 0 && len(result.keys) > opt.limit {
+			break
+		}
+	}
+
+	if opt.withKeysOnly {
+		return result
+	}
+
+	for _, descendant := range result.keys {
+		// z.cli.Multi() not support get operation
+		select {
+		case <-ctx.Done():
+			result.err = ctx.Err()
+			return result
+		default:
+		}
+
+		val, stat, err := z.cli.Get(descendant)
+		if err != nil {
+			result.err = err
+			result.stat = stat
+			return result
+		}
+		result.multi[descendant] = &zkGetValue{key: descendant, value: string(val), stat: stat, err: err}
+	}
+	return result
 }
 
 func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
@@ -100,23 +155,52 @@ func (z *zkKV) getProxy() any      { return z.cli }
 func (z *zkKV) close() (err error) { z.cli.Close(); return }
 
 type zkGetValue struct {
-	stat  *zk.Stat
-	value string
-	err   error
+	key, value string
+	stat       *zk.Stat
+	err        error
+
+	keys  []string
+	multi map[string]*zkGetValue
 }
 
-func (z *zkGetValue) String() (string, error) {
-	if z == nil {
-		return "", ErrNilValue
+func (z *zkGetValue) Err() error {
+	if z == nil || z.stat == nil {
+		return ErrNilValue
 	}
-	return z.value, z.err
+	return z.err
 }
 
-func (z *zkGetValue) Version() (Version, error) {
+func (z *zkGetValue) String() string {
 	if z == nil {
-		return nil, ErrNilValue
+		return ""
 	}
-	return &zkVersion{Stat: z.stat}, nil
+	if len(z.multi) > 0 {
+		return z.multi[z.key].String()
+	}
+	return z.value
+}
+
+func (z *zkGetValue) Version() Version {
+	if z == nil {
+		return newEmptyVersion()
+	}
+	return &zkVersion{Stat: z.stat}
+}
+
+func (z *zkGetValue) KeyValues() KeyValues {
+	if z == nil || len(z.multi) == 0 {
+		return nil
+	}
+	kvs := make(KeyValues, 0, len(z.multi))
+	for _, k := range z.keys {
+		if kv, ok := z.multi[k]; ok {
+			kvs = append(kvs, &KeyValue{Key: k, Val: kv.value, Ver: kv.Version()})
+		} else {
+			kvs = append(kvs, &KeyValue{Key: k, Val: nil, Ver: nil})
+		}
+	}
+
+	return kvs
 }
 
 type zkPutValue struct {

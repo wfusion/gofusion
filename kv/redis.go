@@ -3,6 +3,9 @@ package kv
 import (
 	"context"
 	"reflect"
+	"strings"
+
+	"github.com/spf13/cast"
 
 	"github.com/wfusion/gofusion/common/infra/drivers/redis"
 	"github.com/wfusion/gofusion/common/utils"
@@ -20,7 +23,7 @@ type redisKV struct {
 	cli *redis.Redis
 }
 
-func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) KeyValue {
+func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
 	var hooks []rdsDrv.Hook
 	for _, hookLoc := range conf.Endpoint.RedisHooks {
 		if hookType := inspect.TypeOf(hookLoc); hookType != nil {
@@ -70,8 +73,58 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 }
 
 func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	//opt := utils.ApplyOptions[getOption](opts...)
-	return &redisGetValue{StringCmd: r.cli.GetProxy().Get(ctx, key)}
+	opt := utils.ApplyOptions[queryOption](opts...)
+	if !opt.withPrefix {
+		return &redisGetValue{StringCmd: r.cli.GetProxy().Get(ctx, key)}
+	}
+	if strings.Contains(key, "*") {
+		key += "*"
+	}
+	limit := 100
+	batch := int64(100)
+	if opt.limit > 0 {
+		limit = opt.limit
+		if batch > int64(limit) {
+			batch = int64(limit)
+		}
+	}
+
+	var (
+		multi  = make(map[string]any, limit)
+		cursor = uint64(0)
+	)
+
+	for {
+		keys, cursor, err := r.cli.GetProxy().Scan(ctx, cursor, key, batch).Result()
+		if err != nil {
+			cmd := rdsDrv.NewStringCmd(ctx, key)
+			cmd.SetErr(err)
+			return &redisGetValue{StringCmd: cmd}
+		}
+		if opt.withKeysOnly {
+			for i := 0; i < len(keys); i++ {
+				multi[keys[i]] = nil
+			}
+		} else {
+			vals, err := r.cli.GetProxy().MGet(ctx, keys...).Result()
+			if err != nil {
+				cmd := rdsDrv.NewStringCmd(ctx, key)
+				cmd.SetErr(err)
+				return &redisGetValue{StringCmd: cmd, multi: multi}
+			}
+			length := utils.Min(len(keys), len(vals))
+			for i := 0; i < length; i++ {
+				multi[keys[i]] = vals[i]
+			}
+		}
+		if len(keys) >= limit {
+			break
+		}
+		if cursor == 0 {
+			break
+		}
+	}
+	return &redisGetValue{multi: multi}
 }
 
 func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
@@ -89,20 +142,45 @@ func (r *redisKV) close() error  { return r.cli.Close() }
 
 type redisGetValue struct {
 	*rdsDrv.StringCmd
+	multi map[string]any
 }
 
-func (r *redisGetValue) String() (string, error) {
-	if r == nil {
-		return "", ErrNilValue
+func (r *redisGetValue) Err() error {
+	if r == nil || (r.StringCmd == nil && r.multi == nil) {
+		return ErrNilValue
 	}
-	return r.StringCmd.Result()
+	return r.StringCmd.Err()
 }
 
-func (r *redisGetValue) Version() (Version, error) {
+func (r *redisGetValue) String() string {
 	if r == nil {
-		return nil, ErrNilValue
+		return ""
 	}
-	return new(emptyVersion), nil
+	if r.multi != nil {
+		if vals := utils.MapValues(r.multi); len(vals) > 0 {
+			return cast.ToString(vals[0])
+		}
+		return ""
+	}
+	return r.StringCmd.Val()
+}
+
+func (r *redisGetValue) KeyValues() KeyValues {
+	if r == nil {
+		return nil
+	}
+	kvs := make(KeyValues, 0, len(r.multi))
+	for k, v := range r.multi {
+		kvs = append(kvs, &KeyValue{Key: k, Val: v, Ver: newDefaultVersion()})
+	}
+	return kvs
+}
+
+func (r *redisGetValue) Version() Version {
+	if r == nil {
+		return newEmptyVersion()
+	}
+	return newDefaultVersion()
 }
 
 type redisPutValue struct {

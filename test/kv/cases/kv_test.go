@@ -71,10 +71,9 @@ func (t *KV) testGetPut(name, key string, expired time.Duration) {
 		defer func() { t.NoError(cli.Del(ctx, key).Err()) }()
 
 		// Then
-		getResult := cli.Get(ctx, key)
-		actual, err := getResult.String()
-		t.NoError(err)
-		t.Equal(expect, actual)
+		result := cli.Get(ctx, key)
+		t.NoError(result.Err())
+		t.Equal(expect, result.String())
 	})
 }
 
@@ -90,15 +89,13 @@ func (t *KV) testPutDel(name, key string) {
 		t.NoError(putResult.Err())
 
 		// Then
-		getResult := cli.Get(ctx, key)
-		actual, err := getResult.String()
-		t.NoError(err)
-		t.Equal(expect, actual)
+		result := cli.Get(ctx, key)
+		t.NoError(result.Err())
+		t.Equal(expect, result.String())
 
 		// Then
 		t.NoError(cli.Del(ctx, key).Err())
-		getResult = cli.Get(ctx, key)
-		_, err = getResult.String()
-		t.Error(err)
+		result = cli.Get(ctx, key)
+		t.Error(result.Err())
 	})
 }

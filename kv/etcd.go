@@ -20,7 +20,7 @@ type etcdKV struct {
 	cli *clientv3.Client
 }
 
-func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) KeyValue {
+func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
 	cfg := parseEtcdConfig(ctx, conf, opt)
 	cli, err := clientv3.New(*cfg)
 	if err != nil {
@@ -39,8 +39,18 @@ func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.I
 }
 
 func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	//opt := utils.ApplyOptions[getOption](opts...)
-	rsp, err := e.cli.Get(ctx, key)
+	opt := utils.ApplyOptions[queryOption](opts...)
+	var eopts []clientv3.OpOption
+	if opt.withPrefix {
+		eopts = append(eopts, clientv3.WithPrefix())
+	}
+	if opt.withKeysOnly {
+		eopts = append(eopts, clientv3.WithKeysOnly())
+	}
+	if opt.limit > 0 {
+		eopts = append(eopts, clientv3.WithLimit(int64(opt.limit)))
+	}
+	rsp, err := e.cli.Get(ctx, key, eopts...)
 	return &etcdGetValue{rsp: rsp, err: err}
 }
 
@@ -86,31 +96,36 @@ type etcdGetValue struct {
 	err error
 }
 
-func (e *etcdGetValue) String() (string, error) {
-	if e == nil {
-		return "", ErrNilValue
+func (e *etcdGetValue) Err() error {
+	if e == nil || e.rsp == nil || len(e.rsp.Kvs) == 0 {
+		return ErrNilValue
 	}
-	if e.err != nil {
-		return "", e.err
-	}
-	if len(e.rsp.Kvs) == 0 {
-		return "", ErrNilValue
-	}
-
-	return string(e.rsp.Kvs[0].Value), nil
+	return e.err
 }
 
-func (e *etcdGetValue) Version() (Version, error) {
-	if e == nil {
-		return nil, ErrNilValue
+func (e *etcdGetValue) String() string {
+	if e == nil || e.rsp == nil || len(e.rsp.Kvs) == 0 {
+		return ""
 	}
-	if e.err != nil {
-		return nil, e.err
+	return string(e.rsp.Kvs[0].Value)
+}
+
+func (e *etcdGetValue) Version() Version {
+	if e == nil || e.rsp == nil || len(e.rsp.Kvs) == 0 {
+		return nil
 	}
-	if len(e.rsp.Kvs) == 0 {
-		return nil, ErrNilValue
+	return &etcdVersion{KeyValue: e.rsp.Kvs[0]}
+}
+
+func (e *etcdGetValue) KeyValues() KeyValues {
+	if e == nil || e.rsp == nil || e.rsp.Kvs == nil {
+		return nil
 	}
-	return &etcdVersion{KeyValue: e.rsp.Kvs[0]}, nil
+	kvs := make(KeyValues, 0, len(e.rsp.Kvs))
+	for _, kv := range e.rsp.Kvs {
+		kvs = append(kvs, &KeyValue{Key: string(kv.Key), Val: string(kv.Value), Ver: &etcdVersion{KeyValue: kv}})
+	}
+	return kvs
 }
 
 type etcdPutValue struct {
@@ -151,6 +166,9 @@ type etcdVersion struct {
 }
 
 func (e *etcdVersion) Version() *big.Int {
+	if e == nil || e.KeyValue == nil {
+		return nil
+	}
 	return big.NewInt(e.KeyValue.Version)
 }
 

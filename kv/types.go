@@ -18,7 +18,7 @@ const (
 	ErrInvalidExpiration         utils.Error = "invalid expiration"
 )
 
-type KeyValue interface {
+type Storage interface {
 	Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal
 	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal
 	Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal
@@ -29,8 +29,10 @@ type KeyValue interface {
 }
 
 type GetVal interface {
-	String() (string, error)
-	Version() (Version, error)
+	String() string
+	Version() Version
+	KeyValues() KeyValues
+	Err() error
 }
 
 type PutVal interface {
@@ -46,7 +48,10 @@ type Version interface {
 	Version() *big.Int
 }
 
-type getOption struct {
+type queryOption struct {
+	limit        int
+	withPrefix   bool
+	withKeysOnly bool
 }
 
 type setOption struct {
@@ -61,6 +66,24 @@ type delOption struct {
 func Ver(v int) utils.OptionFunc[delOption] {
 	return func(o *delOption) {
 		o.version = v
+	}
+}
+
+func Prefix() utils.OptionFunc[queryOption] {
+	return func(o *queryOption) {
+		o.withPrefix = true
+	}
+}
+
+func KeysOnly() utils.OptionFunc[queryOption] {
+	return func(o *queryOption) {
+		o.withKeysOnly = true
+	}
+}
+
+func Limit(limit int) utils.OptionFunc[queryOption] {
+	return func(o *queryOption) {
+		o.limit = limit
 	}
 }
 

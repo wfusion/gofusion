@@ -41,7 +41,7 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 }
 
 func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) {
-	var instance KeyValue
+	var instance Storage
 	switch conf.Type {
 	case kvTypeRedis:
 		instance = newRedisInstance(ctx, name, conf, opt)
@@ -58,10 +58,10 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	rwlock.Lock()
 	defer rwlock.Unlock()
 	if appInstances == nil {
-		appInstances = make(map[string]map[string]KeyValue)
+		appInstances = make(map[string]map[string]Storage)
 	}
 	if appInstances[opt.AppName] == nil {
-		appInstances[opt.AppName] = make(map[string]KeyValue)
+		appInstances[opt.AppName] = make(map[string]Storage)
 	}
 	if _, ok := appInstances[opt.AppName][name]; ok {
 		panic(ErrDuplicatedName)
@@ -69,11 +69,11 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	appInstances[opt.AppName][name] = instance
 
 	if opt.DI != nil {
-		opt.DI.MustProvide(func() KeyValue { return Use(ctx, name, AppName(opt.AppName)) }, di.Name(name))
+		opt.DI.MustProvide(func() Storage { return Use(ctx, name, AppName(opt.AppName)) }, di.Name(name))
 	}
 	if opt.App != nil {
 		opt.App.MustProvide(
-			func() KeyValue { return Use(ctx, name, AppName(opt.AppName)) },
+			func() Storage { return Use(ctx, name, AppName(opt.AppName)) },
 			di.Name(name),
 		)
 	}
@@ -91,7 +91,7 @@ func AppName(name string) utils.OptionFunc[useOption] {
 	}
 }
 
-func Use(ctx context.Context, name string, opts ...utils.OptionExtender) KeyValue {
+func Use(ctx context.Context, name string, opts ...utils.OptionExtender) Storage {
 	opt := utils.ApplyOptions[useOption](opts...)
 
 	rwlock.RLock()

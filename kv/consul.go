@@ -23,7 +23,7 @@ type consulKV struct {
 	cli *api.Client
 }
 
-func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) KeyValue {
+func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
 	copt := parseConsulConfig(conf)
 	cli, err := api.NewClient(copt)
 	if err != nil {
@@ -42,9 +42,17 @@ func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config
 }
 
 func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	//opt := utils.ApplyOptions[getOption](opts...)
+	opt := utils.ApplyOptions[queryOption](opts...)
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
+	if opt.withPrefix {
+		// FIXME: consul not support KeysOnly, Limit
+		pairs, meta, err := c.cli.KV().List(key, copt)
+		if err != nil {
+			return &consulGetValue{multi: pairs, meta: meta, err: err}
+		}
+	}
+
 	pair, meta, err := c.cli.KV().Get(key, copt)
 	return &consulGetValue{pair: pair, meta: meta, err: err}
 }
@@ -116,32 +124,40 @@ type consulGetValue struct {
 	pair *api.KVPair
 	meta *api.QueryMeta
 	err  error
+
+	multi api.KVPairs
 }
 
-func (c *consulGetValue) String() (string, error) {
-	if c == nil {
-		return "", ErrNilValue
+func (c *consulGetValue) Err() error {
+	if c == nil || c.pair == nil || len(c.pair.Value) == 0 {
+		return ErrNilValue
 	}
-	if c.err != nil {
-		return "", c.err
-	}
-	if c.pair == nil {
-		return "", ErrNilValue
-	}
-	return string(c.pair.Value), nil
+	return c.err
 }
 
-func (c *consulGetValue) Version() (Version, error) {
-	if c == nil {
-		return nil, ErrNilValue
+func (c *consulGetValue) String() string {
+	if c == nil || c.err != nil || c.pair == nil {
+		return ""
 	}
-	if c.err != nil {
-		return nil, c.err
+	return string(c.pair.Value)
+}
+
+func (c *consulGetValue) Version() Version {
+	if c == nil || c.err != nil || c.pair == nil {
+		return newEmptyVersion()
 	}
-	if c.pair == nil {
-		return nil, ErrNilValue
+	return &consulVersion{KVPair: c.pair}
+}
+
+func (c *consulGetValue) KeyValues() KeyValues {
+	if c == nil || c.multi == nil {
+		return nil
 	}
-	return &consulVersion{KVPair: c.pair}, nil
+	kvs := make(KeyValues, 0, len(c.multi))
+	for _, kv := range c.multi {
+		kvs = append(kvs, &KeyValue{Key: kv.Key, Val: string(kv.Value), Ver: &consulVersion{KVPair: kv}})
+	}
+	return kvs
 }
 
 type consulPutValue struct {
