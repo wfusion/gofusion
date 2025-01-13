@@ -16,6 +16,7 @@ const (
 	ErrNilValue                  utils.Error = "nil value"
 	ErrUnsupportedRedisValueType utils.Error = "unsupported redis value type"
 	ErrInvalidExpiration         utils.Error = "invalid expiration"
+	ErrKeyAlreadyExists          utils.Error = "key already exists"
 )
 
 type Storage interface {
@@ -54,19 +55,10 @@ type queryOption struct {
 	withKeysOnly bool
 }
 
-type setOption struct {
+type writeOption struct {
 	expired time.Duration
-}
-
-type delOption struct {
 	version int
 	leaseID string
-}
-
-func Ver(v int) utils.OptionFunc[delOption] {
-	return func(o *delOption) {
-		o.version = v
-	}
 }
 
 func Prefix() utils.OptionFunc[queryOption] {
@@ -87,14 +79,20 @@ func Limit(limit int) utils.OptionFunc[queryOption] {
 	}
 }
 
-func Expire(expired time.Duration) utils.OptionFunc[setOption] {
-	return func(o *setOption) {
+func Expire(expired time.Duration) utils.OptionFunc[writeOption] {
+	return func(o *writeOption) {
 		o.expired = expired
 	}
 }
 
-func LeaseID(leaseID string) utils.OptionFunc[delOption] {
-	return func(o *delOption) {
+func Ver(v int) utils.OptionFunc[writeOption] {
+	return func(o *writeOption) {
+		o.version = v
+	}
+}
+
+func LeaseID(leaseID string) utils.OptionFunc[writeOption] {
+	return func(o *writeOption) {
 		o.leaseID = leaseID
 	}
 }

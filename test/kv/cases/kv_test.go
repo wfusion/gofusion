@@ -55,6 +55,7 @@ func (t *KV) defaultTest(name, key string, expired time.Duration) {
 	naming := func(n string) string { return name + "_" + n }
 	t.Run(naming("GetPut"), func() { t.testGetPut(name, key, expired) })
 	t.Run(naming("PutDel"), func() { t.testPutDel(name, key) })
+	t.Run(naming("Set"), func() { t.testSet(name, key) })
 }
 
 func (t *KV) testGetPut(name, key string, expired time.Duration) {
@@ -85,8 +86,7 @@ func (t *KV) testPutDel(name, key string) {
 		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
 
 		// When
-		putResult := cli.Put(ctx, key, expect)
-		t.NoError(putResult.Err())
+		t.NoError(cli.Put(ctx, key, expect).Err())
 
 		// Then
 		result := cli.Get(ctx, key)
@@ -97,5 +97,26 @@ func (t *KV) testPutDel(name, key string) {
 		t.NoError(cli.Del(ctx, key).Err())
 		result = cli.Get(ctx, key)
 		t.Error(result.Err())
+	})
+}
+
+func (t *KV) testSet(name, key string) {
+	t.Catch(func() {
+		// Given
+		expect := "this is a value"
+		ctx := context.Background()
+		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+
+		// When
+		t.NoError(cli.Put(ctx, key, expect).Err())
+		expect += "1"
+		t.NoError(cli.Put(ctx, key, expect).Err())
+		expect += "2"
+		t.NoError(cli.Put(ctx, key, expect).Err())
+
+		// Then
+		result := cli.Get(ctx, key)
+		t.NoError(result.Err())
+		t.Equal(expect, result.String())
 	})
 }

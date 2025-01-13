@@ -130,24 +130,47 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 }
 
 func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[setOption](opts...)
+	opt := utils.ApplyOptions[writeOption](opts...)
 	acls := zk.WorldACL(int32(zk.PermAll))
 
 	var (
-		err    error
 		result string
 		bs     = []byte(cast.ToString(val))
 	)
+
+	// FIXME: exists and then set/create lacks transaction consistency
+	exists, stat, err := z.cli.Exists(key)
+	if err != nil {
+		return &zkPutValue{key: key, stat: stat, err: err}
+	}
+	version := int32(-1)
+	if opt.version > 0 {
+		version = int32(opt.version)
+	}
+
 	if opt.expired > 0 {
+		if exists {
+			return &zkPutValue{key: key, stat: stat, err: ErrKeyAlreadyExists}
+		}
 		result, err = z.cli.CreateTTL(key, bs, int32(zk.FlagTTL), acls, opt.expired)
 	} else {
-		result, err = z.cli.Create(key, bs, zk.FlagPersistent, acls)
+		if exists {
+			stat, err = z.cli.Set(key, bs, version)
+		} else {
+			result, err = z.cli.Create(key, bs, zk.FlagPersistent, acls)
+		}
 	}
-	return &zkPutValue{key: key, result: result, err: err}
+	if err != nil {
+		return &zkPutValue{key: key, result: result, stat: stat, err: err}
+	}
+	if !exists {
+		stat = &zk.Stat{Version: 0}
+	}
+	return &zkPutValue{key: key, result: result, stat: stat, err: err}
 }
 
 func (z *zkKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	opt := utils.ApplyOptions[delOption](opts...)
+	opt := utils.ApplyOptions[writeOption](opts...)
 	return &zkDelValue{err: z.cli.Delete(key, int32(opt.version))}
 }
 
@@ -206,6 +229,7 @@ func (z *zkGetValue) KeyValues() KeyValues {
 type zkPutValue struct {
 	key    string
 	result string
+	stat   *zk.Stat
 	err    error
 }
 
@@ -221,6 +245,13 @@ func (z *zkPutValue) LeaseID() string {
 		return ""
 	}
 	return z.key
+}
+
+func (z *zkPutValue) Version() Version {
+	if z == nil {
+		return nil
+	}
+	return &zkVersion{Stat: z.stat}
 }
 
 type zkDelValue struct {
@@ -239,5 +270,8 @@ type zkVersion struct {
 }
 
 func (z *zkVersion) Version() *big.Int {
+	if z == nil || z.Stat == nil {
+		return nil
+	}
 	return big.NewInt(int64(z.Stat.Version))
 }

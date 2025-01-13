@@ -128,12 +128,12 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 }
 
 func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[setOption](opts...)
+	opt := utils.ApplyOptions[writeOption](opts...)
 	return &redisPutValue{StatusCmd: r.cli.GetProxy().Set(ctx, key, val, opt.expired), key: key}
 }
 
 func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	//opt := utils.ApplyOptions[delOption](opts...)
+	//opt := utils.ApplyOptions[writeOption](opts...)
 	return &redisDelValue{IntCmd: r.cli.GetProxy().Del(ctx, key)}
 }
 

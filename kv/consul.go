@@ -58,7 +58,7 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 }
 
 func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[setOption](opts...)
+	opt := utils.ApplyOptions[writeOption](opts...)
 
 	copt := new(api.WriteOptions)
 	copt = copt.WithContext(ctx)
@@ -102,7 +102,7 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 }
 
 func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	opt := utils.ApplyOptions[delOption](opts...)
+	opt := utils.ApplyOptions[writeOption](opts...)
 	copt := new(api.WriteOptions)
 	copt = copt.WithContext(ctx)
 	meta, err := c.cli.KV().Delete(key, copt)

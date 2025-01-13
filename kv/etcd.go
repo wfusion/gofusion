@@ -55,13 +55,16 @@ func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtend
 }
 
 func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[setOption](opts...)
+	opt := utils.ApplyOptions[writeOption](opts...)
 
 	var (
 		leaseID clientv3.LeaseID
 		eopts   []clientv3.OpOption
 	)
-	if opt.expired > 0 {
+	if opt.leaseID != "" {
+		leaseID = clientv3.LeaseID(cast.ToInt64(opt.leaseID))
+		eopts = append(eopts, clientv3.WithLease(leaseID))
+	} else if opt.expired > 0 {
 		rsp, err := clientv3.NewLease(e.cli).Grant(ctx, int64(opt.expired/time.Second))
 		if err != nil {
 			return &etcdPutValue{err: err}
@@ -69,12 +72,13 @@ func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.Opt
 		leaseID = rsp.ID
 		eopts = append(eopts, clientv3.WithLease(leaseID))
 	}
+
 	rsp, err := e.cli.Put(ctx, key, cast.ToString(val), eopts...)
 	return &etcdPutValue{rsp: rsp, leaseID: leaseID, err: err}
 }
 
 func (e *etcdKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	opt := utils.ApplyOptions[delOption](opts...)
+	opt := utils.ApplyOptions[writeOption](opts...)
 	rsp, err := e.cli.Delete(ctx, key)
 	if err != nil {
 		return &etcdDelValue{rsp: rsp, err: err}
