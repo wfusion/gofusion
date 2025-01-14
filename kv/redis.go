@@ -137,6 +137,14 @@ func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExten
 	return &redisDelValue{IntCmd: r.cli.GetProxy().Del(ctx, key)}
 }
 
+func (r *redisKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+	opt := utils.ApplyOptions[queryOption](opts...)
+	if opt.withPrefix && !strings.Contains(key, "*") {
+		key += "*"
+	}
+	return &redisExistsValue{IntCmd: r.cli.GetProxy().Exists(ctx, key), key: key}
+}
+
 func (r *redisKV) getProxy() any { return r.cli }
 func (r *redisKV) close() error  { return r.cli.Close() }
 
@@ -177,6 +185,33 @@ func (r *redisGetValue) KeyValues() KeyValues {
 }
 
 func (r *redisGetValue) Version() Version {
+	if r == nil {
+		return newEmptyVersion()
+	}
+	return newDefaultVersion()
+}
+
+type redisExistsValue struct {
+	*rdsDrv.IntCmd
+
+	key string
+}
+
+func (r *redisExistsValue) Bool() bool {
+	if r == nil || r.IntCmd == nil {
+		return false
+	}
+	return r.IntCmd.Val() > 0
+}
+
+func (r *redisExistsValue) Err() error {
+	if r == nil || r.IntCmd == nil {
+		return ErrNilValue
+	}
+	return r.IntCmd.Err()
+}
+
+func (r *redisExistsValue) Version() Version {
 	if r == nil {
 		return newEmptyVersion()
 	}

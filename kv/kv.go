@@ -40,7 +40,7 @@ func newDefaultVersion() *emptyVersion {
 
 func (e *emptyVersion) Version() *big.Int {
 	if !e.existKV {
-		return nil
+		return big.NewInt(-1)
 	}
 	return big.NewInt(0)
 }

@@ -45,16 +45,17 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 	opt := utils.ApplyOptions[queryOption](opts...)
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
-	if opt.withPrefix {
-		// FIXME: consul not support KeysOnly, Limit
-		pairs, meta, err := c.cli.KV().List(key, copt)
-		if err != nil {
-			return &consulGetValue{multi: pairs, meta: meta, err: err}
-		}
+	if !opt.withPrefix {
+		pair, meta, err := c.cli.KV().Get(key, copt)
+		return &consulGetValue{pair: pair, meta: meta, err: err}
 	}
 
-	pair, meta, err := c.cli.KV().Get(key, copt)
-	return &consulGetValue{pair: pair, meta: meta, err: err}
+	// FIXME: consul not support MGet and Limit
+	pairs, meta, err := c.cli.KV().List(key, copt)
+	if err != nil {
+		return &consulGetValue{multi: pairs, meta: meta, err: err}
+	}
+	return &consulGetValue{multi: pairs, meta: meta}
 }
 
 func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
@@ -117,6 +118,22 @@ func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExte
 	return &consulDelValue{meta: meta, err: err}
 }
 
+func (c *consulKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+	opt := utils.ApplyOptions[queryOption](opts...)
+	copt := new(api.QueryOptions)
+	copt = copt.WithContext(ctx)
+	if !opt.withPrefix {
+		pair, meta, err := c.cli.KV().Get(key, copt)
+		return &consulExistsValue{key: key, pair: pair, meta: meta, err: err}
+	}
+
+	keys, meta, err := c.cli.KV().Keys(key, "", copt)
+	if err != nil {
+		return &consulExistsValue{key: key, keys: keys, meta: meta, err: err}
+	}
+	return &consulExistsValue{key: key, keys: keys, meta: meta}
+}
+
 func (c *consulKV) getProxy() any { return c.cli }
 func (c *consulKV) close() error  { return nil }
 
@@ -143,7 +160,7 @@ func (c *consulGetValue) String() string {
 }
 
 func (c *consulGetValue) Version() Version {
-	if c == nil || c.err != nil || c.pair == nil {
+	if c == nil || c.pair == nil {
 		return newEmptyVersion()
 	}
 	return &consulVersion{KVPair: c.pair}
@@ -158,6 +175,35 @@ func (c *consulGetValue) KeyValues() KeyValues {
 		kvs = append(kvs, &KeyValue{Key: kv.Key, Val: string(kv.Value), Ver: &consulVersion{KVPair: kv}})
 	}
 	return kvs
+}
+
+type consulExistsValue struct {
+	pair *api.KVPair
+	meta *api.QueryMeta
+	key  string
+	keys []string
+	err  error
+}
+
+func (c *consulExistsValue) Bool() bool {
+	if c == nil || c.err != nil || (c.pair == nil && len(c.keys) == 0) {
+		return false
+	}
+	return true
+}
+
+func (c *consulExistsValue) Err() error {
+	if c == nil || (c.pair == nil && len(c.keys) == 0) {
+		return ErrNilValue
+	}
+	return c.err
+}
+
+func (c *consulExistsValue) Version() Version {
+	if c == nil || c.pair == nil {
+		return newEmptyVersion()
+	}
+	return &consulVersion{KVPair: c.pair}
 }
 
 type consulPutValue struct {
@@ -198,7 +244,10 @@ type consulVersion struct {
 }
 
 func (c *consulVersion) Version() *big.Int {
-	return big.NewInt(0).SetUint64(c.ModifyIndex)
+	if c == nil || c.KVPair == nil {
+		return newEmptyVersion().Version()
+	}
+	return big.NewInt(0).SetUint64(c.KVPair.ModifyIndex)
 }
 
 func parseConsulConfig(conf *Conf) *api.Config {

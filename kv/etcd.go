@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cast"
+	"go.etcd.io/etcd/api/v3/etcdserverpb"
 	"go.etcd.io/etcd/api/v3/mvccpb"
 	"go.etcd.io/etcd/client/v3"
 
@@ -92,6 +93,19 @@ func (e *etcdKV) Del(ctx context.Context, key string, opts ...utils.OptionExtend
 	return &etcdDelValue{rsp: rsp, err: err}
 }
 
+func (e *etcdKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+	opt := utils.ApplyOptions[queryOption](opts...)
+	eopts := []clientv3.OpOption{clientv3.WithKeysOnly(), clientv3.WithCountOnly()}
+	if opt.withPrefix {
+		eopts = append(eopts, clientv3.WithPrefix())
+	}
+	if opt.limit > 0 {
+		eopts = append(eopts, clientv3.WithLimit(int64(opt.limit)))
+	}
+	rsp, err := e.cli.Get(ctx, key, eopts...)
+	return &etcdExistsValue{rsp: rsp, err: err}
+}
+
 func (e *etcdKV) getProxy() any { return e.cli }
 func (e *etcdKV) close() error  { return e.cli.Close() }
 
@@ -116,9 +130,9 @@ func (e *etcdGetValue) String() string {
 
 func (e *etcdGetValue) Version() Version {
 	if e == nil || e.rsp == nil || len(e.rsp.Kvs) == 0 {
-		return nil
+		return newEmptyVersion()
 	}
-	return &etcdVersion{KeyValue: e.rsp.Kvs[0]}
+	return &etcdVersion{KeyValue: e.rsp.Kvs[0], header: e.rsp.Header}
 }
 
 func (e *etcdGetValue) KeyValues() KeyValues {
@@ -130,6 +144,32 @@ func (e *etcdGetValue) KeyValues() KeyValues {
 		kvs = append(kvs, &KeyValue{Key: string(kv.Key), Val: string(kv.Value), Ver: &etcdVersion{KeyValue: kv}})
 	}
 	return kvs
+}
+
+type etcdExistsValue struct {
+	rsp *clientv3.GetResponse
+	err error
+}
+
+func (e *etcdExistsValue) Bool() bool {
+	if e == nil || e.rsp == nil {
+		return false
+	}
+	return e.rsp.Count > 0
+}
+
+func (e *etcdExistsValue) Err() error {
+	if e == nil || e.rsp == nil {
+		return ErrNilValue
+	}
+	return e.err
+}
+
+func (e *etcdExistsValue) Version() Version {
+	if e == nil || e.rsp == nil {
+		return newEmptyVersion()
+	}
+	return &etcdVersion{KeyValue: e.rsp.Kvs[0], header: e.rsp.Header}
 }
 
 type etcdPutValue struct {
@@ -167,11 +207,13 @@ func (e *etcdDelValue) Err() error {
 
 type etcdVersion struct {
 	*mvccpb.KeyValue
+
+	header *etcdserverpb.ResponseHeader
 }
 
 func (e *etcdVersion) Version() *big.Int {
 	if e == nil || e.KeyValue == nil {
-		return nil
+		return newEmptyVersion().Version()
 	}
 	return big.NewInt(e.KeyValue.Version)
 }

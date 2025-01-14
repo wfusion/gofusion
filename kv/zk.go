@@ -171,7 +171,22 @@ func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.Optio
 
 func (z *zkKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
 	opt := utils.ApplyOptions[writeOption](opts...)
-	return &zkDelValue{err: z.cli.Delete(key, int32(opt.version))}
+	version := int32(-1)
+	if opt.version > 0 {
+		version = int32(opt.version)
+	}
+	return &zkDelValue{err: z.cli.Delete(key, version)}
+}
+
+func (z *zkKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+	opt := utils.ApplyOptions[queryOption](opts...)
+	val, stat, err := z.cli.Exists(key)
+	if err != nil || val || !opt.withPrefix {
+		return &zkExistsValue{key: key, value: val, stat: stat, err: err}
+	}
+
+	keys, stat, err := z.cli.Children(key)
+	return &zkExistsValue{key: key, keys: keys, value: len(keys) > 0, stat: stat, err: err}
 }
 
 func (z *zkKV) getProxy() any      { return z.cli }
@@ -226,6 +241,35 @@ func (z *zkGetValue) KeyValues() KeyValues {
 	return kvs
 }
 
+type zkExistsValue struct {
+	key   string
+	value bool
+	keys  []string
+	stat  *zk.Stat
+	err   error
+}
+
+func (z *zkExistsValue) Bool() bool {
+	if z == nil || z.stat == nil {
+		return false
+	}
+	return z.value
+}
+
+func (z *zkExistsValue) Err() error {
+	if z == nil || z.stat == nil {
+		return ErrNilValue
+	}
+	return z.err
+}
+
+func (z *zkExistsValue) Version() Version {
+	if z == nil || z.stat == nil {
+		return newEmptyVersion()
+	}
+	return &zkVersion{Stat: z.stat}
+}
+
 type zkPutValue struct {
 	key    string
 	result string
@@ -249,7 +293,7 @@ func (z *zkPutValue) LeaseID() string {
 
 func (z *zkPutValue) Version() Version {
 	if z == nil {
-		return nil
+		return newEmptyVersion()
 	}
 	return &zkVersion{Stat: z.stat}
 }
@@ -271,7 +315,7 @@ type zkVersion struct {
 
 func (z *zkVersion) Version() *big.Int {
 	if z == nil || z.Stat == nil {
-		return nil
+		return newEmptyVersion().Version()
 	}
 	return big.NewInt(int64(z.Stat.Version))
 }

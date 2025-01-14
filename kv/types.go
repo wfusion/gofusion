@@ -19,10 +19,15 @@ const (
 	ErrKeyAlreadyExists          utils.Error = "key already exists"
 )
 
+var (
+	InvalidVersion = big.NewInt(-1)
+)
+
 type Storage interface {
 	Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal
 	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal
 	Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal
+	Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal
 
 	getProxy() any
 	close() error
@@ -42,6 +47,12 @@ type PutVal interface {
 }
 
 type DelVal interface {
+	Err() error
+}
+
+type ExistsVal interface {
+	Version() Version
+	Bool() bool
 	Err() error
 }
 
