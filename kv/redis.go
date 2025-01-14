@@ -77,8 +77,10 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 	if !opt.withPrefix {
 		return &redisGetValue{StringCmd: r.cli.GetProxy().Get(ctx, key)}
 	}
-	if strings.Contains(key, "*") {
-		key += "*"
+
+	pattern := key
+	if !strings.Contains(key, "*") {
+		pattern += "*"
 	}
 	limit := 100
 	batch := int64(100)
@@ -95,9 +97,9 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 	)
 
 	for {
-		keys, cursor, err := r.cli.GetProxy().Scan(ctx, cursor, key, batch).Result()
+		keys, cursor, err := r.cli.GetProxy().Scan(ctx, cursor, pattern, batch).Result()
 		if err != nil {
-			cmd := rdsDrv.NewStringCmd(ctx, key)
+			cmd := rdsDrv.NewStringCmd(ctx, pattern)
 			cmd.SetErr(err)
 			return &redisGetValue{StringCmd: cmd}
 		}
@@ -108,7 +110,7 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 		} else {
 			vals, err := r.cli.GetProxy().MGet(ctx, keys...).Result()
 			if err != nil {
-				cmd := rdsDrv.NewStringCmd(ctx, key)
+				cmd := rdsDrv.NewStringCmd(ctx, pattern)
 				cmd.SetErr(err)
 				return &redisGetValue{StringCmd: cmd, multi: multi}
 			}
@@ -139,10 +141,19 @@ func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExten
 
 func (r *redisKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
 	opt := utils.ApplyOptions[queryOption](opts...)
-	if opt.withPrefix && !strings.Contains(key, "*") {
-		key += "*"
+	if !opt.withPrefix {
+		return &redisExistsValue{IntCmd: r.cli.GetProxy().Exists(ctx, key), key: key}
 	}
-	return &redisExistsValue{IntCmd: r.cli.GetProxy().Exists(ctx, key), key: key}
+	pattern := key
+	if !strings.Contains(key, "*") {
+		pattern += "*"
+	}
+
+	keys, _, err := r.cli.GetProxy().Scan(ctx, 0, pattern, 1).Result()
+	cmd := rdsDrv.NewIntCmd(ctx, pattern)
+	cmd.SetErr(err)
+	cmd.SetVal(int64(len(keys)))
+	return &redisExistsValue{IntCmd: cmd, key: pattern}
 }
 
 func (r *redisKV) getProxy() any { return r.cli }
@@ -157,7 +168,10 @@ func (r *redisGetValue) Err() error {
 	if r == nil || (r.StringCmd == nil && r.multi == nil) {
 		return ErrNilValue
 	}
-	return r.StringCmd.Err()
+	if r.StringCmd != nil {
+		return r.StringCmd.Err()
+	}
+	return nil
 }
 
 func (r *redisGetValue) String() string {

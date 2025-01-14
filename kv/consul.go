@@ -146,15 +146,18 @@ type consulGetValue struct {
 }
 
 func (c *consulGetValue) Err() error {
-	if c == nil || c.pair == nil || len(c.pair.Value) == 0 {
+	if c == nil || ((c.pair == nil || len(c.pair.Value) == 0) && len(c.multi) == 0) {
 		return ErrNilValue
 	}
 	return c.err
 }
 
 func (c *consulGetValue) String() string {
-	if c == nil || c.err != nil || c.pair == nil {
+	if c == nil || (c.pair == nil && c.multi == nil) {
 		return ""
+	}
+	if len(c.multi) > 0 {
+		return string(c.multi[0].Value)
 	}
 	return string(c.pair.Value)
 }

@@ -42,17 +42,42 @@ func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.I
 func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
 	opt := utils.ApplyOptions[queryOption](opts...)
 	var eopts []clientv3.OpOption
-	if opt.withPrefix {
-		eopts = append(eopts, clientv3.WithPrefix())
-	}
 	if opt.withKeysOnly {
 		eopts = append(eopts, clientv3.WithKeysOnly())
 	}
-	if opt.limit > 0 {
-		eopts = append(eopts, clientv3.WithLimit(int64(opt.limit)))
+	if !opt.withPrefix {
+		rsp, err := e.cli.Get(ctx, key, eopts...)
+		return &etcdGetValue{rsp: rsp, err: err}
 	}
-	rsp, err := e.cli.Get(ctx, key, eopts...)
-	return &etcdGetValue{rsp: rsp, err: err}
+
+	limit := int64(100)
+	if opt.limit > 0 {
+		limit = int64(opt.limit)
+	}
+	eopts = append(eopts, clientv3.WithLimit(int64(opt.limit)))
+	eopts = append(eopts,
+		clientv3.WithPrefix(),
+		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
+		clientv3.WithLimit(limit),
+	)
+
+	rsp := &clientv3.GetResponse{More: true}
+	for rsp.More {
+		result, err := e.cli.Get(ctx, key, eopts...)
+		if err != nil {
+			return &etcdGetValue{rsp: rsp, err: err}
+		}
+		rsp.Count = result.Count
+		rsp.Header = result.Header
+		rsp.More = result.More
+		rsp.Kvs = append(rsp.Kvs, result.Kvs...)
+
+		if len(result.Kvs) > 0 {
+			key = string(result.Kvs[len(result.Kvs)-1].Key) + "\x00"
+		}
+	}
+
+	return &etcdGetValue{rsp: rsp}
 }
 
 func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
@@ -73,7 +98,6 @@ func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.Opt
 		leaseID = rsp.ID
 		eopts = append(eopts, clientv3.WithLease(leaseID))
 	}
-
 	rsp, err := e.cli.Put(ctx, key, cast.ToString(val), eopts...)
 	return &etcdPutValue{rsp: rsp, leaseID: leaseID, err: err}
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/go-zookeeper/zk"
 	"github.com/spf13/cast"
 
+	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
@@ -81,14 +82,14 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 		stat:  new(zk.Stat),
 		multi: map[string]*zkGetValue{key: {key: key}},
 	}
-	for _, descendant := range result.keys {
+	for i := 0; i < len(result.keys); i++ {
 		select {
 		case <-ctx.Done():
 			result.err = ctx.Err()
 			return result
 		default:
 		}
-		next, stat, err := z.cli.Children(descendant)
+		next, stat, err := z.cli.Children(result.keys[i])
 		if len(result.keys) == 1 {
 			result.stat = stat
 		}
@@ -96,10 +97,13 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 			result.err = err
 			return result
 		}
+		keys := make([]string, 0, len(next))
 		for _, desc := range next {
-			result.multi[desc] = &zkGetValue{key: desc}
+			k := result.keys[i] + constant.Slash + desc
+			keys = append(keys, k)
+			result.multi[k] = &zkGetValue{key: k}
 		}
-		result.keys = append(result.keys, next...)
+		result.keys = append(result.keys, keys...)
 		if opt.limit > 0 && len(result.keys) > opt.limit {
 			break
 		}
@@ -121,7 +125,6 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 		val, stat, err := z.cli.Get(descendant)
 		if err != nil {
 			result.err = err
-			result.stat = stat
 			return result
 		}
 		result.multi[descendant] = &zkGetValue{key: descendant, value: string(val), stat: stat, err: err}
@@ -202,7 +205,7 @@ type zkGetValue struct {
 }
 
 func (z *zkGetValue) Err() error {
-	if z == nil || z.stat == nil {
+	if z == nil || z.stat == nil || (z.value == "" && len(z.keys) == 0) {
 		return ErrNilValue
 	}
 	return z.err

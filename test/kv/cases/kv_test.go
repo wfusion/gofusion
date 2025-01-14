@@ -2,11 +2,13 @@ package cases
 
 import (
 	"context"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/kv"
 	"github.com/wfusion/gofusion/log"
 
@@ -36,27 +38,28 @@ func (t *KV) AfterTest(suiteName, testName string) {
 }
 
 func (t *KV) TestRedis() {
-	t.defaultTest(nameRedis, "redis:key", time.Second)
+	t.defaultTest(nameRedis, "redis:key", constant.Colon, time.Second)
 }
 
 func (t *KV) TestEtcd() {
-	t.defaultTest(nameEtcd, "etcd_key", time.Second)
+	t.defaultTest(nameEtcd, "etcd_key", constant.Slash, time.Second)
 }
 
 func (t *KV) TestConsul() {
-	t.defaultTest(nameConsul, "consul_key", 10*time.Second)
+	t.defaultTest(nameConsul, "consul_key", constant.Slash, 10*time.Second)
 }
 
 func (t *KV) TestZookeeper() {
-	t.defaultTest(nameZK, "/zk_key", time.Second)
+	t.defaultTest(nameZK, "/zk_key", constant.Slash, time.Second)
 }
 
-func (t *KV) defaultTest(name, key string, expired time.Duration) {
+func (t *KV) defaultTest(name, key, sep string, expired time.Duration) {
 	naming := func(n string) string { return name + "_" + n }
 	t.Run(naming("Put"), func() { t.testPut(name, key) })
 	t.Run(naming("Set"), func() { t.testSet(name, key) })
 	t.Run(naming("Exists"), func() { t.testExists(name, key) })
 	t.Run(naming("Expired"), func() { t.testExpire(name, key, expired) })
+	t.Run(naming("Prefix"), func() { t.testPrefix(name, key, sep) })
 }
 
 func (t *KV) testPut(name, key string) {
@@ -129,14 +132,58 @@ func (t *KV) testExpire(name, key string, expired time.Duration) {
 		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
 
 		// When
-		putResult := cli.Put(ctx, key, expect, kv.Expire(expired))
-		t.NoError(putResult.Err())
+		putActual := cli.Put(ctx, key, expect, kv.Expire(expired))
+		t.NoError(putActual.Err())
 
 		defer func() { t.NoError(cli.Del(ctx, key).Err()) }()
 
 		// Then
-		result := cli.Get(ctx, key)
-		t.NoError(result.Err())
-		t.Equal(expect, result.String())
+		getActual := cli.Get(ctx, key)
+		t.NoError(getActual.Err())
+		t.Equal(expect, getActual.String())
+	})
+}
+
+func (t *KV) testPrefix(name, key, sep string) {
+	t.Catch(func() {
+		// Given
+		val := "this is a value"
+		ctx := context.Background()
+		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+
+		// When
+		t.NoError(cli.Put(ctx, key, val).Err())
+		defer func() { t.NoError(cli.Del(ctx, key).Err()) }()
+
+		key1 := key + sep + "node1"
+		t.NoError(cli.Put(ctx, key1, val).Err())
+		defer func() { t.NoError(cli.Del(ctx, key1).Err()) }()
+
+		key2 := key1 + sep + "node2"
+		t.NoError(cli.Put(ctx, key2, val).Err())
+		defer func() { t.NoError(cli.Del(ctx, key2).Err()) }()
+
+		key3 := key + sep + "node3"
+		t.NoError(cli.Put(ctx, key3, val).Err())
+		defer func() { t.NoError(cli.Del(ctx, key3).Err()) }()
+
+		// Then
+		existActual := cli.Exists(ctx, key, kv.Prefix())
+		t.NoError(existActual.Err())
+		t.True(existActual.Bool())
+
+		getActual := cli.Get(ctx, key, kv.Prefix())
+		t.NoError(getActual.Err())
+
+		kvs := getActual.KeyValues()
+		t.Len(kvs, 4)
+		actual := kvs.Keys()
+		expect := []string{key, key1, key2, key3}
+		sort.Strings(expect)
+		sort.Strings(actual)
+		t.EqualValues(expect, actual)
+		for _, item := range kvs {
+			t.EqualValues(val, item.Val)
+		}
 	})
 }
