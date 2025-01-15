@@ -91,7 +91,11 @@ func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.Opt
 		leaseID = clientv3.LeaseID(cast.ToInt64(opt.leaseID))
 		eopts = append(eopts, clientv3.WithLease(leaseID))
 	} else if opt.expired > 0 {
-		rsp, err := clientv3.NewLease(e.cli).Grant(ctx, int64(opt.expired/time.Second))
+		ttl := int64(opt.expired / time.Second)
+		if ttl == 0 {
+			ttl = 1
+		}
+		rsp, err := clientv3.NewLease(e.cli).Grant(ctx, ttl)
 		if err != nil {
 			return &etcdPutValue{err: err}
 		}

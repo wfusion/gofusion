@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 
 	"github.com/wfusion/gofusion/common/infra/drivers/redis"
@@ -169,6 +170,9 @@ func (r *redisGetValue) Err() error {
 		return ErrNilValue
 	}
 	if r.StringCmd != nil {
+		if errors.Is(rdsDrv.Nil, r.StringCmd.Err()) {
+			return ErrNilValue
+		}
 		return r.StringCmd.Err()
 	}
 	return nil
@@ -219,7 +223,7 @@ func (r *redisExistsValue) Bool() bool {
 }
 
 func (r *redisExistsValue) Err() error {
-	if r == nil || r.IntCmd == nil {
+	if r == nil || r.IntCmd == nil || errors.Is(rdsDrv.Nil, r.IntCmd.Err()) {
 		return ErrNilValue
 	}
 	return r.IntCmd.Err()

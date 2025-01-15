@@ -74,47 +74,48 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 		Namespace:   "",
 		Partition:   "",
 	}
-	if opt.expired > 0 {
-		if opt.expired < consulMinTTL || opt.expired > consulMaxTTL {
-			return &consulPutValue{err: ErrInvalidExpiration}
-		}
-		entry := &api.SessionEntry{
-			CreateIndex:   0,
-			ID:            key,
-			Name:          key,
-			Node:          "",
-			LockDelay:     0,
-			Behavior:      api.SessionBehaviorRelease,
-			TTL:           opt.expired.String(),
-			Namespace:     "",
-			Checks:        nil,
-			NodeChecks:    nil,
-			ServiceChecks: nil,
-		}
-		id, meta, err := c.cli.Session().Create(entry, copt)
-		if err != nil {
-			return &consulPutValue{sessionID: id, pair: pair, meta: meta, err: err}
-		}
-		pair.Session = id
+	if opt.expired <= 0 {
+		meta, err := c.cli.KV().Put(pair, copt)
+		return &consulPutValue{pair: pair, meta: meta, err: err}
 	}
 
-	meta, err := c.cli.KV().Put(pair, copt)
+	if opt.expired < consulMinTTL || opt.expired > consulMaxTTL {
+		return &consulPutValue{err: ErrInvalidExpiration}
+	}
+	entry := &api.SessionEntry{
+		CreateIndex:   0,
+		ID:            key,
+		Name:          key,
+		Node:          "",
+		LockDelay:     0,
+		Behavior:      api.SessionBehaviorDelete,
+		TTL:           opt.expired.String(),
+		Namespace:     "",
+		Checks:        nil,
+		NodeChecks:    nil,
+		ServiceChecks: nil,
+	}
+	id, meta, err := c.cli.Session().CreateNoChecks(entry, copt)
+	if err != nil {
+		return &consulPutValue{pair: pair, meta: meta, err: err}
+	}
+	pair.Session = id
+	ok, meta, err := c.cli.KV().Acquire(pair, copt)
+	if !ok {
+		return &consulPutValue{pair: pair, meta: meta, err: ErrKeyAlreadyExists}
+	}
 	return &consulPutValue{pair: pair, meta: meta, err: err}
 }
 
-func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
+func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) (val DelVal) {
 	opt := utils.ApplyOptions[writeOption](opts...)
 	copt := new(api.WriteOptions)
 	copt = copt.WithContext(ctx)
-	meta, err := c.cli.KV().Delete(key, copt)
-	if err != nil {
+	if opt.leaseID == "" {
+		meta, err := c.cli.KV().Delete(key, copt)
 		return &consulDelValue{meta: meta, err: err}
 	}
-	if opt.leaseID != "" {
-		if meta, err := c.cli.Session().Destroy(opt.leaseID, copt); err != nil {
-			return &consulDelValue{meta: meta, err: err}
-		}
-	}
+	meta, err := c.cli.Session().Destroy(opt.leaseID, copt)
 	return &consulDelValue{meta: meta, err: err}
 }
 
@@ -210,17 +211,16 @@ func (c *consulExistsValue) Version() Version {
 }
 
 type consulPutValue struct {
-	sessionID string
-	pair      *api.KVPair
-	meta      *api.WriteMeta
-	err       error
+	pair *api.KVPair
+	meta *api.WriteMeta
+	err  error
 }
 
 func (c *consulPutValue) LeaseID() string {
-	if c == nil {
+	if c == nil || c.pair == nil {
 		return ""
 	}
-	return c.sessionID
+	return c.pair.Session
 }
 
 func (c *consulPutValue) Err() error {

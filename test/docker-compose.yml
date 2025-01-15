@@ -50,15 +50,21 @@ services:
       - ALLOW_NONE_AUTHENTICATION=yes
       - ETCD_ADVERTISE_CLIENT_URLS=http://etcd:2379
   consul:
-    image: consul:1.15.4
+    image: bitnami/consul:1.19.2
     container_name: consul
     networks: [ gofusion ]
     restart: always
     ports:
+      - "28300:8300"
       - "28500:8500"
       - "28600:8600/tcp"
       - "28600:8600/udp"
-    command: "agent -server -bootstrap-expect=1 -node=consul-node-1 -bind=0.0.0.0 -client=0.0.0.0 -datacenter=dc1 -ui -config-dir=/consul/config"
+    environment:
+      - CONSUL_AGENT_MODE=server
+      - CONSUL_BOOTSTRAP_EXPECT=1
+      - CONSUL_CLIENT_LAN_ADDRESS=0.0.0.0
+      - CONSUL_ENABLE_UI=true
+      - CONSUL_RAFT_MULTIPLIER=1
   zookeeper:
     image: bitnami/zookeeper:3.9.3
     container_name: zookeeper

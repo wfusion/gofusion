@@ -17,6 +17,7 @@ const (
 	ErrUnsupportedRedisValueType utils.Error = "unsupported redis value type"
 	ErrInvalidExpiration         utils.Error = "invalid expiration"
 	ErrKeyAlreadyExists          utils.Error = "key already exists"
+	ErrDeleteKeyFailed           utils.Error = "delete key failed"
 )
 
 var (

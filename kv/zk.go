@@ -35,7 +35,7 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 	connMaxBufferSize, _ := humanize.ParseBytes(conf.Endpoint.ZooMaxConnBufferSize)
 
 	if conf.EnableLogger && utils.IsStrNotBlank(conf.Endpoint.ZooLogger) {
-		logInfo := log.Use(conf.LogInstance, log.AppName(opt.AppName)).Level(ctx) > log.InfoLevel
+		logInfo := log.Use(conf.LogInstance, log.AppName(opt.AppName)).Level(ctx) < log.WarnLevel
 		conn, ech, err = zk.Connect(
 			conf.Endpoint.Addresses,
 			utils.Must(time.ParseDuration(conf.Endpoint.DialTimeout)),
@@ -155,7 +155,7 @@ func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.Optio
 		if exists {
 			return &zkPutValue{key: key, stat: stat, err: ErrKeyAlreadyExists}
 		}
-		result, err = z.cli.CreateTTL(key, bs, int32(zk.FlagTTL), acls, opt.expired)
+		result, err = z.cli.CreateTTL(key, bs, zk.FlagTTL, acls, opt.expired)
 	} else {
 		if exists {
 			stat, err = z.cli.Set(key, bs, version)
