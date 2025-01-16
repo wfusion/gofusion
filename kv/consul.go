@@ -51,6 +51,10 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 
 	if !opt.withPrefix {
 		pair, meta, err := c.cli.KV().Get(key, copt)
+		// FIXME: consul not support exists or keys only
+		if opt.withKeysOnly {
+			pair.Value = nil
+		}
 		return &consulGetValue{pair: pair, meta: meta, err: err}
 	}
 
@@ -59,6 +63,13 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 	if err != nil {
 		return &consulGetValue{multi: pairs, meta: meta, err: err}
 	}
+	// FIXME: consul not support exists or keys only
+	if opt.withKeysOnly {
+		for _, pair := range pairs {
+			pair.Value = nil
+		}
+	}
+
 	return &consulGetValue{multi: pairs, meta: meta}
 }
 
@@ -158,7 +169,7 @@ type consulGetValue struct {
 }
 
 func (c *consulGetValue) Err() error {
-	if c == nil || ((c.pair == nil || len(c.pair.Value) == 0) && len(c.multi) == 0) {
+	if c == nil || (c.pair == nil && c.multi == nil) {
 		return ErrNilValue
 	}
 	return c.err

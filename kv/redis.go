@@ -76,7 +76,14 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
 	opt := utils.ApplyOptions[option](opts...)
 	if !opt.withPrefix {
-		return &redisGetValue{StringCmd: r.cli.GetProxy().Get(ctx, key)}
+		if !opt.withKeysOnly {
+			return &redisGetValue{StringCmd: r.cli.GetProxy().Get(ctx, key)}
+		} else {
+			intCmd := r.cli.GetProxy().Exists(ctx, key)
+			cmd := rdsDrv.NewStringCmd(ctx, intCmd.Args()...)
+			cmd.SetErr(intCmd.Err())
+			return &redisGetValue{StringCmd: cmd}
+		}
 	}
 
 	pattern := key

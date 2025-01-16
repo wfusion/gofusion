@@ -80,8 +80,13 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 	}
 
 	if !opt.withPrefix {
-		val, stat, err := z.cli.Get(key)
-		return &zkGetValue{key: key, value: string(val), stat: stat, err: err}
+		if opt.withKeysOnly {
+			_, stat, err := z.cli.Exists(key)
+			return &zkGetValue{key: key, stat: stat, err: err}
+		} else {
+			val, stat, err := z.cli.Get(key)
+			return &zkGetValue{key: key, value: string(val), stat: stat, err: err}
+		}
 	}
 
 	result := &zkGetValue{
@@ -264,7 +269,7 @@ type zkGetValue struct {
 }
 
 func (z *zkGetValue) Err() error {
-	if z == nil || z.stat == nil || (z.value == "" && len(z.keys) == 0) || errors.Is(z.err, zk.ErrNoNode) {
+	if z == nil || z.stat == nil || errors.Is(z.err, zk.ErrNoNode) {
 		return ErrNilValue
 	}
 	return z.err
