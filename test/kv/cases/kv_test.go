@@ -38,15 +38,15 @@ func (t *KV) AfterTest(suiteName, testName string) {
 }
 
 func (t *KV) TestRedis() {
-	//t.defaultTest(nameRedis, "redis:key", constant.Colon, time.Second)
+	t.defaultTest(nameRedis, "redis:key", constant.Colon, time.Second, time.Millisecond)
 }
 
 func (t *KV) TestEtcd() {
-	//t.defaultTest(nameEtcd, "etcd_key", constant.Slash, time.Second, 3*time.Second)
+	t.defaultTest(nameEtcd, "etcd_key", constant.Slash, time.Second, 3*time.Second)
 }
 
 func (t *KV) TestConsul() {
-	//t.defaultTest(nameConsul, "consul_key", constant.Slash, 10*time.Second, 21*time.Second)
+	t.defaultTest(nameConsul, "consul_key", constant.Slash, 10*time.Second, 21*time.Second)
 }
 
 func (t *KV) TestZookeeper() {
