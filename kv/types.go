@@ -65,7 +65,7 @@ type option struct {
 	expired         time.Duration
 	version         int
 	leaseID         string
-	limit           int
+	batch, limit    int
 	withPrefix      bool
 	withKeysOnly    bool
 	withConsistency bool
@@ -80,6 +80,12 @@ func Prefix() utils.OptionFunc[option] {
 func KeysOnly() utils.OptionFunc[option] {
 	return func(o *option) {
 		o.withKeysOnly = true
+	}
+}
+
+func Batch(batch int) utils.OptionFunc[option] {
+	return func(o *option) {
+		o.batch = batch
 	}
 }
 

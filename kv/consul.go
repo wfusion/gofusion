@@ -69,6 +69,13 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 			pair.Value = nil
 		}
 	}
+	if opt.limit > 0 && len(pairs) > opt.limit {
+		pairLimited := make(api.KVPairs, 0, opt.limit)
+		for i := 0; i < opt.limit; i++ {
+			pairLimited = append(pairLimited, pairs[i])
+		}
+		pairs = pairLimited
+	}
 
 	return &consulGetValue{multi: pairs, meta: meta}
 }

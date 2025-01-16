@@ -116,8 +116,12 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 			keys = append(keys, k)
 			result.multi[k] = &zkGetValue{key: k}
 		}
+		count := len(result.keys) + len(keys)
+		if opt.limit > 0 && count > opt.limit {
+			keys = keys[:opt.limit-len(result.keys)]
+		}
 		result.keys = append(result.keys, keys...)
-		if opt.limit > 0 && len(result.keys) > opt.limit {
+		if opt.limit > 0 && count > opt.limit {
 			break
 		}
 	}
@@ -126,6 +130,7 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 		return result
 	}
 
+	// FIXME: zookeeper not support pagination
 	for _, descendant := range result.keys {
 		// z.cli.Multi() not support get operation
 		select {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 	"github.com/wfusion/gofusion/common/constant"
+	"github.com/wfusion/gofusion/common/utils"
 
 	"github.com/wfusion/gofusion/kv"
 	"github.com/wfusion/gofusion/log"
@@ -63,6 +64,7 @@ func (t *KV) defaultTest(name, key, sep string, expired, sleepTime time.Duration
 	t.Run(naming("QueryPrefix"), func() { t.testQueryPrefix(name, key+"qprefix", sep) })
 	t.Run(naming("DeletePrefix"), func() { t.testDeletePrefix(name, key+"dprefix", sep) })
 	t.Run(naming("KeysOnly"), func() { t.testKeysOnly(name, key+"keysonly", sep) })
+	t.Run(naming("Pagination"), func() { t.testPagination(name, key+"pagination", sep) })
 }
 
 func (t *KV) testPut(name, key string) {
@@ -316,6 +318,40 @@ func (t *KV) testKeysOnly(name, key, sep string) {
 		t.EqualValues(expect, actual)
 		for _, item := range kvs {
 			t.Empty(item.Val)
+		}
+	})
+}
+
+func (t *KV) testPagination(name, key, sep string) {
+	t.Catch(func() {
+		// Given
+		val := "this is a value"
+		ctx := context.Background()
+		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		batch, limit := 1, 3
+
+		t.NoError(cli.Put(ctx, key, val).Err())
+		key1 := key + sep + "node1"
+		t.NoError(cli.Put(ctx, key1, val).Err())
+		key2 := key1 + sep + "node2"
+		t.NoError(cli.Put(ctx, key2, val).Err())
+		key3 := key + sep + "node3"
+		t.NoError(cli.Put(ctx, key3, val).Err())
+		defer func() { t.NoError(cli.Del(ctx, key, kv.Prefix()).Err()) }()
+
+		expect := utils.NewSet([]string{key, key1, key2, key3}...)
+
+		// When
+		getActual := cli.Get(ctx, key, kv.Prefix(), kv.Batch(batch), kv.Limit(limit))
+
+		// Then
+		t.NoError(getActual.Err())
+
+		kvs := getActual.KeyValues()
+		t.Len(kvs, limit)
+		for _, item := range kvs {
+			t.EqualValues(val, item.Val)
+			t.True(expect.Contains(item.Key))
 		}
 	})
 }

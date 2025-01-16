@@ -55,14 +55,20 @@ func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtend
 		return &etcdGetValue{rsp: rsp, err: err}
 	}
 
-	limit := int64(0)
+	var (
+		batch, limit = int64(0), -1
+		count        = 0
+	)
+	if opt.batch > 0 {
+		batch = int64(opt.batch)
+	}
 	if opt.limit > 0 {
-		limit = int64(opt.limit)
+		limit = opt.limit
 	}
 	eopts = append(eopts,
-		clientv3.WithPrefix(),
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
-		clientv3.WithLimit(limit),
+		clientv3.WithLimit(batch),
+		clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)),
 	)
 
 	rsp := &clientv3.GetResponse{More: true}
@@ -76,6 +82,9 @@ func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtend
 		rsp.More = result.More
 		rsp.Kvs = append(rsp.Kvs, result.Kvs...)
 
+		if count += len(result.Kvs); limit != -1 && count >= limit {
+			break
+		}
 		if len(result.Kvs) > 0 {
 			key = string(result.Kvs[len(result.Kvs)-1].Key) + "\x00"
 		}

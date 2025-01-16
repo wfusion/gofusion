@@ -86,12 +86,16 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 		}
 	}
 
-	pattern := key
+	var (
+		pattern      = key
+		batch, limit = int64(100), -1
+	)
 	if !strings.Contains(key, "*") {
 		pattern += "*"
 	}
-	limit := -1
-	batch := int64(100)
+	if opt.batch > 0 {
+		batch = int64(opt.batch)
+	}
 	if opt.limit > 0 {
 		limit = opt.limit
 		if batch > int64(limit) {
@@ -103,11 +107,13 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 		count  = 0
 		cursor = uint64(0)
 		result = new(redisGetValue)
+		keys   []string
+		err    error
 	)
 
 	for {
 		scanResult := r.cli.GetProxy().Scan(ctx, cursor, pattern, batch)
-		keys, cursor, err := scanResult.Result()
+		keys, cursor, err = scanResult.Result()
 		if err != nil {
 			result.StringCmd = rdsDrv.NewStringCmd(ctx, scanResult.Args()...)
 			result.StringCmd.SetErr(err)
@@ -117,6 +123,9 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 		if len(keys) > 0 {
 			if result.multi == nil {
 				result.multi = make(map[string]any)
+			}
+			if limit != -1 && count+len(keys) > limit {
+				keys = keys[:limit-count]
 			}
 
 			if opt.withKeysOnly {
