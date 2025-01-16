@@ -42,9 +42,13 @@ func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config
 }
 
 func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
+	if opt.withConsistency {
+		copt.RequireConsistent = true
+	}
+
 	if !opt.withPrefix {
 		pair, meta, err := c.cli.KV().Get(key, copt)
 		return &consulGetValue{pair: pair, meta: meta, err: err}
@@ -59,7 +63,7 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 }
 
 func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[writeOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 
 	copt := new(api.WriteOptions)
 	copt = copt.WithContext(ctx)
@@ -108,21 +112,28 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 }
 
 func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) (val DelVal) {
-	opt := utils.ApplyOptions[writeOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	copt := new(api.WriteOptions)
 	copt = copt.WithContext(ctx)
-	if opt.leaseID == "" {
-		meta, err := c.cli.KV().Delete(key, copt)
+	if opt.leaseID != "" {
+		meta, err := c.cli.Session().Destroy(opt.leaseID, copt)
 		return &consulDelValue{meta: meta, err: err}
 	}
-	meta, err := c.cli.Session().Destroy(opt.leaseID, copt)
+	if opt.withPrefix {
+		meta, err := c.cli.KV().DeleteTree(key, copt)
+		return &consulDelValue{meta: meta, err: err}
+	}
+	meta, err := c.cli.KV().Delete(key, copt)
 	return &consulDelValue{meta: meta, err: err}
 }
 
 func (c *consulKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
+	if opt.withConsistency {
+		copt.RequireConsistent = true
+	}
 	if !opt.withPrefix {
 		pair, meta, err := c.cli.KV().Get(key, copt)
 		return &consulExistsValue{key: key, pair: pair, meta: meta, err: err}

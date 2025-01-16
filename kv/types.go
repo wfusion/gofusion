@@ -61,51 +61,55 @@ type Version interface {
 	Version() *big.Int
 }
 
-type queryOption struct {
-	limit        int
-	withPrefix   bool
-	withKeysOnly bool
+type option struct {
+	expired         time.Duration
+	version         int
+	leaseID         string
+	limit           int
+	withPrefix      bool
+	withKeysOnly    bool
+	withConsistency bool
 }
 
-type writeOption struct {
-	expired time.Duration
-	version int
-	leaseID string
-}
-
-func Prefix() utils.OptionFunc[queryOption] {
-	return func(o *queryOption) {
+func Prefix() utils.OptionFunc[option] {
+	return func(o *option) {
 		o.withPrefix = true
 	}
 }
 
-func KeysOnly() utils.OptionFunc[queryOption] {
-	return func(o *queryOption) {
+func KeysOnly() utils.OptionFunc[option] {
+	return func(o *option) {
 		o.withKeysOnly = true
 	}
 }
 
-func Limit(limit int) utils.OptionFunc[queryOption] {
-	return func(o *queryOption) {
+func Limit(limit int) utils.OptionFunc[option] {
+	return func(o *option) {
 		o.limit = limit
 	}
 }
 
-func Expire(expired time.Duration) utils.OptionFunc[writeOption] {
-	return func(o *writeOption) {
+func Expire(expired time.Duration) utils.OptionFunc[option] {
+	return func(o *option) {
 		o.expired = expired
 	}
 }
 
-func Ver(v int) utils.OptionFunc[writeOption] {
-	return func(o *writeOption) {
+func Ver(v int) utils.OptionFunc[option] {
+	return func(o *option) {
 		o.version = v
 	}
 }
 
-func LeaseID(leaseID string) utils.OptionFunc[writeOption] {
-	return func(o *writeOption) {
+func LeaseID(leaseID string) utils.OptionFunc[option] {
+	return func(o *option) {
 		o.leaseID = leaseID
+	}
+}
+
+func Consistent() utils.OptionFunc[option] {
+	return func(o *option) {
+		o.withConsistency = true
 	}
 }
 

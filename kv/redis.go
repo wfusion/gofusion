@@ -74,7 +74,7 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 }
 
 func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	if !opt.withPrefix {
 		return &redisGetValue{StringCmd: r.cli.GetProxy().Get(ctx, key)}
 	}
@@ -83,7 +83,7 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 	if !strings.Contains(key, "*") {
 		pattern += "*"
 	}
-	limit := 100
+	limit := -1
 	batch := int64(100)
 	if opt.limit > 0 {
 		limit = opt.limit
@@ -93,55 +93,107 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 	}
 
 	var (
-		multi  = make(map[string]any, limit)
+		count  = 0
 		cursor = uint64(0)
+		result = new(redisGetValue)
 	)
 
 	for {
-		keys, cursor, err := r.cli.GetProxy().Scan(ctx, cursor, pattern, batch).Result()
+		scanResult := r.cli.GetProxy().Scan(ctx, cursor, pattern, batch)
+		keys, cursor, err := scanResult.Result()
 		if err != nil {
-			cmd := rdsDrv.NewStringCmd(ctx, pattern)
-			cmd.SetErr(err)
-			return &redisGetValue{StringCmd: cmd}
+			result.StringCmd = rdsDrv.NewStringCmd(ctx, scanResult.Args()...)
+			result.StringCmd.SetErr(err)
+			return result
 		}
-		if opt.withKeysOnly {
-			for i := 0; i < len(keys); i++ {
-				multi[keys[i]] = nil
+
+		if len(keys) > 0 {
+			if result.multi == nil {
+				result.multi = make(map[string]any)
 			}
-		} else {
-			vals, err := r.cli.GetProxy().MGet(ctx, keys...).Result()
-			if err != nil {
-				cmd := rdsDrv.NewStringCmd(ctx, pattern)
-				cmd.SetErr(err)
-				return &redisGetValue{StringCmd: cmd, multi: multi}
-			}
-			length := utils.Min(len(keys), len(vals))
-			for i := 0; i < length; i++ {
-				multi[keys[i]] = vals[i]
+
+			if opt.withKeysOnly {
+				for i := 0; i < len(keys); i++ {
+					result.multi[keys[i]] = nil
+				}
+			} else {
+				mgetResult := r.cli.GetProxy().MGet(ctx, keys...)
+				vals, err := mgetResult.Result()
+				if err != nil {
+					result.StringCmd = rdsDrv.NewStringCmd(ctx, mgetResult.Args()...)
+					result.StringCmd.SetErr(err)
+					return result
+				}
+				length := utils.Min(len(keys), len(vals))
+				for i := 0; i < length; i++ {
+					result.multi[keys[i]] = vals[i]
+				}
 			}
 		}
-		if len(keys) >= limit {
-			break
-		}
-		if cursor == 0 {
+
+		if count += len(keys); cursor == 0 || (limit != -1 && count >= limit) {
 			break
 		}
 	}
-	return &redisGetValue{multi: multi}
+	return result
 }
 
 func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[writeOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	return &redisPutValue{StatusCmd: r.cli.GetProxy().Set(ctx, key, val, opt.expired), key: key}
 }
 
 func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	//opt := utils.ApplyOptions[writeOption](opts...)
-	return &redisDelValue{IntCmd: r.cli.GetProxy().Del(ctx, key)}
+	opt := utils.ApplyOptions[option](opts...)
+	if !opt.withPrefix {
+		return &redisDelValue{IntCmd: r.cli.GetProxy().Del(ctx, key)}
+	}
+	pattern := key
+	if !strings.Contains(key, "*") {
+		pattern += "*"
+	}
+	limit := -1
+	batch := int64(100)
+	if opt.limit > 0 {
+		limit = opt.limit
+		if batch > int64(limit) {
+			batch = int64(limit)
+		}
+	}
+
+	var (
+		cursor = uint64(0)
+		count  = 0
+		result = new(redisDelValue)
+	)
+	for {
+		scanResult := r.cli.GetProxy().Scan(ctx, cursor, pattern, batch)
+		result.IntCmd = rdsDrv.NewIntCmd(ctx, scanResult.Args()...)
+		keys, cursor, err := scanResult.Result()
+		if err != nil {
+			result.IntCmd.SetErr(err)
+			return result
+		}
+
+		if len(keys) > 0 {
+			delResult := r.cli.GetProxy().Del(ctx, keys...)
+			result.IntCmd = rdsDrv.NewIntCmd(ctx, delResult.Args()...)
+			if err := delResult.Err(); err != nil {
+				result.IntCmd.SetErr(err)
+				return result
+			}
+			result.keys = append(result.keys, keys...)
+		}
+
+		if count += len(keys); cursor == 0 || (limit != -1 && count >= limit) {
+			break
+		}
+	}
+	return result
 }
 
 func (r *redisKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	if !opt.withPrefix {
 		return &redisExistsValue{IntCmd: r.cli.GetProxy().Exists(ctx, key), key: key}
 	}
@@ -258,11 +310,20 @@ func (r *redisPutValue) Err() error {
 
 type redisDelValue struct {
 	*rdsDrv.IntCmd
+
+	keys []string
 }
 
 func (r *redisDelValue) Err() error {
-	if r == nil {
+	if r == nil || r.IntCmd == nil {
 		return ErrNilValue
 	}
 	return r.IntCmd.Err()
+}
+
+func (r *redisDelValue) Deleted() []string {
+	if r == nil {
+		return nil
+	}
+	return r.keys
 }

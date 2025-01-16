@@ -40,7 +40,12 @@ func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.I
 }
 
 func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
+	ctx = clientv3.WithRequireLeader(ctx)
+	opt := utils.ApplyOptions[option](opts...)
+	if opt.withConsistency {
+		ctx = clientv3.WithRequireLeader(ctx)
+	}
+
 	var eopts []clientv3.OpOption
 	if opt.withKeysOnly {
 		eopts = append(eopts, clientv3.WithKeysOnly())
@@ -50,11 +55,10 @@ func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtend
 		return &etcdGetValue{rsp: rsp, err: err}
 	}
 
-	limit := int64(100)
+	limit := int64(0)
 	if opt.limit > 0 {
 		limit = int64(opt.limit)
 	}
-	eopts = append(eopts, clientv3.WithLimit(int64(opt.limit)))
 	eopts = append(eopts,
 		clientv3.WithPrefix(),
 		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
@@ -81,7 +85,8 @@ func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtend
 }
 
 func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[writeOption](opts...)
+	ctx = clientv3.WithRequireLeader(ctx)
+	opt := utils.ApplyOptions[option](opts...)
 
 	var (
 		leaseID clientv3.LeaseID
@@ -107,8 +112,13 @@ func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.Opt
 }
 
 func (e *etcdKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	opt := utils.ApplyOptions[writeOption](opts...)
-	rsp, err := e.cli.Delete(ctx, key)
+	var eopts []clientv3.OpOption
+	opt := utils.ApplyOptions[option](opts...)
+	if opt.withPrefix {
+		eopts = append(eopts, clientv3.WithPrefix())
+	}
+
+	rsp, err := e.cli.Delete(ctx, key, eopts...)
 	if err != nil {
 		return &etcdDelValue{rsp: rsp, err: err}
 	}
@@ -122,8 +132,14 @@ func (e *etcdKV) Del(ctx context.Context, key string, opts ...utils.OptionExtend
 }
 
 func (e *etcdKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
-	eopts := []clientv3.OpOption{clientv3.WithKeysOnly(), clientv3.WithCountOnly()}
+	ctx = clientv3.WithRequireLeader(ctx)
+
+	opt := utils.ApplyOptions[option](opts...)
+	if opt.withConsistency {
+		ctx = clientv3.WithRequireLeader(ctx)
+	}
+
+	eopts := []clientv3.OpOption{clientv3.WithCountOnly()}
 	if opt.withPrefix {
 		eopts = append(eopts, clientv3.WithPrefix())
 	}

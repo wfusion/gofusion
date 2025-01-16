@@ -8,7 +8,9 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/go-zookeeper/zk"
+	"github.com/pkg/errors"
 	"github.com/spf13/cast"
+	"go.uber.org/multierr"
 
 	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/utils"
@@ -70,7 +72,13 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 }
 
 func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
+	if opt.withConsistency {
+		if _, err := z.cli.Sync(key); err != nil {
+			return &zkGetValue{key: key, err: err}
+		}
+	}
+
 	if !opt.withPrefix {
 		val, stat, err := z.cli.Get(key)
 		return &zkGetValue{key: key, value: string(val), stat: stat, err: err}
@@ -133,7 +141,7 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 }
 
 func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	opt := utils.ApplyOptions[writeOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	acls := zk.WorldACL(int32(zk.PermAll))
 
 	var (
@@ -173,16 +181,67 @@ func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.Optio
 }
 
 func (z *zkKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
-	opt := utils.ApplyOptions[writeOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
 	version := int32(-1)
 	if opt.version > 0 {
 		version = int32(opt.version)
 	}
-	return &zkDelValue{err: z.cli.Delete(key, version)}
+	if !opt.withPrefix {
+		if err := z.cli.Delete(key, version); err != nil {
+			return &zkDelValue{err: err}
+		}
+		return &zkDelValue{keys: []string{key}}
+	}
+
+	result := &zkDelValue{keys: []string{key}}
+	for i := 0; i < len(result.keys); i++ {
+		select {
+		case <-ctx.Done():
+			result.err = ctx.Err()
+			return result
+		default:
+		}
+		next, _, err := z.cli.Children(result.keys[i])
+		if err != nil {
+			result.err = err
+			return result
+		}
+		for _, desc := range next {
+			result.keys = append(result.keys, result.keys[i]+constant.Slash+desc)
+		}
+		if opt.limit > 0 && len(result.keys) > opt.limit {
+			break
+		}
+	}
+	deleteReqList := make([]any, 0, len(result.keys))
+	for i := len(result.keys) - 1; i >= 0; i-- {
+		deleteReqList = append(deleteReqList, &zk.DeleteRequest{
+			Path:    result.keys[i],
+			Version: version,
+		})
+	}
+
+	multiRsp, err := z.cli.Multi(deleteReqList...)
+	if err != nil {
+		result.err = err
+		return result
+	}
+	for i := len(multiRsp) - 1; i >= 0; i-- {
+		result.err = multierr.Append(result.err, multiRsp[i].Error)
+		result.stats = append(result.stats, multiRsp[i].Stat)
+	}
+
+	return result
 }
 
 func (z *zkKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
-	opt := utils.ApplyOptions[queryOption](opts...)
+	opt := utils.ApplyOptions[option](opts...)
+	if opt.withConsistency {
+		if _, err := z.cli.Sync(key); err != nil {
+			return &zkExistsValue{key: key, err: err}
+		}
+	}
+
 	val, stat, err := z.cli.Exists(key)
 	if err != nil || val || !opt.withPrefix {
 		return &zkExistsValue{key: key, value: val, stat: stat, err: err}
@@ -205,7 +264,7 @@ type zkGetValue struct {
 }
 
 func (z *zkGetValue) Err() error {
-	if z == nil || z.stat == nil || (z.value == "" && len(z.keys) == 0) {
+	if z == nil || z.stat == nil || (z.value == "" && len(z.keys) == 0) || errors.Is(z.err, zk.ErrNoNode) {
 		return ErrNilValue
 	}
 	return z.err
@@ -303,6 +362,9 @@ func (z *zkPutValue) Version() Version {
 
 type zkDelValue struct {
 	err error
+
+	keys  []string
+	stats []*zk.Stat
 }
 
 func (z *zkDelValue) Err() error {
@@ -310,6 +372,13 @@ func (z *zkDelValue) Err() error {
 		return ErrNilValue
 	}
 	return z.err
+}
+
+func (z *zkDelValue) Deleted() []string {
+	if z == nil {
+		return nil
+	}
+	return z.keys
 }
 
 type zkVersion struct {

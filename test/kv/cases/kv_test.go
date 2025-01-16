@@ -60,7 +60,8 @@ func (t *KV) defaultTest(name, key, sep string, expired, sleepTime time.Duration
 	t.Run(naming("Exists"), func() { t.testExists(name, key+"exists") })
 	t.Run(naming("Expired"), func() { t.testExpire(name, key+"expired", expired, sleepTime) })
 	t.Run(naming("ExpiredDel"), func() { t.testExpireDel(name, key+"expireddel", expired) })
-	t.Run(naming("Prefix"), func() { t.testPrefix(name, key+"prefix", sep) })
+	t.Run(naming("QueryPrefix"), func() { t.testQueryPrefix(name, key+"qprefix", sep) })
+	t.Run(naming("DeletePrefix"), func() { t.testDeletePrefix(name, key+"dprefix", sep) })
 }
 
 func (t *KV) testPut(name, key string) {
@@ -152,9 +153,9 @@ func (t *KV) testExpire(name, key string, expired, sleepTime time.Duration) {
 					return
 				default:
 					time.Sleep(time.Second)
-					getActual = cli.Get(ctx, key)
-					log.Info(ctx, "get key(%s) result(%s) after %s", key, getActual, time.Since(begin))
-					if getActual.String() != expect {
+					result := cli.Exists(ctx, key, kv.Consistent())
+					log.Info(ctx, "get key(%s) result(%v) after %s", key, result.Bool(), time.Since(begin))
+					if !result.Bool() {
 						return
 					}
 				}
@@ -195,7 +196,7 @@ func (t *KV) testExpireDel(name, key string, expired time.Duration) {
 	})
 }
 
-func (t *KV) testPrefix(name, key, sep string) {
+func (t *KV) testQueryPrefix(name, key, sep string) {
 	t.Catch(func() {
 		// Given
 		val := "this is a value"
@@ -236,5 +237,45 @@ func (t *KV) testPrefix(name, key, sep string) {
 		for _, item := range kvs {
 			t.EqualValues(val, item.Val)
 		}
+	})
+}
+
+func (t *KV) testDeletePrefix(name, key, sep string) {
+	t.Catch(func() {
+		// Given
+		val := "this is a value"
+		ctx := context.Background()
+		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+
+		t.NoError(cli.Put(ctx, key, val).Err())
+		key1 := key + sep + "node1"
+		t.NoError(cli.Put(ctx, key1, val).Err())
+		key2 := key1 + sep + "node2"
+		t.NoError(cli.Put(ctx, key2, val).Err())
+		key3 := key + sep + "node3"
+		t.NoError(cli.Put(ctx, key3, val).Err())
+
+		getActual := cli.Get(ctx, key, kv.Prefix())
+		t.NoError(getActual.Err())
+
+		kvs := getActual.KeyValues()
+		t.Len(kvs, 4)
+		actual := kvs.Keys()
+		expect := []string{key, key1, key2, key3}
+		sort.Strings(expect)
+		sort.Strings(actual)
+		t.EqualValues(expect, actual)
+		for _, item := range kvs {
+			t.EqualValues(val, item.Val)
+		}
+
+		// When
+		delActual := cli.Del(ctx, key, kv.Prefix())
+
+		// Then
+		t.NoError(delActual.Err())
+
+		getActual = cli.Get(ctx, key, kv.Prefix())
+		t.Equal(kv.ErrNilValue, getActual.Err())
 	})
 }
