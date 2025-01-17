@@ -39,68 +39,32 @@ func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.I
 	}
 }
 
-func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
-	ctx = clientv3.WithRequireLeader(ctx)
+func (e *etcdKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) Got {
 	opt := utils.ApplyOptions[option](opts...)
-	if opt.withConsistency {
-		ctx = clientv3.WithRequireLeader(ctx)
-	}
-
 	var eopts []clientv3.OpOption
 	if opt.withKeysOnly {
 		eopts = append(eopts, clientv3.WithKeysOnly())
 	}
-	if !opt.withPrefix {
-		rsp, err := e.cli.Get(ctx, key, eopts...)
-		return &etcdGetValue{rsp: rsp, err: err}
+	if opt.withPrefix {
+		eopts = append(eopts, clientv3.WithPrefix())
 	}
-
-	var (
-		batch, limit = int64(0), -1
-		count        = 0
-	)
-	if opt.batch > 0 {
-		batch = int64(opt.batch)
+	if opt.withConsistency {
+		ctx = clientv3.WithRequireLeader(ctx)
 	}
-	if opt.limit > 0 {
-		limit = opt.limit
-	}
-	eopts = append(eopts,
-		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
-		clientv3.WithLimit(batch),
-		clientv3.WithRange(clientv3.GetPrefixRangeEnd(key)),
-	)
-
-	rsp := &clientv3.GetResponse{More: true}
-	for rsp.More {
-		result, err := e.cli.Get(ctx, key, eopts...)
-		if err != nil {
-			return &etcdGetValue{rsp: rsp, err: err}
-		}
-		rsp.Count = result.Count
-		rsp.Header = result.Header
-		rsp.More = result.More
-		rsp.Kvs = append(rsp.Kvs, result.Kvs...)
-
-		if count += len(result.Kvs); limit != -1 && count >= limit {
-			break
-		}
-		if len(result.Kvs) > 0 {
-			key = string(result.Kvs[len(result.Kvs)-1].Key) + "\x00"
-		}
-	}
-
-	return &etcdGetValue{rsp: rsp}
+	rsp, err := e.cli.Get(ctx, key, eopts...)
+	return &etcdGetValue{rsp: rsp, err: err}
 }
 
-func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
-	ctx = clientv3.WithRequireLeader(ctx)
-	opt := utils.ApplyOptions[option](opts...)
-
+func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Put {
 	var (
 		leaseID clientv3.LeaseID
 		eopts   []clientv3.OpOption
 	)
+
+	opt := utils.ApplyOptions[option](opts...)
+	if opt.withConsistency {
+		ctx = clientv3.WithRequireLeader(ctx)
+	}
 	if opt.leaseID != "" {
 		leaseID = clientv3.LeaseID(cast.ToInt64(opt.leaseID))
 		eopts = append(eopts, clientv3.WithLease(leaseID))
@@ -120,13 +84,15 @@ func (e *etcdKV) Put(ctx context.Context, key string, val any, opts ...utils.Opt
 	return &etcdPutValue{rsp: rsp, leaseID: leaseID, err: err}
 }
 
-func (e *etcdKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
+func (e *etcdKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) Del {
 	var eopts []clientv3.OpOption
 	opt := utils.ApplyOptions[option](opts...)
 	if opt.withPrefix {
 		eopts = append(eopts, clientv3.WithPrefix())
 	}
-
+	if opt.withConsistency {
+		ctx = clientv3.WithRequireLeader(ctx)
+	}
 	rsp, err := e.cli.Delete(ctx, key, eopts...)
 	if err != nil {
 		return &etcdDelValue{rsp: rsp, err: err}
@@ -140,7 +106,7 @@ func (e *etcdKV) Del(ctx context.Context, key string, opts ...utils.OptionExtend
 	return &etcdDelValue{rsp: rsp, err: err}
 }
 
-func (e *etcdKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+func (e *etcdKV) Has(ctx context.Context, key string, opts ...utils.OptionExtender) Had {
 	ctx = clientv3.WithRequireLeader(ctx)
 
 	opt := utils.ApplyOptions[option](opts...)
@@ -152,11 +118,31 @@ func (e *etcdKV) Exists(ctx context.Context, key string, opts ...utils.OptionExt
 	if opt.withPrefix {
 		eopts = append(eopts, clientv3.WithPrefix())
 	}
-	if opt.limit > 0 {
-		eopts = append(eopts, clientv3.WithLimit(int64(opt.limit)))
-	}
 	rsp, err := e.cli.Get(ctx, key, eopts...)
 	return &etcdExistsValue{rsp: rsp, err: err}
+}
+
+func (e *etcdKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {
+	opt := utils.ApplyOptions[option](opts...)
+	eopts := []clientv3.OpOption{
+		clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend),
+		clientv3.WithLimit(int64(pageSize)),
+		clientv3.WithRange(clientv3.GetPrefixRangeEnd(pattern)),
+	}
+	if opt.withKeysOnly {
+		eopts = append(eopts, clientv3.WithKeysOnly())
+	}
+	if opt.withConsistency {
+		ctx = clientv3.WithRequireLeader(ctx)
+	}
+	return &etcdPagination{
+		ctx:  ctx,
+		kv:   e,
+		opt:  opt,
+		more: true,
+		key:  pattern,
+		opts: eopts,
+	}
 }
 
 func (e *etcdKV) getProxy() any { return e.cli }
@@ -269,6 +255,50 @@ func (e *etcdVersion) Version() *big.Int {
 		return newEmptyVersion().Version()
 	}
 	return big.NewInt(e.KeyValue.Version)
+}
+
+type etcdPagination struct {
+	ctx context.Context
+	kv  *etcdKV
+	opt *option
+
+	more bool
+	key  string
+	opts []clientv3.OpOption
+}
+
+func (e *etcdPagination) More() bool {
+	if e == nil {
+		return false
+	}
+	return e.more
+}
+
+func (e *etcdPagination) Next() (kvs KeyValues, err error) {
+	if e == nil {
+		return nil, ErrNilValue
+	}
+
+	result, err := e.kv.cli.Get(e.ctx, e.key, e.opts...)
+	if err != nil {
+		return nil, err
+	}
+
+	e.more = result.More
+	if len(result.Kvs) > 0 {
+		e.key = string(result.Kvs[len(result.Kvs)-1].Key) + "\x00"
+
+		kvs = make(KeyValues, 0, len(result.Kvs))
+		for _, kv := range result.Kvs {
+			kvs = append(kvs, &KeyValue{
+				Key: string(kv.Key),
+				Val: kv.Value,
+				Ver: &etcdVersion{KeyValue: kv, header: result.Header},
+			})
+		}
+	}
+
+	return
 }
 
 func parseEtcdConfig(ctx context.Context, conf *Conf, opt *config.InitOption) (cfg *clientv3.Config) {

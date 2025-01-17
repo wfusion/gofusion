@@ -73,7 +73,7 @@ func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.
 	}
 }
 
-func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
+func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) Got {
 	opt := utils.ApplyOptions[option](opts...)
 	if !opt.withPrefix {
 		if !opt.withKeysOnly {
@@ -86,80 +86,53 @@ func (r *redisKV) Get(ctx context.Context, key string, opts ...utils.OptionExten
 		}
 	}
 
-	var (
-		pattern      = key
-		batch, limit = int64(100), -1
-	)
+	pattern := key
 	if !strings.Contains(key, "*") {
 		pattern += "*"
 	}
-	if opt.batch > 0 {
-		batch = int64(opt.batch)
+
+	result := new(redisGetValue)
+	keysResult := r.cli.GetProxy().Keys(ctx, pattern)
+	result.StringCmd = rdsDrv.NewStringCmd(ctx, keysResult.Args()...)
+	if keysResult.Err() != nil {
+		result.StringCmd.SetErr(keysResult.Err())
+		return result
 	}
-	if opt.limit > 0 {
-		limit = opt.limit
-		if batch > int64(limit) {
-			batch = int64(limit)
-		}
+	keys := keysResult.Val()
+	if len(keys) == 0 {
+		result.StringCmd.SetErr(rdsDrv.Nil)
+		return result
 	}
 
-	var (
-		count  = 0
-		cursor = uint64(0)
-		result = new(redisGetValue)
-		keys   []string
-		err    error
-	)
-
-	for {
-		scanResult := r.cli.GetProxy().Scan(ctx, cursor, pattern, batch)
-		keys, cursor, err = scanResult.Result()
-		if err != nil {
-			result.StringCmd = rdsDrv.NewStringCmd(ctx, scanResult.Args()...)
-			result.StringCmd.SetErr(err)
-			return result
+	if opt.withKeysOnly {
+		result.multi = make(map[string]any)
+		for _, key := range keys {
+			result.multi[key] = nil
 		}
+		return result
+	}
 
-		if len(keys) > 0 {
-			if result.multi == nil {
-				result.multi = make(map[string]any)
-			}
-			if limit != -1 && count+len(keys) > limit {
-				keys = keys[:limit-count]
-			}
-
-			if opt.withKeysOnly {
-				for i := 0; i < len(keys); i++ {
-					result.multi[keys[i]] = nil
-				}
-			} else {
-				mgetResult := r.cli.GetProxy().MGet(ctx, keys...)
-				vals, err := mgetResult.Result()
-				if err != nil {
-					result.StringCmd = rdsDrv.NewStringCmd(ctx, mgetResult.Args()...)
-					result.StringCmd.SetErr(err)
-					return result
-				}
-				length := utils.Min(len(keys), len(vals))
-				for i := 0; i < length; i++ {
-					result.multi[keys[i]] = vals[i]
-				}
-			}
-		}
-
-		if count += len(keys); cursor == 0 || (limit != -1 && count >= limit) {
-			break
-		}
+	mgetResult := r.cli.GetProxy().MGet(ctx, keys...)
+	result.StringCmd = rdsDrv.NewStringCmd(ctx, mgetResult.Args()...)
+	if mgetResult.Err() != nil {
+		result.StringCmd.SetErr(mgetResult.Err())
+		return result
+	}
+	vals := mgetResult.Val()
+	result.multi = make(map[string]any, len(keys))
+	length := utils.Min(len(keys), len(vals))
+	for i := 0; i < length; i++ {
+		result.multi[keys[i]] = vals[i]
 	}
 	return result
 }
 
-func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
+func (r *redisKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Put {
 	opt := utils.ApplyOptions[option](opts...)
 	return &redisPutValue{StatusCmd: r.cli.GetProxy().Set(ctx, key, val, opt.expired), key: key}
 }
 
-func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
+func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) Del {
 	opt := utils.ApplyOptions[option](opts...)
 	if !opt.withPrefix {
 		return &redisDelValue{IntCmd: r.cli.GetProxy().Del(ctx, key)}
@@ -168,47 +141,22 @@ func (r *redisKV) Del(ctx context.Context, key string, opts ...utils.OptionExten
 	if !strings.Contains(key, "*") {
 		pattern += "*"
 	}
-	limit := -1
-	batch := int64(100)
-	if opt.limit > 0 {
-		limit = opt.limit
-		if batch > int64(limit) {
-			batch = int64(limit)
-		}
+
+	keysResult := r.cli.GetProxy().Keys(ctx, pattern)
+	if keysResult.Err() != nil {
+		cmd := rdsDrv.NewIntCmd(ctx, keysResult.Args()...)
+		cmd.SetErr(keysResult.Err())
+		return &redisDelValue{IntCmd: cmd}
 	}
 
-	var (
-		cursor = uint64(0)
-		count  = 0
-		result = new(redisDelValue)
-	)
-	for {
-		scanResult := r.cli.GetProxy().Scan(ctx, cursor, pattern, batch)
-		result.IntCmd = rdsDrv.NewIntCmd(ctx, scanResult.Args()...)
-		keys, cursor, err := scanResult.Result()
-		if err != nil {
-			result.IntCmd.SetErr(err)
-			return result
-		}
-
-		if len(keys) > 0 {
-			delResult := r.cli.GetProxy().Del(ctx, keys...)
-			result.IntCmd = rdsDrv.NewIntCmd(ctx, delResult.Args()...)
-			if err := delResult.Err(); err != nil {
-				result.IntCmd.SetErr(err)
-				return result
-			}
-			result.keys = append(result.keys, keys...)
-		}
-
-		if count += len(keys); cursor == 0 || (limit != -1 && count >= limit) {
-			break
-		}
+	keys := keysResult.Val()
+	if len(keys) == 0 {
+		return &redisDelValue{IntCmd: rdsDrv.NewIntCmd(ctx, keysResult.Args()...)}
 	}
-	return result
+	return &redisDelValue{IntCmd: r.cli.GetProxy().Del(ctx, keys...)}
 }
 
-func (r *redisKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+func (r *redisKV) Has(ctx context.Context, key string, opts ...utils.OptionExtender) Had {
 	opt := utils.ApplyOptions[option](opts...)
 	if !opt.withPrefix {
 		return &redisExistsValue{IntCmd: r.cli.GetProxy().Exists(ctx, key), key: key}
@@ -223,6 +171,21 @@ func (r *redisKV) Exists(ctx context.Context, key string, opts ...utils.OptionEx
 	cmd.SetErr(err)
 	cmd.SetVal(int64(len(keys)))
 	return &redisExistsValue{IntCmd: cmd, key: pattern}
+}
+
+func (r *redisKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {
+	if !strings.Contains(pattern, "*") {
+		pattern += "*"
+	}
+	return &redisPagination{
+		ctx:     ctx,
+		kv:      r,
+		opt:     utils.ApplyOptions[option](opts...),
+		first:   true,
+		pattern: pattern,
+		count:   int64(pageSize),
+		cursor:  0,
+	}
 }
 
 func (r *redisKV) getProxy() any { return r.cli }
@@ -337,9 +300,52 @@ func (r *redisDelValue) Err() error {
 	return r.IntCmd.Err()
 }
 
-func (r *redisDelValue) Deleted() []string {
+type redisPagination struct {
+	ctx context.Context
+	kv  *redisKV
+	opt *option
+
+	first   bool
+	pattern string
+	count   int64
+	cursor  uint64
+}
+
+func (r *redisPagination) More() bool {
 	if r == nil {
-		return nil
+		return false
 	}
-	return r.keys
+	return r.first || r.cursor > 0
+}
+
+func (r *redisPagination) Next() (kvs KeyValues, err error) {
+	if r == nil {
+		return nil, ErrNilValue
+	}
+	r.first = false
+	keys, next, err := r.kv.cli.GetProxy().Scan(r.ctx, r.cursor, r.pattern, r.count).Result()
+	if err != nil {
+		return
+	}
+	r.cursor = next
+	if r.opt.withKeysOnly {
+		kvs = make(KeyValues, 0, len(keys))
+		for _, key := range keys {
+			kvs = append(kvs, &KeyValue{Key: key, Val: nil, Ver: newDefaultVersion()})
+		}
+		return
+	}
+	if len(keys) == 0 {
+		return
+	}
+	vals, err := r.kv.cli.GetProxy().MGet(r.ctx, keys...).Result()
+	if err != nil {
+		return
+	}
+	kvs = make(KeyValues, 0, len(vals))
+	length := utils.Min(len(keys), len(vals))
+	for i := 0; i < length; i++ {
+		kvs = append(kvs, &KeyValue{Key: keys[i], Val: vals[i], Ver: newDefaultVersion()})
+	}
+	return
 }

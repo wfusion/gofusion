@@ -71,7 +71,7 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 	}
 }
 
-func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
+func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) Got {
 	opt := utils.ApplyOptions[option](opts...)
 	if opt.withConsistency {
 		if _, err := z.cli.Sync(key); err != nil {
@@ -116,14 +116,7 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 			keys = append(keys, k)
 			result.multi[k] = &zkGetValue{key: k}
 		}
-		count := len(result.keys) + len(keys)
-		if opt.limit > 0 && count > opt.limit {
-			keys = keys[:opt.limit-len(result.keys)]
-		}
 		result.keys = append(result.keys, keys...)
-		if opt.limit > 0 && count > opt.limit {
-			break
-		}
 	}
 
 	if opt.withKeysOnly {
@@ -150,7 +143,7 @@ func (z *zkKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender
 	return result
 }
 
-func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
+func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Put {
 	opt := utils.ApplyOptions[option](opts...)
 	acls := zk.WorldACL(int32(zk.PermAll))
 
@@ -190,7 +183,7 @@ func (z *zkKV) Put(ctx context.Context, key string, val any, opts ...utils.Optio
 	return &zkPutValue{key: key, result: result, stat: stat, err: err}
 }
 
-func (z *zkKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal {
+func (z *zkKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) Del {
 	opt := utils.ApplyOptions[option](opts...)
 	version := int32(-1)
 	if opt.version > 0 {
@@ -219,9 +212,6 @@ func (z *zkKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender
 		for _, desc := range next {
 			result.keys = append(result.keys, result.keys[i]+constant.Slash+desc)
 		}
-		if opt.limit > 0 && len(result.keys) > opt.limit {
-			break
-		}
 	}
 	deleteReqList := make([]any, 0, len(result.keys))
 	for i := len(result.keys) - 1; i >= 0; i-- {
@@ -244,7 +234,7 @@ func (z *zkKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender
 	return result
 }
 
-func (z *zkKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+func (z *zkKV) Has(ctx context.Context, key string, opts ...utils.OptionExtender) Had {
 	opt := utils.ApplyOptions[option](opts...)
 	if opt.withConsistency {
 		if _, err := z.cli.Sync(key); err != nil {
@@ -259,6 +249,17 @@ func (z *zkKV) Exists(ctx context.Context, key string, opts ...utils.OptionExten
 
 	keys, stat, err := z.cli.Children(key)
 	return &zkExistsValue{key: key, keys: keys, value: len(keys) > 0, stat: stat, err: err}
+}
+
+func (z *zkKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {
+	return &zkPagination{
+		ctx:    ctx,
+		kv:     z,
+		opt:    utils.ApplyOptions[option](opts...),
+		keys:   []string{pattern},
+		cursor: 0,
+		count:  pageSize,
+	}
 }
 
 func (z *zkKV) getProxy() any      { return z.cli }
@@ -393,6 +394,70 @@ func (z *zkDelValue) Deleted() []string {
 
 type zkVersion struct {
 	*zk.Stat
+}
+
+type zkPagination struct {
+	ctx context.Context
+	kv  *zkKV
+	opt *option
+
+	keys          []string
+	cursor, count int
+}
+
+func (z *zkPagination) More() bool {
+	if z == nil {
+		return false
+	}
+	return len(z.keys) > z.cursor
+}
+
+func (z *zkPagination) Next() (kvs KeyValues, err error) {
+	if z == nil {
+		return nil, ErrNilValue
+	}
+
+	kvs = make(KeyValues, 0, z.count)
+
+	var (
+		val      []byte
+		stat     *zk.Stat
+		children []string
+	)
+	for cnt := 0; cnt < z.count && z.cursor < len(z.keys); cnt++ {
+		select {
+		case <-z.ctx.Done():
+			return kvs, z.ctx.Err()
+		default:
+		}
+
+		parent := z.keys[z.cursor]
+		if z.opt.withConsistency {
+			if _, err = z.kv.cli.Sync(parent); err != nil {
+				return
+			}
+		}
+
+		if z.opt.withKeysOnly {
+			kvs = append(kvs, &KeyValue{Key: parent, Val: nil, Ver: new(zkVersion)})
+		} else {
+			val, stat, err = z.kv.cli.Get(parent)
+			if err != nil {
+				return
+			}
+			kvs = append(kvs, &KeyValue{Key: parent, Val: string(val), Ver: &zkVersion{Stat: stat}})
+		}
+		z.cursor++
+
+		children, _, err = z.kv.cli.Children(parent)
+		if err != nil {
+			return
+		}
+		for _, child := range children {
+			z.keys = append(z.keys, parent+constant.Slash+child)
+		}
+	}
+	return
 }
 
 func (z *zkVersion) Version() *big.Int {

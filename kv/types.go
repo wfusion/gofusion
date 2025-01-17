@@ -11,13 +11,11 @@ import (
 )
 
 const (
-	ErrDuplicatedName            utils.Error = "duplicated kv name"
-	ErrUnsupportedKVType         utils.Error = "unsupported kv type"
-	ErrNilValue                  utils.Error = "nil value"
-	ErrUnsupportedRedisValueType utils.Error = "unsupported redis value type"
-	ErrInvalidExpiration         utils.Error = "invalid expiration"
-	ErrKeyAlreadyExists          utils.Error = "key already exists"
-	ErrDeleteKeyFailed           utils.Error = "delete key failed"
+	ErrDuplicatedName    utils.Error = "duplicated kv name"
+	ErrUnsupportedKVType utils.Error = "unsupported kv type"
+	ErrNilValue          utils.Error = "nil value"
+	ErrInvalidExpiration utils.Error = "invalid expiration"
+	ErrKeyAlreadyExists  utils.Error = "key already exists"
 )
 
 var (
@@ -25,33 +23,40 @@ var (
 )
 
 type Storage interface {
-	Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal
-	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal
-	Del(ctx context.Context, key string, opts ...utils.OptionExtender) DelVal
-	Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal
+	Get(ctx context.Context, key string, opts ...utils.OptionExtender) Got
+	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Put
+	Del(ctx context.Context, key string, opts ...utils.OptionExtender) Del
+	Has(ctx context.Context, key string, opts ...utils.OptionExtender) Had
+
+	Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated
 
 	getProxy() any
 	close() error
 	config() *Conf
 }
 
-type GetVal interface {
+type Got interface {
 	String() string
 	Version() Version
 	KeyValues() KeyValues
 	Err() error
 }
 
-type PutVal interface {
+type Paginated interface {
+	More() bool
+	Next() (KeyValues, error)
+}
+
+type Put interface {
 	LeaseID() string
 	Err() error
 }
 
-type DelVal interface {
+type Del interface {
 	Err() error
 }
 
-type ExistsVal interface {
+type Had interface {
 	Version() Version
 	Bool() bool
 	Err() error
@@ -65,7 +70,6 @@ type option struct {
 	expired         time.Duration
 	version         int
 	leaseID         string
-	batch, limit    int
 	withPrefix      bool
 	withKeysOnly    bool
 	withConsistency bool
@@ -80,18 +84,6 @@ func Prefix() utils.OptionFunc[option] {
 func KeysOnly() utils.OptionFunc[option] {
 	return func(o *option) {
 		o.withKeysOnly = true
-	}
-}
-
-func Batch(batch int) utils.OptionFunc[option] {
-	return func(o *option) {
-		o.batch = batch
-	}
-}
-
-func Limit(limit int) utils.OptionFunc[option] {
-	return func(o *option) {
-		o.limit = limit
 	}
 }
 

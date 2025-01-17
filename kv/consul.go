@@ -41,7 +41,7 @@ func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config
 	}
 }
 
-func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) GetVal {
+func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExtender) Got {
 	opt := utils.ApplyOptions[option](opts...)
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
@@ -50,37 +50,38 @@ func (c *consulKV) Get(ctx context.Context, key string, opts ...utils.OptionExte
 	}
 
 	if !opt.withPrefix {
-		pair, meta, err := c.cli.KV().Get(key, copt)
 		// FIXME: consul not support exists or keys only
+		pair, meta, err := c.cli.KV().Get(key, copt)
 		if opt.withKeysOnly {
 			pair.Value = nil
 		}
 		return &consulGetValue{pair: pair, meta: meta, err: err}
 	}
 
-	// FIXME: consul not support MGet and Limit
-	pairs, meta, err := c.cli.KV().List(key, copt)
-	if err != nil {
+	if opt.withKeysOnly {
+		keys, meta, err := c.cli.KV().Keys(key, "", copt)
+		pairs := make(api.KVPairs, 0, len(keys))
+		for _, k := range keys {
+			pairs = append(pairs, &api.KVPair{
+				Key:         k,
+				CreateIndex: 0,
+				ModifyIndex: 0,
+				LockIndex:   0,
+				Flags:       0,
+				Value:       nil,
+				Session:     "",
+				Namespace:   "",
+				Partition:   "",
+			})
+		}
 		return &consulGetValue{multi: pairs, meta: meta, err: err}
 	}
-	// FIXME: consul not support exists or keys only
-	if opt.withKeysOnly {
-		for _, pair := range pairs {
-			pair.Value = nil
-		}
-	}
-	if opt.limit > 0 && len(pairs) > opt.limit {
-		pairLimited := make(api.KVPairs, 0, opt.limit)
-		for i := 0; i < opt.limit; i++ {
-			pairLimited = append(pairLimited, pairs[i])
-		}
-		pairs = pairLimited
-	}
 
-	return &consulGetValue{multi: pairs, meta: meta}
+	pairs, meta, err := c.cli.KV().List(key, copt)
+	return &consulGetValue{multi: pairs, meta: meta, err: err}
 }
 
-func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) PutVal {
+func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Put {
 	opt := utils.ApplyOptions[option](opts...)
 
 	copt := new(api.WriteOptions)
@@ -129,7 +130,7 @@ func (c *consulKV) Put(ctx context.Context, key string, val any, opts ...utils.O
 	return &consulPutValue{pair: pair, meta: meta, err: err}
 }
 
-func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) (val DelVal) {
+func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExtender) (val Del) {
 	opt := utils.ApplyOptions[option](opts...)
 	copt := new(api.WriteOptions)
 	copt = copt.WithContext(ctx)
@@ -145,7 +146,7 @@ func (c *consulKV) Del(ctx context.Context, key string, opts ...utils.OptionExte
 	return &consulDelValue{meta: meta, err: err}
 }
 
-func (c *consulKV) Exists(ctx context.Context, key string, opts ...utils.OptionExtender) ExistsVal {
+func (c *consulKV) Has(ctx context.Context, key string, opts ...utils.OptionExtender) Had {
 	opt := utils.ApplyOptions[option](opts...)
 	copt := new(api.QueryOptions)
 	copt = copt.WithContext(ctx)
@@ -162,6 +163,27 @@ func (c *consulKV) Exists(ctx context.Context, key string, opts ...utils.OptionE
 		return &consulExistsValue{key: key, keys: keys, meta: meta, err: err}
 	}
 	return &consulExistsValue{key: key, keys: keys, meta: meta}
+}
+
+func (c *consulKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {
+	opt := utils.ApplyOptions[option](opts...)
+	copt := new(api.QueryOptions)
+	copt = copt.WithContext(ctx)
+	if opt.withConsistency {
+		copt.RequireConsistent = true
+	}
+	keys, _, err := c.cli.KV().Keys(pattern, "", copt)
+	return &consulPagination{
+		ctx:    ctx,
+		kv:     c,
+		opt:    opt,
+		opts:   copt,
+		prefix: pattern,
+		keys:   keys,
+		cursor: 0,
+		count:  pageSize,
+		err:    err,
+	}
 }
 
 func (c *consulKV) getProxy() any { return c.cli }
@@ -280,6 +302,59 @@ func (c *consulVersion) Version() *big.Int {
 		return newEmptyVersion().Version()
 	}
 	return big.NewInt(0).SetUint64(c.KVPair.ModifyIndex)
+}
+
+type consulPagination struct {
+	ctx  context.Context
+	kv   *consulKV
+	opt  *option
+	opts *api.QueryOptions
+
+	err           error
+	prefix        string
+	keys          []string
+	cursor, count int
+}
+
+func (c *consulPagination) More() bool {
+	if c == nil || c.err != nil {
+		return false
+	}
+	return len(c.keys) > c.cursor
+}
+
+func (c *consulPagination) Next() (kvs KeyValues, err error) {
+	if c == nil {
+		return nil, ErrNilValue
+	}
+	if c.err != nil {
+		return nil, c.err
+	}
+
+	var pair *api.KVPair
+
+	kvs = make(KeyValues, 0, c.count)
+	for cnt := 0; cnt < c.count && c.cursor < len(c.keys); cnt++ {
+		select {
+		case <-c.ctx.Done():
+			return kvs, c.ctx.Err()
+		default:
+		}
+
+		if c.opt.withKeysOnly {
+			kvs = append(kvs, &KeyValue{Key: c.keys[cnt], Ver: new(consulVersion)})
+			c.cursor++
+			continue
+		}
+
+		pair, _, err = c.kv.cli.KV().Get(c.keys[c.cursor], c.opts)
+		if err != nil {
+			return
+		}
+		c.cursor++
+		kvs = append(kvs, &KeyValue{Key: c.keys[cnt], Val: string(pair.Value), Ver: &consulVersion{KVPair: pair}})
+	}
+	return
 }
 
 func parseConsulConfig(conf *Conf) *api.Config {

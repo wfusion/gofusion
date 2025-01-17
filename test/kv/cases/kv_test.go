@@ -7,9 +7,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
+
 	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/utils"
-
 	"github.com/wfusion/gofusion/kv"
 	"github.com/wfusion/gofusion/log"
 
@@ -58,13 +58,13 @@ func (t *KV) defaultTest(name, key, sep string, expired, sleepTime time.Duration
 	naming := func(n string) string { return name + "_" + n }
 	t.Run(naming("Put"), func() { t.testPut(name, key+"put") })
 	t.Run(naming("Set"), func() { t.testSet(name, key+"set") })
-	t.Run(naming("Exists"), func() { t.testExists(name, key+"exists") })
+	t.Run(naming("Has"), func() { t.testHas(name, key+"has") })
 	t.Run(naming("Expired"), func() { t.testExpire(name, key+"expired", expired, sleepTime) })
 	t.Run(naming("ExpiredDel"), func() { t.testExpireDel(name, key+"expireddel", expired) })
 	t.Run(naming("QueryPrefix"), func() { t.testQueryPrefix(name, key+"qprefix", sep) })
 	t.Run(naming("DeletePrefix"), func() { t.testDeletePrefix(name, key+"dprefix", sep) })
 	t.Run(naming("KeysOnly"), func() { t.testKeysOnly(name, key+"keysonly", sep) })
-	t.Run(naming("Pagination"), func() { t.testPagination(name, key+"pagination", sep) })
+	t.Run(naming("Paginate"), func() { t.testPaginate(name, key+"paginate", sep) })
 }
 
 func (t *KV) testPut(name, key string) {
@@ -110,7 +110,7 @@ func (t *KV) testSet(name, key string) {
 	})
 }
 
-func (t *KV) testExists(name, key string) {
+func (t *KV) testHas(name, key string) {
 	t.Catch(func() {
 		// Given
 		expect := "this is a value"
@@ -120,7 +120,7 @@ func (t *KV) testExists(name, key string) {
 		defer func() { t.NoError(cli.Del(ctx, key).Err()) }()
 
 		// When
-		result := cli.Exists(ctx, key)
+		result := cli.Has(ctx, key)
 
 		// Then
 		t.NoError(result.Err())
@@ -156,7 +156,7 @@ func (t *KV) testExpire(name, key string, expired, sleepTime time.Duration) {
 					return
 				default:
 					time.Sleep(time.Second)
-					result := cli.Exists(ctx, key, kv.Consistent())
+					result := cli.Has(ctx, key, kv.Consistent())
 					log.Info(ctx, "get key(%s) result(%v) after %s", key, result.Bool(), time.Since(begin))
 					if !result.Bool() {
 						return
@@ -169,7 +169,7 @@ func (t *KV) testExpire(name, key string, expired, sleepTime time.Duration) {
 		getActual = cli.Get(ctx, key)
 		t.Equal(kv.ErrNilValue, getActual.Err())
 
-		existsActual := cli.Exists(ctx, key)
+		existsActual := cli.Has(ctx, key)
 		t.False(existsActual.Bool())
 	})
 }
@@ -194,7 +194,7 @@ func (t *KV) testExpireDel(name, key string, expired time.Duration) {
 		getActual = cli.Get(ctx, key)
 		t.Equal(kv.ErrNilValue, getActual.Err())
 
-		existsActual := cli.Exists(ctx, key)
+		existsActual := cli.Has(ctx, key)
 		t.False(existsActual.Bool())
 	})
 }
@@ -221,7 +221,7 @@ func (t *KV) testQueryPrefix(name, key, sep string) {
 		defer func() { t.NoError(cli.Del(ctx, key3).Err()) }()
 
 		// When
-		existActual := cli.Exists(ctx, key, kv.Prefix())
+		existActual := cli.Has(ctx, key, kv.Prefix())
 
 		// Then
 		t.NoError(existActual.Err())
@@ -322,13 +322,12 @@ func (t *KV) testKeysOnly(name, key, sep string) {
 	})
 }
 
-func (t *KV) testPagination(name, key, sep string) {
+func (t *KV) testPaginate(name, key, sep string) {
 	t.Catch(func() {
 		// Given
 		val := "this is a value"
 		ctx := context.Background()
 		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
-		batch, limit := 1, 3
 
 		t.NoError(cli.Put(ctx, key, val).Err())
 		key1 := key + sep + "node1"
@@ -342,16 +341,44 @@ func (t *KV) testPagination(name, key, sep string) {
 		expect := utils.NewSet([]string{key, key1, key2, key3}...)
 
 		// When
-		getActual := cli.Get(ctx, key, kv.Prefix(), kv.Batch(batch), kv.Limit(limit))
+		iter1 := cli.Paginate(ctx, key, 1)
+		iter2 := cli.Paginate(ctx, key, 2)
+		iter3 := cli.Paginate(ctx, key, 3)
+		iter4 := cli.Paginate(ctx, key, 4)
+		iter5 := cli.Paginate(ctx, key, 5)
+		iter6 := cli.Paginate(ctx, key, 1, kv.Consistent())
+		iter7 := cli.Paginate(ctx, key, 1, kv.KeysOnly())
+		iter8 := cli.Paginate(ctx, key, 1, kv.Consistent(), kv.KeysOnly())
 
 		// Then
-		t.NoError(getActual.Err())
+		checkFn := func(iter kv.Paginated, keysOnly bool) {
+			var kvs kv.KeyValues
+			for iter.More() {
+				result, err := iter.Next()
+				t.NoError(err)
+				if err != nil {
+					return
+				}
+				kvs = append(kvs, result...)
+			}
 
-		kvs := getActual.KeyValues()
-		t.Len(kvs, limit)
-		for _, item := range kvs {
-			t.EqualValues(val, item.Val)
-			t.True(expect.Contains(item.Key))
+			t.Len(kvs, 4)
+			for _, item := range kvs {
+				t.True(expect.Contains(item.Key))
+				if !keysOnly {
+					t.EqualValues(val, item.Val)
+				}
+			}
 		}
+
+		checkFn(iter1, false)
+		checkFn(iter2, false)
+		checkFn(iter3, false)
+		checkFn(iter4, false)
+		checkFn(iter5, false)
+		checkFn(iter6, false)
+		checkFn(iter7, true)
+		checkFn(iter8, true)
+
 	})
 }
