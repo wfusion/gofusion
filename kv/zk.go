@@ -334,7 +334,7 @@ func (z *zkExistsValue) Bool() bool {
 }
 
 func (z *zkExistsValue) Err() error {
-	if z == nil || z.stat == nil {
+	if z == nil {
 		return ErrNilValue
 	}
 	return z.err

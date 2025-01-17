@@ -202,7 +202,7 @@ func (e *etcdExistsValue) Bool() bool {
 }
 
 func (e *etcdExistsValue) Err() error {
-	if e == nil || e.rsp == nil {
+	if e == nil {
 		return ErrNilValue
 	}
 	return e.err

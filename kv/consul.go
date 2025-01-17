@@ -159,10 +159,7 @@ func (c *consulKV) Has(ctx context.Context, key string, opts ...utils.OptionExte
 	}
 
 	keys, meta, err := c.cli.KV().Keys(key, "", copt)
-	if err != nil {
-		return &consulExistsValue{key: key, keys: keys, meta: meta, err: err}
-	}
-	return &consulExistsValue{key: key, keys: keys, meta: meta}
+	return &consulExistsValue{key: key, keys: keys, meta: meta, err: err}
 }
 
 func (c *consulKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {
@@ -252,7 +249,7 @@ func (c *consulExistsValue) Bool() bool {
 }
 
 func (c *consulExistsValue) Err() error {
-	if c == nil || (c.pair == nil && len(c.keys) == 0) {
+	if c == nil {
 		return ErrNilValue
 	}
 	return c.err

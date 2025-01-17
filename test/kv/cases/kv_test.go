@@ -60,6 +60,7 @@ func (t *KV) defaultTest(name, key, sep string, expired, sleepTime time.Duration
 	t.Run(naming("Put"), func() { t.testPut(name, key+"put") })
 	t.Run(naming("Set"), func() { t.testSet(name, key+"set") })
 	t.Run(naming("Has"), func() { t.testHas(name, key+"has") })
+	t.Run(naming("Del"), func() { t.testDel(name, key+"del") })
 	t.Run(naming("Expired"), func() { t.testExpire(name, key+"expired", expired, sleepTime) })
 	t.Run(naming("ExpiredDel"), func() { t.testExpireDel(name, key+"expireddel", expired) })
 	t.Run(naming("QueryPrefix"), func() { t.testQueryPrefix(name, key+"qprefix", sep) })
@@ -67,7 +68,7 @@ func (t *KV) defaultTest(name, key, sep string, expired, sleepTime time.Duration
 	t.Run(naming("KeysOnly"), func() { t.testKeysOnly(name, key+"keysonly", sep) })
 	t.Run(naming("Paginate"), func() { t.testPaginate(name, key+"paginate", sep) })
 	t.Run(naming("SetPageSize"), func() { t.testPaginateSetPageSize(name, key+"setpagesize", sep) })
-	t.Run(naming("FromKey"), func() { t.testPaginateFromKey(name, key+"fromkey", sep) })
+	t.Run(naming("FromCursor"), func() { t.testPaginateFromCursor(name, key+"fromcursor", sep) })
 }
 
 func (t *KV) testPut(name, key string) {
@@ -128,6 +129,27 @@ func (t *KV) testHas(name, key string) {
 		// Then
 		t.NoError(result.Err())
 		t.True(result.Bool())
+	})
+}
+
+func (t *KV) testDel(name, key string) {
+	t.Catch(func() {
+		// Given
+		expect := "this is a value"
+		ctx := context.Background()
+		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		t.NoError(cli.Put(ctx, key, expect).Err())
+		result := cli.Has(ctx, key)
+		t.NoError(result.Err())
+		t.True(result.Bool())
+
+		// When
+		t.NoError(cli.Del(ctx, key).Err())
+
+		// Then
+		result = cli.Has(ctx, key)
+		t.NoError(result.Err())
+		t.False(result.Bool())
 	})
 }
 
@@ -431,7 +453,7 @@ func (t *KV) testPaginateSetPageSize(name, key, sep string) {
 	})
 }
 
-func (t *KV) testPaginateFromKey(name, key, sep string) {
+func (t *KV) testPaginateFromCursor(name, key, sep string) {
 	t.Catch(func() {
 		// Given
 		val := "this is a value"
@@ -447,33 +469,45 @@ func (t *KV) testPaginateFromKey(name, key, sep string) {
 		t.NoError(cli.Put(ctx, key3, val).Err())
 		defer func() { t.NoError(cli.Del(ctx, key, kv.Prefix()).Err()) }()
 
-		expect := utils.NewSet([]string{key, key1, key2, key3}...)
-
 		// When
-		iter := cli.Paginate(ctx, key, 1)
-		_, err := iter.Next()
-		t.NoError(err)
+		checkFn := func(left int) {
+			expect := utils.NewSet([]string{key, key1, key2, key3}...)
+			total := expect.Size()
 
-		cursor := iter.Cursor()
-		iter = cli.Paginate(ctx, key, 1, kv.FromCursor(cast.ToString(cursor)))
+			iter := cli.Paginate(ctx, key, total-left)
+			_, err := iter.Next()
+			t.NoError(err)
+
+			cursor := iter.Cursor()
+			iter = cli.Paginate(ctx, key, 1, kv.FromCursor(cast.ToString(cursor)))
+
+			// Then
+			var kvs kv.KeyValues
+			for iter.More() {
+				result, err := iter.Next()
+				t.NoError(err)
+				if err != nil {
+					return
+				}
+				kvs = append(kvs, result...)
+			}
+
+			t.Len(kvs, left)
+			for _, item := range kvs {
+				t.True(expect.Contains(item.Key))
+				t.EqualValues(val, item.Val)
+				expect.Remove(item.Key)
+			}
+			t.EqualValues(expect.Size(), total-left)
+		}
 
 		// Then
-		var kvs kv.KeyValues
-		for iter.More() {
-			result, err := iter.Next()
-			t.NoError(err)
-			if err != nil {
-				return
-			}
-			kvs = append(kvs, result...)
+		// FIXME: redis result is not stable when scan by count
+		if name != nameRedis {
+			checkFn(0)
+			checkFn(1)
 		}
-
-		t.Len(kvs, 3)
-		for _, item := range kvs {
-			t.True(expect.Contains(item.Key))
-			t.EqualValues(val, item.Val)
-			expect.Remove(item.Key)
-		}
-		t.EqualValues(expect.Items(), []string{key})
+		checkFn(2)
+		checkFn(3)
 	})
 }
