@@ -16,7 +16,7 @@ const (
 	ErrNilValue          utils.Error = "nil value"
 	ErrInvalidExpiration utils.Error = "invalid expiration"
 	ErrKeyAlreadyExists  utils.Error = "key already exists"
-	ErrrNotImplement     utils.Error = "not implement"
+	ErrNotImplement      utils.Error = "not implement"
 )
 
 var (

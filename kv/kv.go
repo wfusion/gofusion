@@ -41,11 +41,11 @@ func newAbstractPagination(ctx context.Context, count int, opt *option) *abstrac
 }
 
 func (a *abstractPagination) More() bool {
-	panic(ErrrNotImplement)
+	panic(ErrNotImplement)
 }
 
 func (a *abstractPagination) Next() (KeyValues, error) {
-	panic(ErrrNotImplement)
+	panic(ErrNotImplement)
 }
 
 func (a *abstractPagination) SetPageSize(pageSize int) {
