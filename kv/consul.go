@@ -23,7 +23,7 @@ type consulKV struct {
 	cli *api.Client
 }
 
-func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
+func newConsulInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storable {
 	copt := parseConsulConfig(conf)
 	cli, err := api.NewClient(copt)
 	if err != nil {
@@ -174,15 +174,13 @@ func (c *consulKV) Paginate(ctx context.Context, pattern string, pageSize int, o
 	}
 	keys, _, err := c.cli.KV().Keys(pattern, "", copt)
 	return &consulPagination{
-		ctx:    ctx,
-		kv:     c,
-		opt:    opt,
-		opts:   copt,
-		prefix: pattern,
-		keys:   keys,
-		cursor: 0,
-		count:  pageSize,
-		err:    err,
+		abstractPagination: newAbstractPagination(ctx, pageSize, opt),
+		kv:                 c,
+		opts:               copt,
+		prefix:             pattern,
+		keys:               keys,
+		cursor:             0,
+		err:                err,
 	}
 }
 
@@ -305,15 +303,14 @@ func (c *consulVersion) Version() *big.Int {
 }
 
 type consulPagination struct {
-	ctx  context.Context
+	*abstractPagination
 	kv   *consulKV
-	opt  *option
 	opts *api.QueryOptions
 
-	err           error
-	prefix        string
-	keys          []string
-	cursor, count int
+	err    error
+	prefix string
+	keys   []string
+	cursor int
 }
 
 func (c *consulPagination) More() bool {
@@ -341,18 +338,22 @@ func (c *consulPagination) Next() (kvs KeyValues, err error) {
 		default:
 		}
 
+		key := c.keys[c.cursor]
+		c.cursor++
+
 		if c.opt.withKeysOnly {
-			kvs = append(kvs, &KeyValue{Key: c.keys[cnt], Ver: new(consulVersion)})
-			c.cursor++
+			kvs = append(kvs, &KeyValue{Key: key, Ver: new(consulVersion)})
 			continue
 		}
 
-		pair, _, err = c.kv.cli.KV().Get(c.keys[c.cursor], c.opts)
+		pair, _, err = c.kv.cli.KV().Get(key, c.opts)
 		if err != nil {
 			return
 		}
-		c.cursor++
-		kvs = append(kvs, &KeyValue{Key: c.keys[cnt], Val: string(pair.Value), Ver: &consulVersion{KVPair: pair}})
+		if pair == nil {
+			continue
+		}
+		kvs = append(kvs, &KeyValue{Key: key, Val: string(pair.Value), Ver: &consulVersion{KVPair: pair}})
 	}
 	return
 }

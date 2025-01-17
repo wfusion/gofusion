@@ -3,6 +3,7 @@ package kv
 import (
 	"context"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/spf13/cast"
@@ -21,7 +22,7 @@ type etcdKV struct {
 	cli *clientv3.Client
 }
 
-func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
+func newEtcdInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storable {
 	cfg := parseEtcdConfig(ctx, conf, opt)
 	cli, err := clientv3.New(*cfg)
 	if err != nil {
@@ -136,12 +137,11 @@ func (e *etcdKV) Paginate(ctx context.Context, pattern string, pageSize int, opt
 		ctx = clientv3.WithRequireLeader(ctx)
 	}
 	return &etcdPagination{
-		ctx:  ctx,
-		kv:   e,
-		opt:  opt,
-		more: true,
-		key:  pattern,
-		opts: eopts,
+		abstractPagination: newAbstractPagination(ctx, pageSize, opt),
+		kv:                 e,
+		more:               true,
+		key:                pattern,
+		opts:               eopts,
 	}
 }
 
@@ -258,9 +258,8 @@ func (e *etcdVersion) Version() *big.Int {
 }
 
 type etcdPagination struct {
-	ctx context.Context
-	kv  *etcdKV
-	opt *option
+	*abstractPagination
+	kv *etcdKV
 
 	more bool
 	key  string
@@ -299,6 +298,24 @@ func (e *etcdPagination) Next() (kvs KeyValues, err error) {
 	}
 
 	return
+}
+
+func (e *etcdPagination) SetPageSize(pageSize int) {
+	if e == nil {
+		return
+	}
+
+	const limitFuncName = "go.etcd.io/etcd/client/v3.WithLimit"
+	for i := 0; i < len(e.opts); i++ {
+		name := utils.GetFuncName(e.opts[i])
+		if strings.Contains(name, limitFuncName) {
+			e.opts = append(e.opts[:i], e.opts[i+1:]...)
+			break
+		}
+	}
+
+	e.abstractPagination.SetPageSize(pageSize)
+	e.opts = append(e.opts, clientv3.WithLimit(int64(pageSize)))
 }
 
 func parseEtcdConfig(ctx context.Context, conf *Conf, opt *config.InitOption) (cfg *clientv3.Config) {

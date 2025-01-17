@@ -24,7 +24,7 @@ type redisKV struct {
 	cli *redis.Redis
 }
 
-func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
+func newRedisInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storable {
 	var hooks []rdsDrv.Hook
 	for _, hookLoc := range conf.Endpoint.RedisHooks {
 		if hookType := inspect.TypeOf(hookLoc); hookType != nil {
@@ -178,13 +178,11 @@ func (r *redisKV) Paginate(ctx context.Context, pattern string, pageSize int, op
 		pattern += "*"
 	}
 	return &redisPagination{
-		ctx:     ctx,
-		kv:      r,
-		opt:     utils.ApplyOptions[option](opts...),
-		first:   true,
-		pattern: pattern,
-		count:   int64(pageSize),
-		cursor:  0,
+		abstractPagination: newAbstractPagination(ctx, pageSize, utils.ApplyOptions[option](opts...)),
+		kv:                 r,
+		first:              true,
+		pattern:            pattern,
+		cursor:             0,
 	}
 }
 
@@ -301,13 +299,11 @@ func (r *redisDelValue) Err() error {
 }
 
 type redisPagination struct {
-	ctx context.Context
-	kv  *redisKV
-	opt *option
+	*abstractPagination
+	kv *redisKV
 
 	first   bool
 	pattern string
-	count   int64
 	cursor  uint64
 }
 
@@ -323,7 +319,7 @@ func (r *redisPagination) Next() (kvs KeyValues, err error) {
 		return nil, ErrNilValue
 	}
 	r.first = false
-	keys, next, err := r.kv.cli.GetProxy().Scan(r.ctx, r.cursor, r.pattern, r.count).Result()
+	keys, next, err := r.kv.cli.GetProxy().Scan(r.ctx, r.cursor, r.pattern, int64(r.count)).Result()
 	if err != nil {
 		return
 	}

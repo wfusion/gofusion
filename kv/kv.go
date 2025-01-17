@@ -8,7 +8,7 @@ import (
 
 var (
 	rwlock       = new(sync.RWMutex)
-	appInstances map[string]map[string]Storage
+	appInstances map[string]map[string]Storable
 )
 
 type abstractKV struct {
@@ -24,6 +24,32 @@ func (a *abstractKV) config() *Conf {
 		return nil
 	}
 	return a.conf
+}
+
+type abstractPagination struct {
+	ctx   context.Context
+	opt   *option
+	count int
+}
+
+func newAbstractPagination(ctx context.Context, count int, opt *option) *abstractPagination {
+	return &abstractPagination{
+		ctx:   ctx,
+		opt:   opt,
+		count: count,
+	}
+}
+
+func (a *abstractPagination) More() bool {
+	panic(ErrrNotImplement)
+}
+
+func (a *abstractPagination) Next() (KeyValues, error) {
+	panic(ErrrNotImplement)
+}
+
+func (a *abstractPagination) SetPageSize(pageSize int) {
+	a.count = pageSize
 }
 
 type emptyVersion struct {

@@ -65,6 +65,7 @@ func (t *KV) defaultTest(name, key, sep string, expired, sleepTime time.Duration
 	t.Run(naming("DeletePrefix"), func() { t.testDeletePrefix(name, key+"dprefix", sep) })
 	t.Run(naming("KeysOnly"), func() { t.testKeysOnly(name, key+"keysonly", sep) })
 	t.Run(naming("Paginate"), func() { t.testPaginate(name, key+"paginate", sep) })
+	t.Run(naming("SetPageSize"), func() { t.testPaginateSetPageSize(name, key+"setpagesize", sep) })
 }
 
 func (t *KV) testPut(name, key string) {
@@ -338,8 +339,6 @@ func (t *KV) testPaginate(name, key, sep string) {
 		t.NoError(cli.Put(ctx, key3, val).Err())
 		defer func() { t.NoError(cli.Del(ctx, key, kv.Prefix()).Err()) }()
 
-		expect := utils.NewSet([]string{key, key1, key2, key3}...)
-
 		// When
 		iter1 := cli.Paginate(ctx, key, 1)
 		iter2 := cli.Paginate(ctx, key, 2)
@@ -363,12 +362,16 @@ func (t *KV) testPaginate(name, key, sep string) {
 			}
 
 			t.Len(kvs, 4)
+
+			expect := utils.NewSet([]string{key, key1, key2, key3}...)
 			for _, item := range kvs {
 				t.True(expect.Contains(item.Key))
 				if !keysOnly {
 					t.EqualValues(val, item.Val)
 				}
+				expect.Remove(item.Key)
 			}
+			t.Zero(expect.Size())
 		}
 
 		checkFn(iter1, false)
@@ -380,5 +383,48 @@ func (t *KV) testPaginate(name, key, sep string) {
 		checkFn(iter7, true)
 		checkFn(iter8, true)
 
+	})
+}
+
+func (t *KV) testPaginateSetPageSize(name, key, sep string) {
+	t.Catch(func() {
+		// Given
+		val := "this is a value"
+		ctx := context.Background()
+		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+
+		t.NoError(cli.Put(ctx, key, val).Err())
+		key1 := key + sep + "node1"
+		t.NoError(cli.Put(ctx, key1, val).Err())
+		key2 := key1 + sep + "node2"
+		t.NoError(cli.Put(ctx, key2, val).Err())
+		key3 := key + sep + "node3"
+		t.NoError(cli.Put(ctx, key3, val).Err())
+		defer func() { t.NoError(cli.Del(ctx, key, kv.Prefix()).Err()) }()
+
+		expect := utils.NewSet([]string{key, key1, key2, key3}...)
+
+		// When
+		iter := cli.Paginate(ctx, key, 2)
+
+		// Then
+		var kvs kv.KeyValues
+		for iter.More() {
+			result, err := iter.Next()
+			t.NoError(err)
+			if err != nil {
+				return
+			}
+			kvs = append(kvs, result...)
+			iter.SetPageSize(1)
+		}
+
+		t.Len(kvs, 4)
+		for _, item := range kvs {
+			t.True(expect.Contains(item.Key))
+			t.EqualValues(val, item.Val)
+			expect.Remove(item.Key)
+		}
+		t.Zero(expect.Size())
 	})
 }

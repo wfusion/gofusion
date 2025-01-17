@@ -16,13 +16,14 @@ const (
 	ErrNilValue          utils.Error = "nil value"
 	ErrInvalidExpiration utils.Error = "invalid expiration"
 	ErrKeyAlreadyExists  utils.Error = "key already exists"
+	ErrrNotImplement     utils.Error = "not implement"
 )
 
 var (
 	InvalidVersion = big.NewInt(-1)
 )
 
-type Storage interface {
+type Storable interface {
 	Get(ctx context.Context, key string, opts ...utils.OptionExtender) Got
 	Put(ctx context.Context, key string, val any, opts ...utils.OptionExtender) Put
 	Del(ctx context.Context, key string, opts ...utils.OptionExtender) Del
@@ -45,6 +46,7 @@ type Got interface {
 type Paginated interface {
 	More() bool
 	Next() (KeyValues, error)
+	SetPageSize(pageSize int)
 }
 
 type Put interface {

@@ -26,7 +26,7 @@ type zkKV struct {
 	closeCh <-chan zk.Event
 }
 
-func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storage {
+func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) Storable {
 	var (
 		conn *zk.Conn
 		ech  <-chan zk.Event
@@ -253,12 +253,10 @@ func (z *zkKV) Has(ctx context.Context, key string, opts ...utils.OptionExtender
 
 func (z *zkKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {
 	return &zkPagination{
-		ctx:    ctx,
-		kv:     z,
-		opt:    utils.ApplyOptions[option](opts...),
-		keys:   []string{pattern},
-		cursor: 0,
-		count:  pageSize,
+		abstractPagination: newAbstractPagination(ctx, pageSize, utils.ApplyOptions[option](opts...)),
+		kv:                 z,
+		keys:               []string{pattern},
+		cursor:             0,
 	}
 }
 
@@ -397,12 +395,11 @@ type zkVersion struct {
 }
 
 type zkPagination struct {
-	ctx context.Context
-	kv  *zkKV
-	opt *option
+	*abstractPagination
+	kv *zkKV
 
-	keys          []string
-	cursor, count int
+	keys   []string
+	cursor int
 }
 
 func (z *zkPagination) More() bool {
