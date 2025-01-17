@@ -173,13 +173,19 @@ func (c *consulKV) Paginate(ctx context.Context, pattern string, pageSize int, o
 		copt.RequireConsistent = true
 	}
 	keys, _, err := c.cli.KV().Keys(pattern, "", copt)
+
+	cursor := 0
+	if opt.cursor != nil {
+		cursor = cast.ToInt(opt.cursor)
+	}
+
 	return &consulPagination{
 		abstractPagination: newAbstractPagination(ctx, pageSize, opt),
 		kv:                 c,
 		opts:               copt,
 		prefix:             pattern,
 		keys:               keys,
-		cursor:             0,
+		cursor:             cursor,
 		err:                err,
 	}
 }
@@ -356,6 +362,13 @@ func (c *consulPagination) Next() (kvs KeyValues, err error) {
 		kvs = append(kvs, &KeyValue{Key: key, Val: string(pair.Value), Ver: &consulVersion{KVPair: pair}})
 	}
 	return
+}
+
+func (c *consulPagination) Cursor() any {
+	if c == nil {
+		return nil
+	}
+	return c.cursor
 }
 
 func parseConsulConfig(conf *Conf) *api.Config {

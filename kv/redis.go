@@ -177,12 +177,19 @@ func (r *redisKV) Paginate(ctx context.Context, pattern string, pageSize int, op
 	if !strings.Contains(pattern, "*") {
 		pattern += "*"
 	}
+	opt := utils.ApplyOptions[option](opts...)
+
+	cursor := uint64(0)
+	if opt.cursor != nil {
+		cursor = cast.ToUint64(opt.cursor)
+	}
+
 	return &redisPagination{
-		abstractPagination: newAbstractPagination(ctx, pageSize, utils.ApplyOptions[option](opts...)),
+		abstractPagination: newAbstractPagination(ctx, pageSize, opt),
 		kv:                 r,
 		first:              true,
 		pattern:            pattern,
-		cursor:             0,
+		cursor:             cursor,
 	}
 }
 
@@ -344,4 +351,11 @@ func (r *redisPagination) Next() (kvs KeyValues, err error) {
 		kvs = append(kvs, &KeyValue{Key: keys[i], Val: vals[i], Ver: newDefaultVersion()})
 	}
 	return
+}
+
+func (r *redisPagination) Cursor() any {
+	if r == nil {
+		return nil
+	}
+	return r.cursor
 }

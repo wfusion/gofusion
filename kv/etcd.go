@@ -136,11 +136,15 @@ func (e *etcdKV) Paginate(ctx context.Context, pattern string, pageSize int, opt
 	if opt.withConsistency {
 		ctx = clientv3.WithRequireLeader(ctx)
 	}
+	key := pattern
+	if fromKey := cast.ToString(opt.cursor); fromKey != "" {
+		key = fromKey + "\x00"
+	}
 	return &etcdPagination{
 		abstractPagination: newAbstractPagination(ctx, pageSize, opt),
 		kv:                 e,
 		more:               true,
-		key:                pattern,
+		key:                key,
 		opts:               eopts,
 	}
 }
@@ -316,6 +320,13 @@ func (e *etcdPagination) SetPageSize(pageSize int) {
 
 	e.abstractPagination.SetPageSize(pageSize)
 	e.opts = append(e.opts, clientv3.WithLimit(int64(pageSize)))
+}
+
+func (e *etcdPagination) Cursor() any {
+	if e == nil {
+		return nil
+	}
+	return e.key
 }
 
 func parseEtcdConfig(ctx context.Context, conf *Conf, opt *config.InitOption) (cfg *clientv3.Config) {

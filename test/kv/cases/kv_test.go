@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/spf13/cast"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/wfusion/gofusion/common/constant"
@@ -66,6 +67,7 @@ func (t *KV) defaultTest(name, key, sep string, expired, sleepTime time.Duration
 	t.Run(naming("KeysOnly"), func() { t.testKeysOnly(name, key+"keysonly", sep) })
 	t.Run(naming("Paginate"), func() { t.testPaginate(name, key+"paginate", sep) })
 	t.Run(naming("SetPageSize"), func() { t.testPaginateSetPageSize(name, key+"setpagesize", sep) })
+	t.Run(naming("FromKey"), func() { t.testPaginateFromKey(name, key+"fromkey", sep) })
 }
 
 func (t *KV) testPut(name, key string) {
@@ -426,5 +428,52 @@ func (t *KV) testPaginateSetPageSize(name, key, sep string) {
 			expect.Remove(item.Key)
 		}
 		t.Zero(expect.Size())
+	})
+}
+
+func (t *KV) testPaginateFromKey(name, key, sep string) {
+	t.Catch(func() {
+		// Given
+		val := "this is a value"
+		ctx := context.Background()
+		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+
+		t.NoError(cli.Put(ctx, key, val).Err())
+		key1 := key + sep + "node1"
+		t.NoError(cli.Put(ctx, key1, val).Err())
+		key2 := key1 + sep + "node2"
+		t.NoError(cli.Put(ctx, key2, val).Err())
+		key3 := key + sep + "node3"
+		t.NoError(cli.Put(ctx, key3, val).Err())
+		defer func() { t.NoError(cli.Del(ctx, key, kv.Prefix()).Err()) }()
+
+		expect := utils.NewSet([]string{key, key1, key2, key3}...)
+
+		// When
+		iter := cli.Paginate(ctx, key, 1)
+		_, err := iter.Next()
+		t.NoError(err)
+
+		cursor := iter.Cursor()
+		iter = cli.Paginate(ctx, key, 1, kv.FromCursor(cast.ToString(cursor)))
+
+		// Then
+		var kvs kv.KeyValues
+		for iter.More() {
+			result, err := iter.Next()
+			t.NoError(err)
+			if err != nil {
+				return
+			}
+			kvs = append(kvs, result...)
+		}
+
+		t.Len(kvs, 3)
+		for _, item := range kvs {
+			t.True(expect.Contains(item.Key))
+			t.EqualValues(val, item.Val)
+			expect.Remove(item.Key)
+		}
+		t.EqualValues(expect.Items(), []string{key})
 	})
 }

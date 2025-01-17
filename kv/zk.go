@@ -252,11 +252,17 @@ func (z *zkKV) Has(ctx context.Context, key string, opts ...utils.OptionExtender
 }
 
 func (z *zkKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {
+	opt := utils.ApplyOptions[option](opts...)
+	cursor := 0
+	if opt.cursor != nil {
+		cursor = cast.ToInt(opt.cursor)
+	}
 	return &zkPagination{
-		abstractPagination: newAbstractPagination(ctx, pageSize, utils.ApplyOptions[option](opts...)),
+		abstractPagination: newAbstractPagination(ctx, pageSize, opt),
 		kv:                 z,
+		first:              true,
 		keys:               []string{pattern},
-		cursor:             0,
+		cursor:             cursor,
 	}
 }
 
@@ -398,6 +404,7 @@ type zkPagination struct {
 	*abstractPagination
 	kv *zkKV
 
+	first  bool
 	keys   []string
 	cursor int
 }
@@ -406,7 +413,7 @@ func (z *zkPagination) More() bool {
 	if z == nil {
 		return false
 	}
-	return len(z.keys) > z.cursor
+	return z.first || len(z.keys) > z.cursor
 }
 
 func (z *zkPagination) Next() (kvs KeyValues, err error) {
@@ -414,12 +421,39 @@ func (z *zkPagination) Next() (kvs KeyValues, err error) {
 		return nil, ErrNilValue
 	}
 
+	// move the cursor to turn the page for FromKey feature
+	var children []string
+	if z.first && z.cursor >= len(z.keys) {
+		for i := 0; i < len(z.keys) && z.cursor >= len(z.keys); i++ {
+			select {
+			case <-z.ctx.Done():
+				return kvs, z.ctx.Err()
+			default:
+			}
+
+			parent := z.keys[i]
+			if z.opt.withConsistency {
+				if _, err = z.kv.cli.Sync(parent); err != nil {
+					return
+				}
+			}
+
+			children, _, err = z.kv.cli.Children(parent)
+			if err != nil {
+				return nil, err
+			}
+			for _, child := range children {
+				z.keys = append(z.keys, parent+constant.Slash+child)
+			}
+		}
+	}
+
+	z.first = false
 	kvs = make(KeyValues, 0, z.count)
 
 	var (
-		val      []byte
-		stat     *zk.Stat
-		children []string
+		val  []byte
+		stat *zk.Stat
 	)
 	for cnt := 0; cnt < z.count && z.cursor < len(z.keys); cnt++ {
 		select {
@@ -455,6 +489,13 @@ func (z *zkPagination) Next() (kvs KeyValues, err error) {
 		}
 	}
 	return
+}
+
+func (z *zkPagination) Cursor() any {
+	if z == nil {
+		return nil
+	}
+	return z.cursor
 }
 
 func (z *zkVersion) Version() *big.Int {

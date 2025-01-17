@@ -47,6 +47,7 @@ type Paginated interface {
 	More() bool
 	Next() (KeyValues, error)
 	SetPageSize(pageSize int)
+	Cursor() any
 }
 
 type Put interface {
@@ -75,11 +76,18 @@ type option struct {
 	withPrefix      bool
 	withKeysOnly    bool
 	withConsistency bool
+	cursor          any
 }
 
 func Prefix() utils.OptionFunc[option] {
 	return func(o *option) {
 		o.withPrefix = true
+	}
+}
+
+func FromCursor[T int | int64 | uint | uint64 | string](cursor T) utils.OptionFunc[option] {
+	return func(o *option) {
+		o.cursor = cursor
 	}
 }
 
