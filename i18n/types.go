@@ -8,6 +8,9 @@ import (
 
 type Localizable[T comparable] interface {
 	AddMessages(code T, trans map[language.Tag]*Message, opts ...utils.OptionExtender) Localizable[T]
+	AddMessageFile(path string) (err error)
+	AddMessageBytes(buf []byte, path string) error
+
 	Localize(code T, opts ...utils.OptionExtender) (message string)
 }
 

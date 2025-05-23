@@ -59,6 +59,16 @@ func Var(vars ...string) utils.OptionFunc[addMessagesOption] {
 	}
 }
 
+func (i *bundle[T]) AddMessageFile(path string) (err error) {
+	_, err = i.bundle.LoadMessageFile(path)
+	return
+}
+
+func (i *bundle[T]) AddMessageBytes(buf []byte, path string) (err error) {
+	_, err = i.bundle.ParseMessageFileBytes(buf, path)
+	return
+}
+
 func (i *bundle[T]) AddMessages(code T, trans map[language.Tag]*Message, opts ...utils.OptionExtender) Localizable[T] {
 	i.checkDuplicated(code, trans)
 

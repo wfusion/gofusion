@@ -106,7 +106,6 @@ type clientConf struct {
 }
 
 // metricsConf http metrics configure
-
 type metricsConf struct {
 	HeaderLabels []string `yaml:"header_labels" json:"header_labels" toml:"header_labels"`
 }
