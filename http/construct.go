@@ -162,14 +162,22 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 
 func addI18n(conf Conf, opt *config.InitOption) func() {
 	bundle := i18n.NewBundle[Errcode](i18n.DefaultLang(i18n.AppName(opt.AppName)))
+	errBundle := i18n.NewBundle[Error](i18n.DefaultLang(i18n.AppName(opt.AppName)))
 	if I18n == nil {
 		I18n = bundle
+	}
+	if I18nErr == nil {
+		I18nErr = errBundle
 	}
 	if i18ns == nil {
 		i18ns = make(map[string]i18n.Localizable[Errcode])
 	}
+	if i18nErrs == nil {
+		i18nErrs = make(map[string]i18n.Localizable[Error])
+	}
 
 	i18ns[opt.AppName] = bundle
+	i18nErrs[opt.AppName] = errBundle
 
 	// initialize http internal error
 	bundle.AddMessages(Errcode(conf.ErrorCode), map[language.Tag]*i18n.Message{
@@ -179,6 +187,7 @@ func addI18n(conf Conf, opt *config.InitOption) func() {
 
 	if opt.DI != nil {
 		opt.DI.MustProvide(func() i18n.Localizable[Errcode] { return bundle })
+		opt.DI.MustProvide(func() i18n.Localizable[Error] { return errBundle })
 	}
 
 	errParam = Errcode(conf.ErrorCode)
@@ -190,9 +199,11 @@ func addI18n(conf Conf, opt *config.InitOption) func() {
 		defer locker.Unlock()
 		if i18ns != nil {
 			delete(i18ns, opt.AppName)
+			delete(i18nErrs, opt.AppName)
 		}
 		if opt.AppName == "" {
 			I18n = nil
+			I18nErr = nil
 		}
 	}
 }

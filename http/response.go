@@ -40,6 +40,10 @@ func RspError(c *gin.Context, data any, page, count int, msg string, err error, 
 	switch e := err.(type) {
 	case Errcode:
 		code, msg = int(e), e.Error()
+	case *Error:
+		code, msg = int(e.Code), e.Error()
+	case Error:
+		code, msg = int(e.Code), e.Error()
 	case *bizErr:
 		code, msg = int(e.code), e.Error()
 	default:
@@ -90,14 +94,23 @@ func rspSuccess(c *gin.Context, code int, data any, page, count int, msg string)
 	})
 }
 
-func rspError[T constraint.Integer](c *gin.Context, appName string, code T, data any, page, count int, msg string) {
+func rspError[T constraint.Integer | Error](c *gin.Context, appName string, code T, data any, page, count int, msg string) {
 	status := c.Writer.Status()
 	if status <= 0 {
 		status = http.StatusBadRequest
 	}
 
 	if msg == "" {
-		msg = Localizable(AppName(appName)).Localize(Errcode(code), i18n.Langs(langs(c)))
+		switch realCode := any(code).(type) {
+		case Errcode:
+			msg = Localizable(AppName(appName)).Localize(realCode, i18n.Langs(langs(c)))
+		case *Error:
+			msg = LocalizableError(AppName(appName)).Localize(*realCode, i18n.Langs(langs(c)))
+		case Error:
+			msg = LocalizableError(AppName(appName)).Localize(realCode, i18n.Langs(langs(c)))
+		default:
+			msg = Localizable(AppName(appName)).Localize(Errcode(cast.ToInt(realCode)), i18n.Langs(langs(c)))
+		}
 	}
 	var (
 		pagePtr  *int

@@ -24,6 +24,9 @@ var (
 	I18n  i18n.Localizable[Errcode]
 	i18ns map[string]i18n.Localizable[Errcode]
 
+	I18nErr  i18n.Localizable[Error]
+	i18nErrs map[string]i18n.Localizable[Error]
+
 	ginBindingI18nOnce       = new(sync.Once)
 	ginBindingI18nTranslator ut.Translator
 )
@@ -34,6 +37,18 @@ func Localizable(opts ...utils.OptionExtender) i18n.Localizable[Errcode] {
 	locker.RLock()
 	defer locker.RUnlock()
 	i, ok := i18ns[opt.appName]
+	if !ok {
+		panic(errors.Errorf("http i18n not founc: %s", opt.appName))
+	}
+	return i
+}
+
+func LocalizableError(opts ...utils.OptionExtender) i18n.Localizable[Error] {
+	opt := utils.ApplyOptions[useOption](opts...)
+
+	locker.RLock()
+	defer locker.RUnlock()
+	i, ok := i18nErrs[opt.appName]
 	if !ok {
 		panic(errors.Errorf("http i18n not founc: %s", opt.appName))
 	}
