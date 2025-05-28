@@ -31,7 +31,7 @@ type DalInterface[T any, TS ~[]*T] interface {
 	InsertInBatches(ctx context.Context, modList TS, batchSize int, opts ...utils.OptionExtender) error
 	Save(ctx context.Context, mod any, opts ...utils.OptionExtender) error
 	Update(ctx context.Context, column string, value any, query any, args ...any) (int64, error)
-	Updates(ctx context.Context, columns map[string]any, query any, args ...any) (int64, error)
+	Updates(ctx context.Context, updates, query any, args ...any) (int64, error)
 	Delete(ctx context.Context, query any, args ...any) (int64, error)
 	FirstOrCreate(ctx context.Context, mod *T, conds ...any) (int64, error)
 	Transaction(ctx context.Context, fc func(tx context.Context) error, opts ...utils.OptionExtender) error
@@ -226,11 +226,11 @@ func (d *dal[T, TS]) Update(ctx context.Context, column string, value any,
 	return u.RowsAffected, u.Error
 }
 
-func (d *dal[T, TS]) Updates(ctx context.Context, columns map[string]any,
+func (d *dal[T, TS]) Updates(ctx context.Context, updates any,
 	query any, args ...any) (int64, error) {
 	o, args := d.parseOptionFromArgs(args...)
 	ctx = context.WithValue(ctx, fusCtx.KeyDALOption, o)
-	u := d.WriteDB(ctx).Clauses(o.clauses...).Where(query, args...).Updates(columns)
+	u := d.WriteDB(ctx).Clauses(o.clauses...).Where(query, args...).Updates(updates)
 	return u.RowsAffected, u.Error
 }
 
