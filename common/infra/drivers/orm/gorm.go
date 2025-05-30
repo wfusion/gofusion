@@ -130,6 +130,7 @@ func (g *gormDriver) open(driver driver, dialect string, opt *gormDriverOption) 
 	}
 
 	db, err = gorm.Open(dialector, &gorm.Config{
+		PrepareStmt:                              true,
 		DisableForeignKeyConstraintWhenMigrating: true,
 	})
 	return
