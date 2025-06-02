@@ -51,7 +51,7 @@ type enumString[T comparable, TS ~[]T] struct {
 func (e *enumString[T, TS]) Enum(s string) TS {
 	s = e.caseSensitivityConv(s)
 	if v, ok := e.reversedMapping[s]; ok {
-		return SliceConvert(v, e.elemSliceType).(TS)
+		return TS(SliceConvert(v, e.elemSliceType))
 	}
 	return nil
 }
