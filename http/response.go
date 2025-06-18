@@ -45,7 +45,11 @@ func RspError(c *gin.Context, data any, page, count int, msg string, err error, 
 	case Error:
 		code, msg = int(e.Code), e.Error()
 	case *bizErr:
-		code, msg = int(e.code), e.Error()
+		if e.err != nil {
+			code, msg = int(e.err.Code), e.Error()
+		} else {
+			code, msg = int(e.code), e.Error()
+		}
 	default:
 		code, msg = int(errParam), e.Error()
 	}

@@ -696,7 +696,11 @@ func parseRspError(rspVals []reflect.Value, err error) (code int, data any, page
 	case Errcode:
 		code, msg = int(e), e.Error()
 	case *bizErr:
-		code, msg = int(e.code), e.Error()
+		if e.err != nil {
+			code, msg = int(e.err.Code), e.Error()
+		} else {
+			code, msg = int(e.code), e.Error()
+		}
 	default:
 		code, msg = int(errParam), e.Error()
 	}
