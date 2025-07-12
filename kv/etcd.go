@@ -149,6 +149,14 @@ func (e *etcdKV) Paginate(ctx context.Context, pattern string, pageSize int, opt
 	}
 }
 
+func (e *etcdKV) Transaction(ctx context.Context) {
+	e.cli.Txn(ctx).
+		If(clientv3.Compare(clientv3.Version("123"), "=", 123)).
+		Then(clientv3.OpPut("123", "true")).
+		Else(clientv3.OpDelete("123")).
+		Commit()
+}
+
 func (e *etcdKV) getProxy() any { return e.cli }
 func (e *etcdKV) close() error  { return e.cli.Close() }
 

@@ -265,6 +265,26 @@ func (z *zkKV) Paginate(ctx context.Context, pattern string, pageSize int, opts 
 	}
 }
 
+func (z *zkKV) Transaction(ctx context.Context) {
+	multi := []any{
+		&zk.CreateRequest{
+			Path:  "/",
+			Flags: zk.FlagEphemeral,
+		},
+		&zk.SetDataRequest{
+			Path: "/data",
+			Data: []byte("data"),
+		},
+		&zk.DeleteRequest{
+			Path: "/data",
+		},
+		&zk.CheckVersionRequest{
+			Path: "/data",
+		},
+	}
+	z.cli.Multi(multi...)
+}
+
 func (z *zkKV) getProxy() any      { return z.cli }
 func (z *zkKV) close() (err error) { z.cli.Close(); return }
 
