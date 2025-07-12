@@ -68,7 +68,7 @@ func logging(rootCtx context.Context, c *gin.Context, logger resty.Logger, rawUR
 		switch {
 		case status < http.StatusBadRequest:
 			logger.Debugf(msg, ctx, fields)
-		case status >= http.StatusBadRequest && status < http.StatusInternalServerError:
+		case status < http.StatusInternalServerError:
 			logger.Warnf(msg, ctx, fields)
 		default:
 			logger.Errorf(msg, ctx, fields)
