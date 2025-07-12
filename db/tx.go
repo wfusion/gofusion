@@ -19,7 +19,7 @@ func TxUse(name string) utils.OptionFunc[txOption] {
 	}
 }
 
-// WithinTx 事务内执行 DAL 操作
+// WithinTx Performs A Dal operation within a transaction
 func WithinTx(ctx context.Context, cb func(ctx context.Context) (err error), opts ...utils.OptionExtender) error {
 	var db *DB
 

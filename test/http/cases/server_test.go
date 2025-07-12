@@ -52,7 +52,6 @@ func (t *Server) TestStartAndStop() {
 
 		time.Sleep(time.Second)
 
-		// 发送中断信号
 		process, err := os.FindProcess(os.Getpid())
 		t.Require().NoError(err)
 		t.Require().NoError(process.Signal(os.Interrupt))
