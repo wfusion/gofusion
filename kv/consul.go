@@ -187,6 +187,36 @@ func (c *consulKV) Paginate(ctx context.Context, pattern string, pageSize int, o
 	}
 }
 
+func (c *consulKV) Transaction(ctx context.Context) {
+	c.cli.Txn().Txn(api.TxnOps{
+		&api.TxnOp{
+			KV: &api.KVTxnOp{
+				Verb:    api.KVLock,
+				Key:     "test/lock",
+				Session: "adf4238a-882b-9ddc-4a9d-5b6758e4159e",
+				Value:   []byte("hello"),
+			},
+		},
+		&api.TxnOp{
+			KV: &api.KVTxnOp{
+				Verb: api.KVGet,
+				Key:  "another/key",
+			},
+		},
+		&api.TxnOp{
+			Check: &api.CheckTxnOp{
+				Verb: api.CheckSet,
+				Check: api.HealthCheck{
+					Node:    "foo",
+					CheckID: "redis:a",
+					Name:    "Redis Health Check",
+					Status:  "passing",
+				},
+			},
+		},
+	}, nil)
+}
+
 func (c *consulKV) getProxy() any { return c.cli }
 func (c *consulKV) close() error  { return nil }
 

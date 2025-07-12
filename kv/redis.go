@@ -202,6 +202,12 @@ func (r *redisKV) Paginate(ctx context.Context, pattern string, pageSize int, op
 	}
 }
 
+func (r *redisKV) Transaction(ctx context.Context) {
+	r.cli.GetProxy().TxPipelined(ctx, func(p rdsDrv.Pipeliner) error {
+		return nil
+	})
+}
+
 func (r *redisKV) getProxy() any { return r.cli }
 func (r *redisKV) close() error  { return r.cli.Close() }
 
