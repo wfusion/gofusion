@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/wfusion/gofusion/common/utils"
 )
 
 const (
@@ -298,8 +300,6 @@ func (w *worker) maskDeidentifyImpl(in string) (string, error) {
 	return out, err
 }
 
-// private func
-
 // DIYMaskWorker stores maskFuc and maskName
 type DIYMaskWorker struct {
 	maskFunc func(string) (string, error)
@@ -335,107 +335,101 @@ func (e *Engine) NewDIYMaskWorker(maskName string, maskFunc func(string) (string
 }
 
 // maskStructImpl will mask a strcut object by tag mask info
-// 根据tag mask里定义的脱敏规则对struct object直接脱敏, 会修改obj本身，传入指针，返回指针
-func (e *Engine) maskStructImpl(inPtr any, level int) (any, error) {
-	//log.Errorf("[mask] level:%d, maskStructImpl: %+v", level, inPtr)
+// Directly desensitizing a struct Object according to
+// the desensitization rules defined in the tag mask modifies the OBJ itself,
+// passing in a pointer, and returning a pointer
+func (e *Engine) maskStructImpl(in any, level int) (result any, err error) {
 	if level <= 0 { // call deep check
-		//log.Errorf("[mask] !call deep loop detected!")
-		//log.Errorf("obj: %+v", inPtr)
-		return inPtr, nil
+		return in, nil
 	}
-	valPtr := reflect.ValueOf(inPtr)
+	valPtr := reflect.ValueOf(in)
 	if valPtr.Kind() != reflect.Ptr || valPtr.IsNil() || !valPtr.IsValid() || valPtr.IsZero() {
-		return inPtr, ErrMaskStructInput
+		return in, ErrMaskStructInput
 	}
-	val := reflect.Indirect(valPtr)
-	var retErr error
-	if val.CanSet() {
-		if val.Kind() == reflect.Struct {
-			sz := val.NumField()
-			if sz > defMaxInput {
-				return inPtr, fmt.Errorf("defMaxInput: %d , %w", defMaxInput, ErrMaxInputLimit)
-			}
-			for i := 0; i < sz; i++ {
-				valField := val.Field(i)
-				typeField := val.Type().Field(i)
-				inStr := valField.String()
-				outStr := inStr // default is orignal str
-				methodName, ok := typeField.Tag.Lookup("mask")
-				if !ok { // mask tag not found
-					continue
+	val := utils.IndirectValue(valPtr)
+	if !val.CanSet() || val.Kind() != reflect.Struct {
+		return in, nil
+	}
+
+	sz := val.NumField()
+	if sz > defMaxInput {
+		return in, fmt.Errorf("defMaxInput: %d , %w", defMaxInput, ErrMaxInputLimit)
+	}
+
+	for i := 0; i < sz; i++ {
+		valField := val.Field(i)
+		typeField := val.Type().Field(i)
+		inStr := valField.String()
+		outStr := inStr // default is orignal str
+		methodName, ok := typeField.Tag.Lookup("mask")
+		if !ok || !valField.CanSet() { // mask tag not found
+			continue
+		}
+		switch valField.Kind() {
+		case reflect.String:
+			if len(methodName) > 0 {
+				if maskWorker, ok := e.maskerMap[methodName]; ok {
+					if masked, err := maskWorker.Mask(inStr); err == nil {
+						outStr = masked
+						valField.SetString(outStr)
+					}
 				}
-				if valField.CanSet() {
-					switch valField.Kind() {
-					case reflect.String:
-						if len(methodName) > 0 {
-							if maskWorker, ok := e.maskerMap[methodName]; ok {
-								if masked, err := maskWorker.Mask(inStr); err == nil {
-									outStr = masked
-									valField.SetString(outStr)
-								}
-							}
-						}
-					case reflect.Struct:
-						if valField.CanAddr() {
-							//log.Errorf("[mask] Struct, %s", typeField.Name)
-							_, retErr = e.maskStructImpl(valField.Addr().Interface(), level-1)
-						}
-					case reflect.Ptr:
-						if !valField.IsNil() {
-							//log.Errorf("[mask] Ptr, %s", typeField.Name)
-							_, retErr = e.maskStructImpl(valField.Interface(), level-1)
-						}
-					case reflect.Interface:
-						if valField.CanInterface() {
-							valInterFace := valField.Interface()
-							if inStr, ok := valInterFace.(string); ok {
-								outStr := inStr
-								if len(methodName) > 0 {
-									if maskWorker, ok := e.maskerMap[methodName]; ok {
-										if masked, err := maskWorker.Mask(inStr); err == nil {
-											outStr = masked
-											if valField.CanSet() {
-												valField.Set(reflect.ValueOf(outStr))
-											}
-										}
-									}
-								}
-							}
-						}
-					case reflect.Slice, reflect.Array:
-						length := valField.Len()
-						for i := 0; i < length; i++ {
-							item := valField.Index(i)
-							if item.Kind() == reflect.String {
-								inStr := item.String()
-								outStr := inStr
-								// use parent mask info
-								if len(methodName) > 0 {
-									if maskWorker, ok := e.maskerMap[methodName]; ok {
-										if masked, err := maskWorker.Mask(inStr); err == nil {
-											outStr = masked
-											if item.CanSet() {
-												item.SetString(outStr)
-											}
-										}
-									}
-								}
-							} else if item.Kind() == reflect.Ptr {
-								if !item.IsNil() {
-									//log.Errorf("[mask] Ptr, %s", item.Type().Name())
-									_, retErr = e.maskStructImpl(item.Interface(), level-1)
-								}
-							} else if item.Kind() == reflect.Struct {
-								if item.CanAddr() {
-									//log.Errorf("[mask] Struct, %s", item.Type().Name())
-									_, retErr = e.maskStructImpl(item.Addr().Interface(), level-1)
+			}
+		case reflect.Struct:
+			if valField.CanAddr() {
+				_, err = e.maskStructImpl(valField.Addr().Interface(), level-1)
+			}
+		case reflect.Ptr:
+			if !valField.IsNil() {
+				_, err = e.maskStructImpl(valField.Interface(), level-1)
+			}
+		case reflect.Interface:
+			if valField.CanInterface() {
+				valInterFace := valField.Interface()
+				if inStr, ok := valInterFace.(string); ok {
+					outStr := inStr
+					if len(methodName) > 0 {
+						if maskWorker, ok := e.maskerMap[methodName]; ok {
+							if masked, err := maskWorker.Mask(inStr); err == nil {
+								outStr = masked
+								if valField.CanSet() {
+									valField.Set(reflect.ValueOf(outStr))
 								}
 							}
 						}
 					}
 				}
 			}
+		case reflect.Slice, reflect.Array:
+			length := valField.Len()
+			for i := 0; i < length; i++ {
+				item := valField.Index(i)
+				if item.Kind() == reflect.String {
+					inStr := item.String()
+					outStr := inStr
+					// use parent mask info
+					if len(methodName) > 0 {
+						if maskWorker, ok := e.maskerMap[methodName]; ok {
+							if masked, err := maskWorker.Mask(inStr); err == nil {
+								outStr = masked
+								if item.CanSet() {
+									item.SetString(outStr)
+								}
+							}
+						}
+					}
+				} else if item.Kind() == reflect.Ptr {
+					if !item.IsNil() {
+						_, err = e.maskStructImpl(item.Interface(), level-1)
+					}
+				} else if item.Kind() == reflect.Struct {
+					if item.CanAddr() {
+						_, err = e.maskStructImpl(item.Addr().Interface(), level-1)
+					}
+				}
+			}
 		}
 	}
-	return inPtr, retErr
+
+	return in, err
 }

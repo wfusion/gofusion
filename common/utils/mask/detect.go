@@ -120,15 +120,11 @@ func (d *detector) DetectBytes(inputBytes []byte) (DetectResultList, error) {
 	for _, reObj := range d.VReg {
 		if ret, err := d.regexDetectBytes(reObj, inputBytes); err == nil {
 			results = append(results, ret...)
-		} else {
-			//log.Errorf(err.Error())
 		}
 	}
 	for _, item := range d.VDict {
 		if ret, err := d.dictDetectBytes([]byte(item), inputBytes); err == nil {
 			results = append(results, ret...)
-		} else {
-			//log.Errorf(err.Error())
 		}
 	}
 	results = d.filter(results)
@@ -283,8 +279,6 @@ func (d *detector) preCompile(reList []string) []*regexp.Regexp {
 	for _, reStr := range reList {
 		if re, err := regexp.Compile(reStr); err == nil {
 			list = append(list, re)
-		} else {
-			//log.Errorf("Regex %s ,error: %w", reStr, err)
 		}
 	}
 	return list

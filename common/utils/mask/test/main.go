@@ -9,7 +9,7 @@ import (
 
 func main() {
 	caller := "replace.your.caller"
-	// remove NewEngein() outside for loop, and one Engine Object one thread/goroutin
+	// remove NewEngine() outside for loop, and one Engine Object one thread/goroutin
 	if eng, err := mask.NewEngine(caller); err == nil {
 		eng.ApplyConfig(defaultCfg)
 		fmt.Printf("DLP %s Demo:\n\n", eng.GetVersion())
@@ -76,7 +76,8 @@ mac地址 06-06-06-aa-bb-cc
 			fmt.Printf("\toutStr: %s\n", outStr)
 			fmt.Println()
 		}
-		// 自定义脱敏，邮箱用户名保留首尾各一个字符，保留所有域名
+		// Custom desensitization, Mailbox user name to retain the first and
+		// last one character, retain all domain names
 		eng.RegisterMasker("EmailMaskRule02", func(in string) (string, error) {
 			list := strings.Split(in, "@")
 			if len(list) >= 2 {
@@ -111,7 +112,8 @@ mac地址 06-06-06-aa-bb-cc
 			fmt.Println()
 		}
 		type EmailType string
-		// 需要递归的结构体，需要填 `mask:"DEEP"` 才会递归脱敏
+		// For structures that require recursion,
+		// you need to fill in 'mask: “Deep”' to recursively desensitize
 		type Foo struct {
 			Email         EmailType `mask:"EMAIL"`
 			PhoneNumber   string    `mask:"CHINAPHONE"`
@@ -147,7 +149,7 @@ mac地址 06-06-06-aa-bb-cc
 		inPtr := &inObj
 		inObj.NULLPtr = inPtr
 		fmt.Printf("\t11. MaskStruct( inPtr: %+v, Extinfo: %+v)\n", inPtr, *(inPtr.Extinfo))
-		// MaskStruct 参数必须是pointer, 才能修改struct 内部元素
+		// The MaskStruct parameter must be a pointer to modify the internal elements of the struct
 		if outPtr, err := eng.MaskStruct(inPtr); err == nil {
 			fmt.Printf("\toutObj: %+v, Extinfo:%+v\n", outPtr, inObj.Extinfo)
 			fmt.Printf("\t\t EmailPtrSlice:\n")
@@ -158,7 +160,6 @@ mac地址 06-06-06-aa-bb-cc
 		} else {
 			fmt.Println(err.Error())
 		}
-		//fmt.Println(eng.GetDefaultConf())
 		eng.Close()
 	} else {
 		fmt.Println("[dlp] NewEngine error: ", err.Error())

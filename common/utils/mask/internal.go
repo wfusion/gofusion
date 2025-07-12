@@ -107,9 +107,7 @@ func (e *Engine) loadMaskWorker() error {
 	for _, rule := range maskRuleList {
 		if obj, err := newMaskWorker(rule, e); err == nil {
 			ruleName := obj.GetRuleName()
-			if _, ok := e.maskerMap[ruleName]; ok {
-				//log.Errorf("ruleName: %s, error: %s", old.GetRuleName(), ErrLoadMaskNameConflict.Error())
-			} else {
+			if _, ok := e.maskerMap[ruleName]; !ok {
 				e.maskerMap[ruleName] = obj
 			}
 		}

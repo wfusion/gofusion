@@ -202,20 +202,20 @@ func (e *Engine) Mask(inputText string, methodName string) (outputText string, e
 }
 
 // MaskStruct will mask a struct object by tag mask info
-func (e *Engine) MaskStruct(inPtr any) (outPtr any, retErr error) {
-	outPtr = inPtr               // fail back to inPtr
-	retErr = ErrMaskStructOutput // default return err if panic
+func (e *Engine) MaskStruct(in any) (out any, err error) {
+	out = in                  // fail back to in
+	err = ErrMaskStructOutput // default return err if panic
 	defer e.recoveryImpl()
 	if !e.hasConfigured() { // not configed
 		panic(ErrHasNotConfigured)
 	}
 	if e.hasClosed() {
-		return inPtr, ErrProcessAfterClose
+		return in, ErrProcessAfterClose
 	}
-	if inPtr == nil {
+	if in == nil {
 		return nil, ErrMaskStructInput
 	}
-	outPtr, retErr = e.maskStructImpl(inPtr, defMaxCallDeep)
+	out, err = e.maskStructImpl(in, defMaxCallDeep)
 	return
 }
 

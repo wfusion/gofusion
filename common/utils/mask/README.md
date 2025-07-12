@@ -28,7 +28,7 @@ godlp 能够广泛支持结构化（JSON数据、KV数据、golang map）和非�
 go get github.com/bytedance/godlp@latest
 ```
 
-示例代码在 `mainrun/mainrun.go` 文件中
+示例代码在 `test/main.go` 文件中
 
 在godlp代码根目录下输入以下命令可以进行编译和运行
 

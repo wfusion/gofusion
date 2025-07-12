@@ -14,18 +14,19 @@ type RuleTestItem struct {
 	In     string `yaml:"In"`
 	Out    string `yaml:"Out"`
 }
+
 type RuleTest struct {
 	Date     string         `yaml:"Date"`
 	TestList []RuleTestItem `yaml:"TestList"`
 }
 
-// public func
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
 	shutdown()
 	os.Exit(code)
 }
+
 func TestRule(t *testing.T) {
 	testPath := "./rule_test.yml"
 	if buf, err := ioutil.ReadFile(testPath); err == nil {
@@ -134,8 +135,6 @@ func TestDeidentifyJSONByResult(t *testing.T) {
 		t.Error("incorrect output")
 	}
 }
-
-// private func
 
 func setup() {
 	runtime.GOMAXPROCS(1)
