@@ -4,28 +4,33 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"syscall"
 
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
-	"github.com/wfusion/gofusion/common/utils/serialize/json"
+	"github.com/spf13/cast"
+	"github.com/spf13/pflag"
+	"github.com/wfusion/gofusion/common/env"
 
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/clone"
+	"github.com/wfusion/gofusion/common/utils/serialize/json"
 )
 
 var (
 	Registry = &registry{di: di.Dig, app: di.Fx, initOnce: new(sync.Once), closeCh: make(chan struct{})}
 
-	initLocker   sync.RWMutex
-	registryLock sync.RWMutex
-	registryMap  = map[string]Configurable{"": Registry}
+	initLocker     sync.RWMutex
+	registryLocker sync.RWMutex
+	registryMap    = map[string]Configurable{"": Registry}
 )
 
 const (
@@ -33,8 +38,8 @@ const (
 )
 
 func Use(appName string, opts ...utils.OptionExtender) Configurable {
-	registryLock.RLock()
-	defer registryLock.RUnlock()
+	registryLocker.RLock()
+	defer registryLocker.RUnlock()
 	cfg, ok := registryMap[appName]
 	if !ok {
 		panic(errors.Errorf("app register config not found: %s", appName))
@@ -43,18 +48,20 @@ func Use(appName string, opts ...utils.OptionExtender) Configurable {
 }
 
 func New(appName string) Configurable {
-	registryLock.Lock()
-	defer registryLock.Unlock()
+	registryLocker.Lock()
+	defer registryLocker.Unlock()
 	if reg, ok := registryMap[appName]; ok {
 		return reg
 	}
 
 	reg := &registry{
-		di:       di.NewDI(),
-		app:      di.New(),
-		appName:  appName,
-		initOnce: new(sync.Once),
-		closeCh:  make(chan struct{}),
+		di:                   di.NewDI(),
+		app:                  di.New(),
+		appName:              appName,
+		initOnce:             new(sync.Once),
+		closeCh:              make(chan struct{}),
+		businessConfigValue:  new(atomic.Value),
+		componentConfigValue: new(atomic.Value),
 	}
 	registryMap[appName] = reg
 	return reg
@@ -70,10 +77,10 @@ type registry struct {
 	initWg             sync.WaitGroup
 	closeCh            chan struct{}
 
-	componentList      []*Component
-	businessConfig     any
-	businessConfigType reflect.Type
-	componentConfigs   any
+	componentList        []*Component
+	businessConfigValue  *atomic.Value
+	businessConfigType   reflect.Type
+	componentConfigValue *atomic.Value
 }
 
 type initOption struct {
@@ -124,16 +131,16 @@ func (r *registry) Init(businessConfig any, opts ...utils.OptionExtender) (grace
 		}
 
 		// load config function
-		loadFn := loadConfig
+		loadFn := loadConfigFromFiles
 		if opt.customLoadFunc != nil {
 			loadFn = opt.customLoadFunc
 		}
 
-		gracefully = r.initByConfigFile(parent, businessConfig, loadFn, opts...)
+		gracefully = r.initAllConfig(parent, businessConfig, loadFn, opts...)
 	})
 	if gracefully == nil {
 		// give back
-		reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(r.businessConfig))
+		reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(r.businessConfigValue.Load()))
 
 		once := new(sync.Once)
 		gracefully = func() {
@@ -214,12 +221,12 @@ func (r *registry) LoadComponentConfig(name string, componentConfig any) (err er
 	}
 
 	// load config
-	if r.componentConfigs == nil {
+	if r.componentConfigValue == nil {
 		return
 	}
-	componentConfigsValue := utils.IndirectValue(reflect.ValueOf(clone.Clone(r.componentConfigs)))
+	componentConfigsValue := utils.IndirectValue(reflect.ValueOf(clone.Clone(r.componentConfigValue.Load())))
 	if !componentConfigsValue.IsValid() {
-		return errors.Errorf("component configs not initialize now [%s]", name)
+		return errors.Errorf("component appConfigs not initialize now [%s]", name)
 	}
 	componentConfigValue := componentConfigsValue.FieldByName(componentConfigFieldName).FieldByName(name)
 
@@ -250,16 +257,16 @@ func (r *registry) GetAllConfigs() any {
 	val := reflect.New(r.makeAllConfigStruct())
 	derefVal := reflect.Indirect(val)
 
-	// business configs
-	businessConfigsVal := reflect.Indirect(reflect.ValueOf(r.businessConfig))
+	// business appConfigs
+	businessConfigsVal := reflect.Indirect(reflect.ValueOf(r.businessConfigValue.Load()))
 	numFields := businessConfigsVal.NumField()
 	for i := 0; i < numFields; i++ {
 		derefVal.Field(i + 1).Set(businessConfigsVal.Field(i))
 	}
 
-	// component configs
+	// component appConfigs
 	derefComponentConfigsVal := derefVal.FieldByName(componentConfigFieldName)
-	componentConfigsVal := reflect.Indirect(reflect.ValueOf(r.componentConfigs)).FieldByName(componentConfigFieldName)
+	componentConfigsVal := reflect.Indirect(reflect.ValueOf(r.componentConfigValue.Load())).FieldByName(componentConfigFieldName)
 	numFields = componentConfigsVal.NumField()
 	for i := 0; i < numFields; i++ {
 		derefComponentConfigsVal.Field(i).Set(componentConfigsVal.Field(i))
@@ -267,38 +274,47 @@ func (r *registry) GetAllConfigs() any {
 	return clone.Clone(val.Interface())
 }
 
-func (r *registry) initByConfigFile(parent context.Context, businessConfig any,
+// initAllConfig
+// configuration priority:
+// 1. configurations from remote
+// 2. flag
+// 3. os environment
+// 4. files
+// 5. default from struct tag
+func (r *registry) initAllConfig(parent context.Context, businessConfig any,
 	loadFn loadConfigFunc, opts ...utils.OptionExtender) func() {
 	r.loadComponents()
 	r.checkBusinessConfig(businessConfig)
 
 	businessConfigVal := reflect.ValueOf(businessConfig)
 	r.businessConfigType = utils.IndirectType(businessConfigVal.Type())
-	r.businessConfig = reflect.New(r.businessConfigType).Interface()
-	r.componentConfigs = reflect.New(r.makeComponentsConfigStruct()).Interface()
+	r.businessConfigValue.Store(reflect.New(r.businessConfigType).Interface())
+	r.componentConfigValue.Store(reflect.New(r.makeComponentsConfigStruct()).Interface())
 
 	r.initAllConfigByLoadFunc(loadFn, opts...)
+	r.initAllConfigByEnv()
 	r.initAllConfigByFlag()
+	destructor := r.initAllConfigByRemote(parent)
 
 	appName := r.AppName()
-	registryLock.Lock()
+	registryLocker.Lock()
 	if _, ok := registryMap[appName]; !ok {
 		registryMap[appName] = r
 	}
-	registryLock.Unlock()
+	registryLocker.Unlock()
 
 	// decrypt
-	CryptoDecryptByTag(r.businessConfig, AppName(r.AppName()))
-	CryptoDecryptByTag(r.componentConfigs, AppName(r.AppName()))
+	CryptoDecryptByTag(r.businessConfigValue.Load(), AppName(r.AppName()))
+	CryptoDecryptByTag(r.componentConfigValue.Load(), AppName(r.AppName()))
 
 	// give back
-	reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(r.businessConfig))
+	reflect.Indirect(reflect.ValueOf(businessConfig)).Set(reflect.ValueOf(r.businessConfigValue.Load()))
 
-	return r.initComponents(parent)
+	return r.initComponents(parent, []string{ComponentRemoteConfig + ".default"}, []reflect.Value{destructor})
 }
 
 func (r *registry) getBaseObject() reflect.Value {
-	return reflect.Indirect(reflect.ValueOf(r.componentConfigs)).FieldByName(componentConfigFieldName)
+	return reflect.Indirect(reflect.ValueOf(r.componentConfigValue.Load())).FieldByName(componentConfigFieldName)
 }
 
 func (r *registry) makeComponentsConfigStruct() reflect.Type {
@@ -376,6 +392,12 @@ func (r *registry) loadComponents() {
 			WithFlag(utils.AnyPtr("null")),
 		)
 
+		// config
+		r.AddComponent(ComponentRemoteConfig, RemoteConstruct,
+			WithTag("yaml", "config"), WithTag("json", "config"), WithTag("toml", "config"),
+			WithFlag(&remoteConfigFlagString),
+		)
+
 		// crypto
 		r.AddComponent(ComponentCrypto, CryptoConstruct,
 			WithTag("yaml", "crypto"), WithTag("json", "crypto"), WithTag("toml", "crypto"),
@@ -394,13 +416,68 @@ func (r *registry) loadComponents() {
 
 func (r *registry) initAllConfigByLoadFunc(loadFn loadConfigFunc, opts ...utils.OptionExtender) {
 	if loadFn != nil {
-		loadFn(r.businessConfig, opts...)
-		loadFn(r.componentConfigs, opts...)
+		loadFn(r.businessConfigValue.Load(), opts...)
+		loadFn(r.componentConfigValue.Load(), opts...)
+	}
+}
+
+func (r *registry) initAllConfigByEnv() {
+	configVal := utils.IndirectValue(reflect.ValueOf(r.componentConfigValue.Load())).FieldByName(componentConfigFieldName)
+
+	envAppName := strcase.ToScreamingSnake(r.AppName())
+	for i := 0; i < len(r.componentList); i++ {
+		com := r.componentList[i]
+		if com.name == ComponentApp {
+			name := env.SvcName()
+			if utils.IsStrNotBlank(name) {
+				envAppName = strcase.ToScreamingSnake(name)
+				configVal.FieldByName(com.name).SetString(name)
+			}
+			continue
+		}
+
+		envValue := os.Getenv(envAppName + "_" + strcase.ToScreamingSnake(com.name))
+		if utils.IsStrBlank(envValue) {
+			continue
+		}
+		switch com.name {
+		case ComponentDebug:
+			if utils.IsStrNotBlank(envValue) {
+				configVal.FieldByName(com.name).SetBool(cast.ToBool(envValue))
+			}
+		default:
+			comValp := configVal.FieldByName(com.name).Addr()
+			if utils.IsStrNotBlank(envValue) {
+				utils.MustSuccess(json.Unmarshal([]byte(envValue), comValp.Interface()))
+			}
+		}
+	}
+
+	bizConfNames := [...]string{
+		"CONF", "CONFIG", "CONFIGS", "CONFIGURATION",
+		"SETTING", "SETTINGS",
+
+		"BIZ_CONF", "BIZ_CONFIG", "BIZ_CONFIGS", "BIZ_CONFIGURATION", "BIZ_SETTING", "BIZ_SETTINGS",
+
+		"BUSINESS_CONF", "BUSINESS_CONFIG", "BUSINESS_CONFIGS", "BUSINESS_CONFIGURATION",
+		"BUSINESS_SETTING", "BUSINESS_SETTINGS",
+
+		"APP_CONF", "APP_CONFIG", "APP_CONFIGS", "APP_CONFIGURATION", "APP_SETTING", "APP_SETTINGS",
+
+		"APPLICATION_CONF", "APPLICATION_CONFIG", "APPLICATION_CONFIGS", "APPLICATION_CONFIGURATION",
+		"APPLICATION_SETTING", "APPLICATION_SETTINGS",
+	}
+	for _, bizConfName := range bizConfNames {
+		envValue := os.Getenv(envAppName + "_" + bizConfName)
+		if utils.IsStrBlank(envValue) {
+			continue
+		}
+		utils.MustSuccess(json.Unmarshal([]byte(envValue), r.businessConfigValue.Load()))
 	}
 }
 
 func (r *registry) initAllConfigByFlag() {
-	configVal := utils.IndirectValue(reflect.ValueOf(r.componentConfigs)).FieldByName(componentConfigFieldName)
+	configVal := utils.IndirectValue(reflect.ValueOf(r.componentConfigValue.Load())).FieldByName(componentConfigFieldName)
 	for i := 0; i < len(r.componentList); i++ {
 		com := r.componentList[i]
 		if utils.IsStrPtrBlank(com.flagString) {
@@ -408,29 +485,55 @@ func (r *registry) initAllConfigByFlag() {
 		}
 		switch com.name {
 		case ComponentApp:
-			if utils.IsStrNotBlank(appFlagString) {
+			if pflag.CommandLine.Changed(appFlagKey) {
 				configVal.FieldByName(com.name).SetString(appFlagString)
 			}
 		case ComponentDebug:
-			if debugFlag {
+			if pflag.CommandLine.Changed(debugFlagKey) {
 				configVal.FieldByName(com.name).SetBool(debugFlag)
 			}
 		default:
 			comValp := configVal.FieldByName(com.name).Addr()
-			utils.MustSuccess(json.Unmarshal([]byte(*com.flagString), comValp.Interface()))
+			if utils.IsStrPtrNotBlank(com.flagString) {
+				utils.MustSuccess(json.Unmarshal([]byte(*com.flagString), comValp.Interface()))
+			}
 
 			// process defaults
-			_ = utils.ParseTag(comValp.Interface(), utils.ParseTagName("default"),
-				utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml))
+			_ = utils.ParseTag(
+				comValp.Interface(),
+				utils.ParseTagName("default"),
+				utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
+			)
 		}
 	}
 
 	if len(appBizFlagString) > 0 {
-		utils.MustSuccess(json.Unmarshal([]byte(appBizFlagString), &r.businessConfig))
+		utils.MustSuccess(json.Unmarshal([]byte(appBizFlagString), r.businessConfigValue.Load()))
 	}
+	_ = utils.ParseTag(
+		r.businessConfigValue.Load(),
+		utils.ParseTagName("default"),
+		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
+	)
 }
 
-func (r *registry) initComponents(parent context.Context) func() {
+func (r *registry) initAllConfigByRemote(ctx context.Context) (destructor reflect.Value) {
+	destructor = reflect.ValueOf(RemoteConstruct(ctx, r.remoteConfig(), AppName(r.AppName()), DI(r.di), App(r.app)))
+	vp := Remote(DefaultInstanceKey, AppName(r.AppName()))
+	if vp == nil {
+		return reflect.Value{}
+	}
+
+	configVal := utils.IndirectValue(reflect.ValueOf(r.componentConfigValue.Load()))
+	configValp := configVal.Addr()
+	utils.MustSuccess(vp.Unmarshal(configValp.Interface()))
+	utils.MustSuccess(vp.Unmarshal(r.businessConfigValue.Load()))
+	vp.OnConfigChange(r.watchRemoteConfigChange(ctx, vp))
+	return
+}
+
+func (r *registry) initComponents(parent context.Context,
+	gracefullyComNames []string, preDestructors []reflect.Value) func() {
 	ctx, cancel := context.WithCancel(parent)
 	ctxVal := reflect.ValueOf(ctx)
 	o1 := reflect.ValueOf(utils.OptionExtender(AppName(r.appName)))
@@ -438,16 +541,27 @@ func (r *registry) initComponents(parent context.Context) func() {
 	o3 := reflect.ValueOf(utils.OptionExtender(App(r.app)))
 
 	baseObject := r.getBaseObject()
-	destructors := make([]reflect.Value, 0, len(r.componentList))
 	componentNames := make([]string, 0, len(r.componentList))
-	hasCallbackComponentNames := make([]string, 0, len(r.componentList))
+	destructors := make([]reflect.Value, 0, len(r.componentList))
+	gracefullyComponentNames := make([]string, 0, len(r.componentList))
+
+	destructors = append(destructors, preDestructors...)
+	gracefullyComponentNames = append(gracefullyComponentNames, gracefullyComNames...)
+
 	for i := 0; i < len(r.componentList); i++ {
 		com := r.componentList[i]
-		comArgs := reflect.ValueOf(clone.Clone(baseObject.FieldByName(com.name).Interface()))
+		baseConf := clone.Clone(baseObject.FieldByName(com.name).Interface())
+		if com.name == ComponentRemoteConfig {
+			// default remote config is already initialized in registry.initAllConfigByRemote
+			delete(baseConf.(map[string]*RemoteConf), DefaultInstanceKey)
+			continue
+		}
+
+		comArgs := reflect.ValueOf(baseConf)
 		componentNames = append(componentNames, com.name)
 		if out := com.constructor.Call([]reflect.Value{ctxVal, comArgs, o1, o2, o3}); len(out) > 0 && !out[0].IsNil() {
 			destructors = append(destructors, out[0])
-			hasCallbackComponentNames = append(hasCallbackComponentNames, com.name)
+			gracefullyComponentNames = append(gracefullyComponentNames, com.name)
 		}
 	}
 
@@ -470,17 +584,34 @@ func (r *registry) initComponents(parent context.Context) func() {
 			r.initWg.Wait()
 			cancel()
 			for i := len(destructors) - 1; i >= 0; i-- {
-				log.Printf("%v [Gofusion] %s %s exiting...", pid, app, hasCallbackComponentNames[i])
-				destructors[i].Call(nil)
-				log.Printf("%v [Gofusion] %s %s exited", pid, app, hasCallbackComponentNames[i])
+				log.Printf("%v [Gofusion] %s %s exiting...", pid, app, gracefullyComponentNames[i])
+				if destructors[i].IsValid() {
+					destructors[i].Call(nil)
+				}
+				log.Printf("%v [Gofusion] %s %s exited", pid, app, gracefullyComponentNames[i])
 			}
 
 			r.di.Clear()
 			r.app.Clear()
-			r.businessConfig = nil
-			r.componentConfigs = nil
+			r.businessConfigValue = new(atomic.Value)
+			r.componentConfigValue = new(atomic.Value)
 			r.initOnce = new(sync.Once)
 		})
+	}
+}
+
+func (r *registry) watchRemoteConfigChange(ctx context.Context, vp RemoteConfigurable) func(in Event) {
+	return func(in Event) {
+		configVal := r.componentConfigValue.Load()
+		configClone := clone.Clone(configVal)
+		if err := vp.Unmarshal(configClone); err == nil {
+			r.componentConfigValue.Store(configClone)
+		}
+		appConfigVal := r.businessConfigValue.Load()
+		appConfigClone := clone.Clone(appConfigVal)
+		if err := vp.Unmarshal(appConfigClone); err == nil {
+			r.businessConfigValue.Store(appConfigClone)
+		}
 	}
 }
 

@@ -140,14 +140,14 @@ func (a *AggregateSample) String() string {
 func NewInmemSinkFromURL(u *url.URL) (MetricSink, error) {
 	params := u.Query()
 
-	interval, err := time.ParseDuration(params.Get("interval"))
+	interval, err := utils.ParseDuration(params.Get("interval"))
 	if err != nil {
-		return nil, fmt.Errorf("Bad 'interval' param: %s", err)
+		return nil, fmt.Errorf("bad 'interval' param: %s", err)
 	}
 
-	retain, err := time.ParseDuration(params.Get("retain"))
+	retain, err := utils.ParseDuration(params.Get("retain"))
 	if err != nil {
-		return nil, fmt.Errorf("Bad 'retain' param: %s", err)
+		return nil, fmt.Errorf("bad 'retain' param: %s", err)
 	}
 
 	return NewInmemSink(interval, retain), nil

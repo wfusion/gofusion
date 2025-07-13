@@ -35,6 +35,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
 )
 
@@ -134,15 +135,14 @@ var testRegexp = regexp.MustCompile(`_test|(\.test$)`)
 // GetEnvironment get environment
 func (c *Configor) GetEnvironment() string {
 	if c.Environment == "" {
-		if env := os.Getenv("CONFIGOR_ENV"); env != "" {
-			return env
+		if e := os.Getenv("CONFIGOR_ENV"); e != "" {
+			return e
 		}
-
 		if testRegexp.MatchString(os.Args[0]) {
-			return "test"
+			return env.CI
 		}
 
-		return "development"
+		return env.GetEnv()
 	}
 	return c.Environment
 }

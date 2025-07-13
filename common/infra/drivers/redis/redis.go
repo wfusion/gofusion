@@ -71,7 +71,7 @@ func (d *defaultDialect) wrapDurationSetter(s string, setter func(du time.Durati
 	if utils.IsStrBlank(s) {
 		return
 	}
-	duration, err := time.ParseDuration(s)
+	duration, err := utils.ParseDuration(s)
 	if err != nil {
 		panic(err)
 	}

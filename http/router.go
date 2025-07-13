@@ -9,7 +9,6 @@ import (
 	"mime"
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -232,8 +231,8 @@ func (r *router) Config() OutputConf {
 		Key:          cfg.Key,
 		NextProtos:   cfg.NextProtos,
 		SuccessCode:  cfg.SuccessCode,
-		ReadTimeout:  utils.Must(time.ParseDuration(cfg.ReadTimeout)),
-		WriteTimeout: utils.Must(time.ParseDuration(cfg.WriteTimeout)),
+		ReadTimeout:  utils.Must(utils.ParseDuration(cfg.ReadTimeout)),
+		WriteTimeout: utils.Must(utils.ParseDuration(cfg.WriteTimeout)),
 		AsynqConf:    clone.Slowly(cfg.Asynq),
 	}
 }

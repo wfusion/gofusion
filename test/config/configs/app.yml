@@ -240,8 +240,8 @@ base:
         # or <program run directory name>.log if <app> is not configured, or md5 hash if run directory is /
         name: gofusion.log
         # The maximum duration to retain logs. This is triggered only during log rotation due to exceeding size limits.
-        # The duration should be >= 1ms. The default value is 720 hours.
-        rotation_max_age: 720h
+        # The duration should be >= 1ms. The default value is 30 days.
+        rotation_max_age: 30d
         # The maximum number of file copies to keep. The actual number retained includes the current log file in use,
         # so the actual maximum number of copies is <rotation_count> + 1.
         rotation_count: 10

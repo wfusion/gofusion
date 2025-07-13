@@ -10,6 +10,11 @@ const (
 	Online  = "online"
 	Staging = "staging"
 	CI      = "ci"
+
+	Local = "local"
+	Test  = "test"
+	Sit   = "sit"
+	Prod  = "prod"
 )
 
 var (
@@ -29,25 +34,14 @@ func GetEnv() string {
 	return env
 }
 
-// IsDEV is dev
-func IsDEV() bool {
-	return GetEnv() == Dev
-}
-
-// IsOnline is online
-func IsOnline() bool {
-	return GetEnv() == Online
-}
-
-// IsStaging is staging
-func IsStaging() bool {
-	return GetEnv() == Staging
-}
-
-// IsCI is ci
-func IsCI() bool {
-	return GetEnv() == CI
-}
+func IsDEV() bool     { return GetEnv() == Dev }
+func IsOnline() bool  { return GetEnv() == Online }
+func IsStaging() bool { return GetEnv() == Staging }
+func IsCI() bool      { return GetEnv() == CI }
+func IsLocal() bool   { return GetEnv() == Local }
+func IsTest() bool    { return GetEnv() == Test }
+func IsSIT() bool     { return GetEnv() == Sit }
+func IsProd() bool    { return GetEnv() == Prod }
 
 func SetSvcName(name string) {
 	svcName = name
@@ -61,6 +55,12 @@ func SvcName() string {
 		return svcName
 	}
 	if svcName = os.Getenv("SERVICE_NAME"); svcName != "" {
+		return svcName
+	}
+	if svcName = os.Getenv("APP_NAME"); svcName != "" {
+		return svcName
+	}
+	if svcName = os.Getenv("APPLICATION_NAME"); svcName != "" {
 		return svcName
 	}
 	return ""

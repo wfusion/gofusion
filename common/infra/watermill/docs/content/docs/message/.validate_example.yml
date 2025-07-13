@@ -1,3 +1,0 @@
-validation_cmd: "go run receiving-ack.go"
-timeout: 30
-expected_output: "ack received"

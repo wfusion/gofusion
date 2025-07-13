@@ -73,18 +73,22 @@ func (c *Configor) getConfigurationFileWithENVPrefix(file, env string) (string, 
 	var (
 		envFile string
 		extname = path.Ext(file)
+		hyphens = [...]string{".", "-", "_"}
 	)
 
-	if extname == "" {
-		envFile = fmt.Sprintf("%v.%v", file, env)
-	} else {
-		envFile = fmt.Sprintf("%v.%v%v", strings.TrimSuffix(file, extname), env, extname)
+	for _, hyphen := range hyphens {
+		if extname == "" {
+			envFile = fmt.Sprintf("%v%s%v", file, hyphen, env)
+		} else {
+			envFile = fmt.Sprintf("%v%s%v%v", strings.TrimSuffix(file, extname), hyphen, env, extname)
+		}
+
+		if fileInfo, err := c.statFunc(envFile); err == nil && fileInfo.Mode().IsRegular() {
+			fileHash, _ := c.hashFunc(envFile)
+			return envFile, fileInfo.ModTime(), fileHash, nil
+		}
 	}
 
-	if fileInfo, err := c.statFunc(envFile); err == nil && fileInfo.Mode().IsRegular() {
-		fileHash, _ := c.hashFunc(envFile)
-		return envFile, fileInfo.ModTime(), fileHash, nil
-	}
 	return "", time.Now(), "", fmt.Errorf("failed to find file %v", file)
 }
 

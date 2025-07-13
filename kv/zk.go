@@ -4,7 +4,6 @@ import (
 	"context"
 	"math/big"
 	"reflect"
-	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/go-zookeeper/zk"
@@ -40,7 +39,7 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 		logInfo := log.Use(conf.LogInstance, log.AppName(opt.AppName)).Level(ctx) < log.WarnLevel
 		conn, ech, err = zk.Connect(
 			conf.Endpoint.Addresses,
-			utils.Must(time.ParseDuration(conf.Endpoint.DialTimeout)),
+			utils.Must(utils.ParseDuration(conf.Endpoint.DialTimeout)),
 			zk.WithLogger(reflect.New(inspect.TypeOf(conf.Endpoint.ZooLogger)).Interface().(zk.Logger)),
 			zk.WithLogInfo(logInfo),
 			zk.WithMaxBufferSize(int(maxBufferSize)),
@@ -49,7 +48,7 @@ func newZKInstance(ctx context.Context, name string, conf *Conf, opt *config.Ini
 	} else {
 		conn, ech, err = zk.Connect(
 			conf.Endpoint.Addresses,
-			utils.Must(time.ParseDuration(conf.Endpoint.DialTimeout)),
+			utils.Must(utils.ParseDuration(conf.Endpoint.DialTimeout)),
 			zk.WithMaxBufferSize(int(maxBufferSize)),
 			zk.WithMaxConnBufferSize(int(connMaxBufferSize)),
 		)

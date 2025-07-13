@@ -93,6 +93,7 @@ services:
     restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=ci
+      - MYSQL_DATABASE=ApolloConfigDB
     ports:
       - "23306:3306"
   postgres:
@@ -145,6 +146,15 @@ services:
       - "./metrics/configs/prometheus.yml:/etc/prometheus/prometheus.yml"
     ports:
       - "29090:9090"
+  apollo:
+    image: apolloconfig/apollo-configservice:2.4.0
+    container_name: apollo
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ApolloConfigDB?characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=ci
+    ports:
+      - "38080:8080"
   prometheus_push:
     image: prom/pushgateway:v1.6.2
     container_name: prometheus_push

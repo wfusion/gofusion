@@ -62,3 +62,9 @@ func (r *registry) cryptoConfig() (conf *CryptoConf) {
 
 	return
 }
+
+func (r *registry) remoteConfig() (confs map[string]*RemoteConf) {
+	confs = make(map[string]*RemoteConf)
+	_ = r.LoadComponentConfig(ComponentRemoteConfig, &confs)
+	return
+}

@@ -45,11 +45,14 @@ func (l *loader) Unmarshal(out any) (err error) {
 	}).Load(out, l.files...)
 }
 
-var profile string
-
 type loadConfigFunc func(out any, opts ...utils.OptionExtender)
 
-func loadConfig(out any, opts ...utils.OptionExtender) {
+// loadConfigFromFiles
+// load files priority:
+// 1. conf flag
+// 2. Files()
+// 3. app.local.yml > app{.ENV}.yml (if ENV specified, e.g. app.ci.yml)
+func loadConfigFromFiles(out any, opts ...utils.OptionExtender) {
 	parseFlags()
 
 	opt := utils.ApplyOptions[initOption](opts...)
@@ -63,39 +66,39 @@ func loadConfig(out any, opts ...utils.OptionExtender) {
 	case len(opt.filenames) > 0:
 		files = append(files, opt.filenames...)
 	default:
-		defaultPathPrefix := filepath.Join(env.WorkDir, "configs", "app.")
-		defaultLocal1PathPrefix := filepath.Join(env.WorkDir, "configs", "app.local.")
-		defaultLocal2PathPrefix := filepath.Join(env.WorkDir, "configs", "app_local.")
-		defaultLocal3PathPrefix := filepath.Join(env.WorkDir, "configs", "app-local.")
-		extensions := []string{"yaml", "yml", "json", "toml"}
-		for _, ext := range extensions {
-			localFilename := defaultLocal1PathPrefix + ext
-			if _, err := os.Stat(localFilename); err == nil {
-				files = append(files, localFilename)
-				continue
-			}
-			localFilename = defaultLocal2PathPrefix + ext
-			if _, err := os.Stat(localFilename); err == nil {
-				files = append(files, localFilename)
-				continue
-			}
-			localFilename = defaultLocal3PathPrefix + ext
-			if _, err := os.Stat(localFilename); err == nil {
-				files = append(files, localFilename)
-				continue
+		dirs := [...]string{"", "conf", "config", "appConfigs"}
+		prefixes := [...]string{
+			"app", "application",
+			"setting", "settings", "appsetting", "appsettings",
+			"conf", "config", "configure", "configuration",
+		}
+		hyphens := [...]string{".", "-", "_"}
+		extensions := [...]string{"yaml", "yml", "json", "toml"}
+		for _, dir := range dirs {
+			for _, prefix := range prefixes {
+				for _, hyphen := range hyphens {
+					for _, ext := range extensions {
+						localFilename := filepath.Join(env.WorkDir, dir, prefix+hyphen+"local."+ext)
+						if _, err := os.Stat(localFilename); err == nil {
+							files = append(files, localFilename)
+							continue
+						}
+					}
+				}
 			}
 		}
-		for _, ext := range extensions {
-			defaultFilename := defaultPathPrefix + ext
-			files = append(files, defaultFilename)
-		}
-	}
 
-	if profile != "" {
-		if err := configor.New(&configor.Config{Environment: profile}).Load(out, files...); err != nil {
-			panic(errors.Errorf("parse config file of config env %s error: %v", profile, err))
+		for _, dir := range dirs {
+			for _, prefix := range prefixes {
+				for _, ext := range extensions {
+					filename := filepath.Join(env.WorkDir, dir, prefix+"."+ext)
+					if _, err := os.Stat(filename); err == nil {
+						files = append(files, filename)
+						continue
+					}
+				}
+			}
 		}
-		return
 	}
 
 	if err := NewDefaultLoader(files...).Unmarshal(out); err != nil {

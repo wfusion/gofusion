@@ -60,12 +60,12 @@ func (g *gormDriver) New(ctx context.Context, option Option, opts ...utils.Optio
 		sqlDB.SetMaxIdleConns(opt.MaxIdleConns)
 	}
 	if utils.IsStrNotBlank(option.ConnMaxLifeTime) {
-		if liftTime, err := time.ParseDuration(option.ConnMaxLifeTime); err == nil {
+		if liftTime, err := utils.ParseDuration(option.ConnMaxLifeTime); err == nil {
 			sqlDB.SetConnMaxLifetime(liftTime)
 		}
 	}
 	if utils.IsStrNotBlank(option.ConnMaxLifeTime) {
-		if idleTime, err := time.ParseDuration(option.ConnMaxIdleTime); err == nil {
+		if idleTime, err := utils.ParseDuration(option.ConnMaxIdleTime); err == nil {
 			sqlDB.SetConnMaxIdleTime(idleTime)
 		}
 	}
@@ -200,7 +200,7 @@ func (g *gormDriver) genSqlServerDsn(opt *gormDriverOption) (dsn string) {
 
 	timeout := "5" // seconds
 	if utils.IsStrNotBlank(opt.Timeout) {
-		if duration, err := time.ParseDuration(opt.Timeout); err == nil {
+		if duration, err := utils.ParseDuration(opt.Timeout); err == nil {
 			timeout = fmt.Sprintf("%v", int(duration/time.Second))
 		}
 	}
@@ -215,13 +215,13 @@ func (g *gormDriver) genClickhouseDsn(opt *gormDriverOption) (dsn string) {
 
 	readTimeout := "2" // seconds
 	if utils.IsStrNotBlank(opt.ReadTimeout) {
-		if duration, err := time.ParseDuration(opt.ReadTimeout); err == nil {
+		if duration, err := utils.ParseDuration(opt.ReadTimeout); err == nil {
 			readTimeout = fmt.Sprintf("%v", int(duration/time.Second))
 		}
 	}
 	writeTimeout := "2" // seconds
 	if utils.IsStrNotBlank(opt.ReadTimeout) {
-		if duration, err := time.ParseDuration(opt.WriteTimeout); err == nil {
+		if duration, err := utils.ParseDuration(opt.WriteTimeout); err == nil {
 			writeTimeout = fmt.Sprintf("%v", int(duration/time.Second))
 		}
 	}

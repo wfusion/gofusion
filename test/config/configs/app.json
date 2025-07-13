@@ -140,7 +140,7 @@
                     "layout": "json",
                     "path": ".",
                     "name": "gofusion.log",
-                    "rotation_max_age": "720h",
+                    "rotation_max_age": "30d",
                     "rotation_count": 10,
                     "rotation_size": "100mib",
                     "compress": false
