@@ -554,7 +554,6 @@ func (r *registry) initComponents(parent context.Context,
 		if com.name == ComponentRemoteConfig {
 			// default remote config is already initialized in registry.initAllConfigByRemote
 			delete(baseConf.(map[string]*RemoteConf), DefaultInstanceKey)
-			continue
 		}
 
 		comArgs := reflect.ValueOf(baseConf)
