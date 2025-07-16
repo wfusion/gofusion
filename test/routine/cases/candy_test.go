@@ -48,7 +48,7 @@ func (t *Candy) TestGo() {
 			i += 1
 		}, routine.WaitGroup(wg), routine.AppName(t.AppName()))
 		wg.Wait()
-		t.EqualValues(1, i)
+		t.Require().EqualValues(1, i)
 	})
 }
 
@@ -66,7 +66,7 @@ func (t *Candy) TestGoWithArgs() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(2, i)
+		t.Require().EqualValues(2, i)
 	})
 }
 
@@ -82,7 +82,7 @@ func (t *Candy) TestGoWithType() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(2, i)
+		t.Require().EqualValues(2, i)
 	})
 }
 
@@ -100,7 +100,7 @@ func (t *Candy) TestGoWithVariableArgs() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(4, i)
+		t.Require().EqualValues(4, i)
 	})
 }
 
@@ -119,7 +119,7 @@ func (t *Candy) TestGoWithError() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(4, i)
+		t.Require().EqualValues(4, i)
 	})
 }
 
@@ -138,7 +138,7 @@ func (t *Candy) TestGoWithResultAndError() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(4, i)
+		t.Require().EqualValues(4, i)
 	})
 }
 
@@ -158,7 +158,7 @@ func (t *Candy) TestGocWithResultAndError() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(4, i)
+		t.Require().EqualValues(4, i)
 	})
 }
 
@@ -178,7 +178,7 @@ func (t *Candy) TestGoWithChannel() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(2, i)
+		t.Require().EqualValues(2, i)
 		select {
 		case v := <-ch:
 			log.Info(context.Background(), "get channel result: %+v", v)
@@ -203,7 +203,7 @@ func (t *Candy) TestGoWithChannelResult() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(2, i)
+		t.Require().EqualValues(2, i)
 		select {
 		case v := <-ch:
 			log.Info(context.Background(), "get channel result: %+v", v)
@@ -228,7 +228,7 @@ func (t *Candy) TestGoWithChannelError() {
 			routine.AppName(t.AppName()),
 		)
 		wg.Wait()
-		t.EqualValues(2, i)
+		t.Require().EqualValues(2, i)
 		select {
 		case v := <-ch:
 			log.Info(context.Background(), "get channel result: %+v", v)
@@ -247,7 +247,7 @@ func (t *Candy) TestLoop() {
 			}
 		}, routine.WaitGroup(wg), routine.AppName(t.AppName()))
 		wg.Wait()
-		t.EqualValues(expected, i)
+		t.Require().EqualValues(expected, i)
 	})
 }
 
@@ -262,7 +262,7 @@ func (t *Candy) TestLoopWithArgs() {
 			}
 		}, routine.Args(&i), routine.WaitGroup(wg), routine.AppName(t.AppName()))
 		wg.Wait()
-		t.Equal(expected, i)
+		t.Require().Equal(expected, i)
 	})
 }
 
@@ -286,8 +286,8 @@ func (t *Candy) TestWhenAllWithFuture() {
 		futures = append(futures, routine.AppName(t.AppName()))
 		_, timeout, err := routine.WhenAll(futures...).GetOrTimeout(time.Second)
 		t.False(timeout)
-		t.NoError(err)
-		t.EqualValues(expected*2, sum.Load())
+		t.Require().NoError(err)
+		t.Require().EqualValues(expected*2, sum.Load())
 	})
 }
 

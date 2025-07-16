@@ -1,4 +1,4 @@
-version: "2"
+version: "3"
 
 services:
   kafka:
@@ -170,6 +170,11 @@ services:
       - JAVA_OPTS=-Dspring.profiles.active=github,database-discovery
     ports:
       - "38080:8080"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/health" ]
+      interval: 5s
+      timeout: 2s
+      retries: 20
   apollo-admin:
     image: apolloconfig/apollo-adminservice:2.4.0
     container_name: apollo-admin
@@ -183,6 +188,11 @@ services:
       - JAVA_OPTS=-Dspring.profiles.active=github,database-discovery
     ports:
       - "38090:8090"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8090/health" ]
+      interval: 5s
+      timeout: 2s
+      retries: 20
   apollo-portal:
     image: apolloconfig/apollo-portal:2.4.0
     container_name: apollo-portal
@@ -197,6 +207,11 @@ services:
       - DEV_META=http://apollo-config:8080
     ports:
       - "38070:8070"
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8070/health" ]
+      interval: 5s
+      timeout: 2s
+      retries: 20
   prometheus-push:
     image: prom/pushgateway:v1.6.2
     container_name: prometheus-push
@@ -204,30 +219,34 @@ services:
     restart: always
     ports:
       - "29091:9091"
-#  test:
-#    image: golang:1.18.10-bullseye
-#    container_name: test
-#    networks: [ gofusion ]
-#    volumes:
-#      - "../../gofusion:/gofusion"
-#      #- "${GOPATH}/pkg:/go/pkg:ro"
-#    command:
-#      - "/bin/sh"
-#      - "-c"
-#      - "cd /gofusion && ./ci-linux.sh"
-#    #command: ['/bin/sh', '-c', 'while true; do sleep 1000; done']
-#    depends_on:
-#      - kafka
-#      - pulsar
-#      - rabbitmq
-#      - redis
-#      - mysql
-#      - postgres
-#      - opengauss
-#      - sqlserver
-#      - mongo
-#      - prometheus
-#      - prometheus_push
+  #test:
+  #  image: golang:1.18.10-bullseye
+  #  container_name: test
+  #  networks: [ gofusion ]
+  #  volumes:
+  #    - "../../gofusion:/gofusion"
+  #    # - "${GOPATH}/pkg:/go/pkg:ro"
+  #  command:
+  #    - "/bin/sh"
+  #    - "-c"
+  #    - "cd /gofusion/test && ./ci-linux.sh"
+  #  #command: ['/bin/sh', '-c', 'while true; do sleep 1000; done']
+  #  depends_on:
+  #    - kafka
+  #    - pulsar
+  #    - rabbitmq
+  #    - redis
+  #    - mysql
+  #    - postgres
+  #    - opengauss
+  #    - sqlserver
+  #    - mongo
+  #    - prometheus
+  #    - prometheus-push
+  #    - zookeeper
+  #    - etcd
+  #    - consul
+  #    - apollo-portal
 
 networks:
   gofusion:

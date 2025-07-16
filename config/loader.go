@@ -66,7 +66,12 @@ func loadConfigFromFiles(out any, opts ...utils.OptionExtender) {
 	case len(opt.filenames) > 0:
 		files = append(files, opt.filenames...)
 	default:
-		dirs := [...]string{"", "conf", "config", "appConfigs"}
+		dirs := [...]string{
+			"",
+			"conf", "config", "configs",
+			"setting", "settings",
+			"appConfigs", "appSettings",
+		}
 		prefixes := [...]string{
 			"app", "application",
 			"setting", "settings", "appsetting", "appsettings",

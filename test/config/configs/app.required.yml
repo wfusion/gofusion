@@ -1,6 +1,15 @@
 base:
   debug: true
   app: gofusion
+  #config:
+  #  json:
+  #    type: apollo
+  #    apollo:
+  #      app_id: gofusion
+  #      cluster: default
+  #      namespaces: app.json
+  #      endpoint: http://apollo-config:8080
+  #      secret: "e16e6897b788a18357a79a834f37e492f155c879"
   crypto:
     config:
       mode: gcm

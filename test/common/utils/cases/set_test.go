@@ -38,7 +38,9 @@ func (t *Set) TestInsert() {
 		set1 := utils.NewSet([]int{1, 2, 3}...)
 		set1.Insert(4)
 		t.Require().Len(set1.Items(), 4)
-		t.Require().EqualValues([]int{1, 2, 3, 4}, set1.Items())
+		actual := set1.Items()
+		sort.Ints(actual)
+		t.Require().EqualValues([]int{1, 2, 3, 4}, actual)
 	})
 }
 

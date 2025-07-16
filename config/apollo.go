@@ -116,7 +116,7 @@ func parseApolloNamespaceContent(cli agollo.Client, vp *viper.Viper, namespace s
 }
 
 func formatApolloTxtKey(namespace string) string {
-	return fmt.Sprintf("%s_%s", namespace, "~~txt~~")
+	return fmt.Sprintf("%s%s", namespace, "~~txt~~")
 }
 
 type apolloListener struct {

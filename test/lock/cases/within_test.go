@@ -88,10 +88,10 @@ func (t *Within) testWithin(locker lock.Lockable, key string) {
 				// log.Info(ctx, "[+] goroutine[%v]: %+v", idx, unsafeMap)
 				return
 			}, lock.AppName(t.AppName()))
-			t.NoError(err)
+			t.Require().NoError(err)
 		}, routine.Args(i), routine.WaitGroup(wg), routine.AppName(t.AppName()))
 	}
 	wg.Wait()
 	t.Len(unsafeMap, parallel)
-	t.EqualValues(parallel, unsafeInt)
+	t.Require().EqualValues(parallel, unsafeInt)
 }

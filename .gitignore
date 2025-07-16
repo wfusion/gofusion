@@ -63,3 +63,8 @@ gen/
 # Examples
 examples/
 example/
+
+# Apollo backups
+gofusion-app.json.json
+gofusion-app.yaml.json
+gofusion-test.txt.json

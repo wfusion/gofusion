@@ -89,9 +89,9 @@ func (t *Conn) testDefault(read, write string) {
 		}()
 
 		wg := new(sync.WaitGroup)
-		t.NoError(tx.Migrator().AutoMigrate(new(modelWithData)))
+		t.Require().NoError(tx.Migrator().AutoMigrate(new(modelWithData)))
 		defer func() {
-			t.NoError(tx.Migrator().DropTable(new(modelWithData)))
+			t.Require().NoError(tx.Migrator().DropTable(new(modelWithData)))
 		}()
 
 		for i := 0; i < 100; i++ {

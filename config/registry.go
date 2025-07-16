@@ -26,7 +26,14 @@ import (
 )
 
 var (
-	Registry = &registry{di: di.Dig, app: di.Fx, initOnce: new(sync.Once), closeCh: make(chan struct{})}
+	Registry = &registry{
+		di:                   di.Dig,
+		app:                  di.Fx,
+		initOnce:             new(sync.Once),
+		closeCh:              make(chan struct{}),
+		businessConfigValue:  new(atomic.Value),
+		componentConfigValue: new(atomic.Value),
+	}
 
 	initLocker     sync.RWMutex
 	registryLocker sync.RWMutex
@@ -523,7 +530,12 @@ func (r *registry) initAllConfigByRemote(ctx context.Context) (destructor reflec
 		utils.ParseTagName("default"),
 		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
 	)
-	destructor = reflect.ValueOf(RemoteConstruct(ctx, r.remoteConfig(), AppName(r.AppName()), DI(r.di), App(r.app)))
+	remoteConfigs := r.remoteConfig()
+	if len(remoteConfigs) == 0 || remoteConfigs[DefaultInstanceKey] == nil {
+		return
+	}
+	initConfig := map[string]*RemoteConf{DefaultInstanceKey: remoteConfigs[DefaultInstanceKey]}
+	destructor = reflect.ValueOf(RemoteConstruct(ctx, initConfig, AppName(r.AppName()), DI(r.di), App(r.app)))
 	vp := Remote(DefaultInstanceKey, AppName(r.AppName()))
 	if vp == nil {
 		return reflect.Value{}

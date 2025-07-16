@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -65,11 +66,11 @@ func (t *Suite) Copy(src []string, testName string, stackSkip int) (cleanFn func
 
 	stackSkip++
 	// t.clearAllFiles(allFilenames, stackSkip)
-	for src, dst := range fileMapping {
-		t.copyFile(dst, src, stackSkip)
+	for s, d := range fileMapping {
+		t.copyFile(d, s, stackSkip)
 	}
-	for _, filename := range others {
-		t.copyFile(filename, filename, stackSkip)
+	for _, other := range others {
+		t.copyFile(other, other, stackSkip)
 	}
 	return func() {
 		t.clearAllFiles(allFilenames, stackSkip)
@@ -83,8 +84,22 @@ func (t *Suite) Init(src []string, testName string, stackSkip int) (cleanFn func
 	appName := t.appName(componentName, testName)
 	fileMapping, _ := t.mappingFilenames(appName, src)
 	cfgNames := utils.MapValues(fileMapping)
+
+	srcOrder := make(map[string]int, len(src))
+	for idx, s := range src {
+		srcOrder[s] = idx
+	}
+	findOrderFn := func(cfgName string) int {
+		for k, v := range srcOrder {
+			if strings.HasSuffix(cfgName, k) {
+				return v
+			}
+		}
+		return math.MaxInt
+	}
+	utils.SortStable(cfgNames, func(e1, e2 string) bool { return findOrderFn(e1) < findOrderFn(e2) })
 	for i := 0; i < len(cfgNames); i++ {
-		cfgNames[i] = env.WorkDir + "/configs/" + cfgNames[i]
+		cfgNames[i] = filepath.Join(env.WorkDir, "configs", cfgNames[i])
 	}
 
 	appCfg := &struct{}{}
@@ -115,7 +130,7 @@ func (t *Suite) appName(componentName, testName string) string {
 }
 
 func (t *Suite) isConfigFile(name string) (ok bool) {
-	return strings.Contains(name, "app")
+	return strings.HasPrefix(name, "app")
 }
 
 func (t *Suite) mappingFilenames(appName string, filenames []string) (cfgMapping map[string]string, others []string) {

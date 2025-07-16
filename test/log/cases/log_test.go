@@ -45,7 +45,7 @@ func (t *Log) TestLevel() {
 		defer cancel()
 
 		// Then
-		t.EqualValues(log.DebugLevel, logger.Level(ctx))
+		t.Require().EqualValues(log.DebugLevel, logger.Level(ctx))
 	})
 }
 
@@ -72,7 +72,7 @@ func (t *Log) TestCustomLoggerFx() {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
-		t.NoError(app.Start(ctx))
-		t.NoError(app.Stop(ctx))
+		t.Require().NoError(app.Start(ctx))
+		t.Require().NoError(app.Stop(ctx))
 	})
 }

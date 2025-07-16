@@ -44,13 +44,13 @@ func (t *Redis) TestGetSet() {
 		rdsCli := redis.Use(ctx, nameDefault, redis.AppName(t.AppName()))
 
 		// When
-		t.NoError(rdsCli.Set(ctx, key, val, time.Second).Err())
+		t.Require().NoError(rdsCli.Set(ctx, key, val, time.Second).Err())
 		defer rdsCli.Del(ctx, key)
 
 		// Then
 		actual, err := rdsCli.Get(ctx, key).Result()
-		t.NoError(err)
-		t.Equal(val, actual)
+		t.Require().NoError(err)
+		t.Require().Equal(val, actual)
 	})
 }
 
@@ -65,6 +65,6 @@ func (t *Redis) TestSubscribe() {
 
 		// Then
 		_, err := pubsub.ReceiveTimeout(ctx, 500*time.Millisecond)
-		t.NoError(err)
+		t.Require().NoError(err)
 	})
 }

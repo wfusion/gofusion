@@ -62,20 +62,20 @@ func (t *Local) TestLocal() {
 		// Then
 		keys := []string{"13", "14", "15"}
 		rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		keys = []string{"1", "2", "3"}
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		keys = []string{"1"}
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, false))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		time.Sleep(5 * time.Second)
 		keys = []string{"1"}
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 	})
 }
 
@@ -100,10 +100,10 @@ func (t *Local) TestLocalGetAll() {
 		// Then
 		keys := []string{"1"}
 		rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		rs = instance.GetAll(ctx, nil)
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 	})
 }
 
@@ -128,20 +128,20 @@ func (t *Local) TestLocalWithoutLog() {
 		// Then
 		keys := []string{"13", "14", "15"}
 		rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		keys = []string{"1", "2", "3"}
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		keys = []string{"1"}
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, false))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		time.Sleep(5 * time.Second)
 		keys = []string{"1"}
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 	})
 }
 
@@ -164,11 +164,11 @@ func (t *Local) TestClear() {
 		// Then
 		keys := []string{"1", "2", "3"}
 		rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, false))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		instance.Clear(ctx)
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 	})
 }
 
@@ -191,11 +191,11 @@ func (t *Local) TestDel() {
 		// Then
 		keys := []string{"1", "2", "3"}
 		rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, false))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 
 		instance.Del(ctx, keys...)
 		rs = instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.NotEmpty(rs)
+		t.Require().NotEmpty(rs)
 	})
 }
 
@@ -240,7 +240,7 @@ func (t *Local) TestSetExpired() {
 		time.Sleep(5 * time.Second)
 		keys := []string{"1"}
 		rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 	})
 }
 
@@ -260,7 +260,7 @@ func (t *Local) TestSetKeyExpired() {
 		time.Sleep(5 * time.Second)
 		keys := []string{"1"}
 		rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
-		t.EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
+		t.Require().EqualValues(utils.MapValuesByKeys(stringObjMap, keys), rs)
 	})
 }
 
@@ -281,8 +281,8 @@ func (t *Local) TestSetGetInParallel() {
 				val := mock.GenObjBySerializeAlgo(serialize.AlgorithmJson).(*mock.CommonObj)
 				instance.Set(ctx, map[string]*mock.CommonObj{key: val})
 				rs := instance.Get(ctx, []string{key}, commonObjCallback)
-				//t.NotEmpty(rs)
-				t.EqualValues(val, rs[0])
+				//t.Require().NotEmpty(rs)
+				t.Require().EqualValues(val, rs[0])
 			}()
 		}
 		wg.Wait()
@@ -306,15 +306,15 @@ func (t *Local) TestLocalWithCallback() {
 
 			// When
 			randomKeys := [3]string{}
-			t.NoError(faker.FakeData(&randomKeys))
+			t.Require().NoError(faker.FakeData(&randomKeys))
 			keys := append([]string{randomKey}, randomKeys[:]...)
 			rs := instance.Get(ctx, keys, nil)
 
 			// Then
-			t.Equal(len(rs), len(keys))
-			t.EqualValues(stringObjMap[randomKey], rs[0])
+			t.Require().Equal(len(rs), len(keys))
+			t.Require().EqualValues(stringObjMap[randomKey], rs[0])
 			for i := 0; i < len(rs); i++ {
-				t.NotEmpty(rs[i])
+				t.Require().NotEmpty(rs[i])
 			}
 		})
 	})
@@ -337,15 +337,15 @@ func (t *Local) TestLocalWithSerialize() {
 
 			// When
 			randomKeys := [3]string{}
-			t.NoError(faker.FakeData(&randomKeys))
+			t.Require().NoError(faker.FakeData(&randomKeys))
 			keys := append([]string{randomKey}, randomKeys[:]...)
 			rs := instance.Get(ctx, keys, t.commonObjCallback(stringObjMap, true))
 
 			// Then
-			t.Equal(len(rs), len(keys))
-			t.EqualValues(stringObjMap[randomKey], rs[0])
+			t.Require().Equal(len(rs), len(keys))
+			t.Require().EqualValues(stringObjMap[randomKey], rs[0])
 			for i := 0; i < len(rs); i++ {
-				t.NotEmpty(rs[i])
+				t.Require().NotEmpty(rs[i])
 			}
 		})
 	})
@@ -368,15 +368,15 @@ func (t *Local) TestLocalWithSerializeAndCompress() {
 
 			// When
 			randomKeys := [3]string{}
-			t.NoError(faker.FakeData(&randomKeys))
+			t.Require().NoError(faker.FakeData(&randomKeys))
 			keys := append([]string{randomKey}, randomKeys[:]...)
 			rs := instance.Get(ctx, keys, t.commonObjCallback(stringObjMap, true))
 
 			// Then
-			t.Equal(len(rs), len(keys))
-			t.EqualValues(stringObjMap[randomKey], rs[0])
+			t.Require().Equal(len(rs), len(keys))
+			t.Require().EqualValues(stringObjMap[randomKey], rs[0])
 			for i := 0; i < len(rs); i++ {
-				t.NotEmpty(rs[i])
+				t.Require().NotEmpty(rs[i])
 			}
 		})
 	})
@@ -430,15 +430,15 @@ func (t *Local) TestLocalWithCompress() {
 
 					// When
 					randomKeys := [3]string{}
-					t.NoError(faker.FakeData(&randomKeys))
+					t.Require().NoError(faker.FakeData(&randomKeys))
 					keys := append([]string{randomKey}, randomKeys[:]...)
 					rs := instance.Get(ctx, keys, t.randomObjCallback(stringObjMap, algo, true))
 
 					// Then
-					t.Equal(len(rs), len(keys))
-					t.EqualValues(stringObjMap[randomKey], rs[0])
+					t.Require().Equal(len(rs), len(keys))
+					t.Require().EqualValues(stringObjMap[randomKey], rs[0])
 					for i := 0; i < len(rs); i++ {
-						t.NotEmpty(rs[i])
+						t.Require().NotEmpty(rs[i])
 					}
 				})
 			})

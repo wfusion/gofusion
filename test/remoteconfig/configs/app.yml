@@ -1,0 +1,828 @@
+base:
+  # Debug mode, enables debug mode for gorm and gin
+  # Note: Conflicts with the log configuration in db, gorm native debug takes precedence
+  debug: true
+
+  # Application or system name, just ensure uniqueness within the same runtime environment
+  app: gofusion
+
+  # remote configuration
+  config:
+    # Name of the configuration profile. In this example, 'default'.
+    # This profile's settings will override the default component configurations.
+    default:
+      # The type of the configuration center. Currently, only 'apollo' is supported.
+      type: apollo
+      apollo:
+        # The App ID for this application in Apollo.
+        app_id: gofusion
+        # The name of the Apollo cluster.
+        cluster: default
+        # The namespace(s) to listen to. Multiple namespaces can be specified,
+        # separated by a comma (e.g., "application,application.yaml").
+        namespaces: app.yaml
+        # The address of the Apollo meta server (Config Service).
+        endpoint: http://apollo-config:8080
+        # Enable local backup. If true, configurations fetched from Apollo will be saved to a local file.
+        # This allows the application to use the last known configuration if the Apollo service is down.
+        is_backup_config: true
+        # Path for the backup file. For example, './' saves the file in the current working directory.
+        backup_config_path: ./
+        # The secret key used for accessing namespaces with access control.
+        secret: "e16e6897b788a18357a79a834f37e492f155c879"
+        # The label used for gray releases.
+        label: ""
+        # Timeout for fetching configurations from the server. The default is 10s. The unit is seconds.
+        sync_server_timeout: 10s
+        # Determines if the application must successfully fetch the configuration on its first attempt to start.
+        must_start: true
+    json:
+      type: apollo
+      apollo:
+        app_id: gofusion
+        cluster: default
+        namespaces: app.json
+        endpoint: http://apollo-config:8080
+        is_backup_config: false
+        secret: "e16e6897b788a18357a79a834f37e492f155c879"
+        must_start: false
+    txt:
+      type: apollo
+      apollo:
+        app_id: gofusion
+        cluster: default
+        namespaces: test.txt
+        endpoint: http://apollo-config:8080
+        is_backup_config: false
+        secret: "e16e6897b788a18357a79a834f37e492f155c879"
+        must_start: false
+
+  # Encryption configuration
+  crypto:
+    # Encryption of this configuration file
+    config:
+      # Cipher mode, supports ecb, cbc, cfb, ctr, ofb, gcm
+      mode: gcm
+      # Encryption algorithm, supports des, 3des, aes, rc4, chacha20poly1305, xchacha20poly1305, sm4
+      algorithm: sm4
+      # Symmetric key in base64
+      key_base64: MTIzNDU2NzhhYmNkZWZnaA== # 12345678abcdefgh
+      # Obfuscate symmetric key, if enabled, the encryption configuration and ciphertext
+      # in this configuration file cannot be decrypted directly,
+      # corresponding ciphertext also needs to be obfuscated encrypted by fus tool for normal parsing
+      confuse_key: true
+      # Ciphertext format, if encrypted ciphertext has been printable encoded, it needs to be configured,
+      # supports hex, base32, base32-hex, base64, base64-url, base64-raw, base64-raw-url
+      output_algorithm: base64
+    # Custom encryption configuration, corresponding struct field configures tag: `encrypted:"gorm"`,
+    # which can parse the configuration content accordingly
+    custom:
+      gorm:
+        mode: gcm
+        algorithm: sm4
+        key_base64: MTIzNDU2NzhhYmNkZWZnaA== # 12345678abcdefgh
+        confuse_key: true
+        output_algorithm: base64
+
+  # HTTP configuration
+  http:
+    # Port to be opened
+    port: 9001
+    # File path of the certificate required to enable tls
+    cert: ""
+    # File path of the certificate required to enable tls
+    key: ""
+    # TLS, if enabled and <next_protos> selects h2, then zero-copy gin functions defined in
+    # gofusion/http will degrade to memory stream copy
+    tls: false
+    # Protocol, prefer the ones in the front, supports h2, http/1.1
+    next_protos: [http/1.1]
+    # Whether to output in color in console, affects log readability
+    colorful_console: false
+    # Configurable http response body: {"code": 0, "message": "ok", "data": {}} for successful return, the value of code
+    success_code: 0
+    # Configurable http response body: {"code": -1, "message": "ok", "data": {}} for failed return, the value of code
+    error_code: -1
+    # Enable pprof, golang program status can be obtained using http port
+    pprof: false
+    read_timeout: 10s
+    write_timeout: 10s
+    # Enable logging, can be switched in real-time during program run
+    enable_logger: true
+    # Log configuration, corresponding to the name in the log component
+    log_instance: default
+    # Configurable custom logger that implements the resty.logger.Interface
+    # The default configured logger can print logs to the log configured in log.<log_instance>
+    # Custom configurations may not be found due to not being directly referenced, so when configuring,
+    # you need to define the corresponding object or function's global reflect.Type to avoid being ignored by the compiler
+    logger: github.com/wfusion/gofusion/log/customlogger.httpLogger
+    # White list for xss defense middleware
+    xss_white_url_list: [ "" ]
+    # CORS configuration
+    cors:
+      # Configures Access-Control-Allow-Origin. If not configured or empty, allows all origins.
+      allow_origins: [ "localhost" ]
+      # Configures Access-Control-Allow-Methods. If not configured or empty, allows POST, OPTIONS, GET, PUT, DELETE.
+      allow_methods: [ "POST", "GET", "PUT", "DELETE", "OPTIONS" ]
+      # Configures Access-Control-Allow-Credentials. If not configured or empty, allows "true".
+      allow_credentials: "true"
+      # Configures Access-Control-Allow-Headers. If not configured or empty, allows all headers in the request.
+      allow_headers: [ "Content-Length" ]
+      # Configures Access-Control-Expose-Headers. If not configured or empty, defaults to:
+      # Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type
+      expose_headers: [ "Content-Length" ]
+      # Configures the response string for HTTP OPTIONS requests. Defaults to "no content".
+      options_response: "nothing"
+      # Configures the body string returned when a cross-origin request is not allowed. Defaults to none body returned.
+      forbidden_response: ""
+    # Asynq monitoring configuration
+    asynq:
+      # HTTP path
+      - path: /asynq
+        # Name of the broker instance depended on by asynq, corresponds to the configuration name of instance_type
+        instance: default
+        # Type of broker depended on by asynq
+        instance_type: redis
+        readonly: false
+        prometheus_address: ""
+    # HTTP clients configuration
+    clients:
+      # Configuration name
+      default:
+        # Whether to enable mock, used in conjunction with github.com/jarcoal/httpmock, see usage in test/http/cases/client_test.go
+        mock: true
+        # Request timeout
+        timeout: 30s
+        dial_timeout: 30s
+        dial_keepalive_time: 30s
+        force_attempt_http2: true
+        tls_handshake_timeout: 10s
+        disable_compression: false
+        max_idle_conns: 100
+        max_idle_conns_per_host: 100
+        max_conns_per_host: 0
+        idle_conn_timeout: 90s
+        expect_continue_timeout: 1s
+        # Retry count
+        retry_count: 0
+        # Retry interval
+        retry_wait_time: 100ms
+        # Maximum retry time
+        retry_max_wait_time: 2s
+        # Retry conditions, customizable retryable conditions
+        # Configurable custom implementation of github.com/go-resty/resty/v2.RetryConditionFunc function declaration
+        # Custom configurations may not be found due to not being directly referenced, so when configuring,
+        # you need to define the corresponding object or function's global reflect.Type to avoid being ignored by the compiler
+        retry_condition_funcs: [ ]
+        # Retry callback, customizable conditions that trigger a retry
+        # Configurable custom implementation of github.com/go-resty/resty/v2.OnRetryFunc function declaration
+        # Custom configurations may not be found due to not being directly referenced, so when configuring,
+        # you need to define the corresponding object or function's global reflect.Type to avoid being ignored by the compiler
+        retry_hooks: [ ]
+    # HTTP metrics configuration
+    metrics:
+      # Extract key-value pairs from the request header that need to be reported as labels in telemetry,
+      # as part of the Golang framework configuration.
+      header_labels: [ ]
+
+  # Internationalization configuration
+  i18n:
+    # Default language, supports languages defined in golang.org/x/text/language
+    default_lang: zh
+
+  # Goroutine configuration
+  goroutine_pool:
+    # Configures the maximum number of goroutines through Go, Loop, Promise, Pool in this component,
+    # can control the total amount of goroutines in business calls
+    max_routine_amount: -1
+    # Maximum waiting time for a single pool during graceful exit
+    max_release_time_per_pool: 3h
+    # Mainly used for debugging and unit testing, can force Go, Loop, Promise, Pool to execute synchronously
+    force_sync: false
+    # Enable logging, can be switched in real-time during program run
+    enable_logger: false
+    # Configurable custom implementation of ants.Logger interface logger object
+    # The default configured logger object can print logs to the logs configured in log.default
+    # Custom configuration may not find the object because it is not directly referenced, so when business configures,
+    # it needs to define the global reflect.Type type of the corresponding object or function to avoid compiler neglect
+    logger: github.com/wfusion/gofusion/log/customlogger.routineLogger
+    # Log configuration, corresponds to the name in the log component
+    log_instance: default
+
+  # Metrics configuration
+  metrics:
+    # Metrics configuration name
+    prometheus:
+      # Remote service type, currently supports mock, prometheus, mock type for business unit test
+      type: prometheus
+      # Metrics collection method, supports push, pull
+      # Note: When using pull, you need to register http endpoint yourself using metrics.HttpHandler
+      mode: push
+      # Effective when type is push, the interval for pushing metrics, required to be < 60s
+      interval: 15s
+      # Define constant label kv
+      labels:
+        constant_key: constant_value
+      # Remote connection configuration
+      endpoint:
+        # Connection address
+        addresses: [ prometheus:9091 ]
+      # All metrics default to add _service, _service_hostname, _service_ip labels
+      enable_service_label: true
+      # Automatically collect and report metrics of each component, including db, redis, mongo, http, and routine now:
+      # redis_idle,redis_total,redis_stale,redis_hits,redis_misses,redis_latency
+      # mongo_idle,mongo_inuse,mongo_total,mongo_latency
+      # db_idle,db_total,db_inuse,db_wait_count,db_wait_duration,db_latency
+      # http_latency, http_request_counter, http_code_counter
+      # runtime_alloc_bytes,runtime_sys_bytes,runtime_malloc_count,runtime_free_count,runtime_heap_objects,
+      # runtime_total_gc_pause_ns,runtime_total_gc_runs
+      enable_internal_metrics: true
+      # Limit on metrics queue length, limiting memory usage due to high concurrency metrics, default is 16384
+      #
+      # When reaching the limit, metrics are discarded by default, metrics.WithTimeout can hang to ensure metrics,
+      # or set a business-tolerable time using metrics.Timeout option
+      queue_limit: 16384
+      # Concurrency of metrics queue processing, limiting CPU usage due to high concurrency metrics,
+      # defaults to runtime.NumCPU()
+      queue_concurrency: 0
+      # Enable logging, can be switched in real-time during program run
+      enable_logger: true
+      # Log configuration, corresponding to the name in the log component
+      log_instance: default
+      # Can configure a custom implementation of metrics.logger.Interface interface for logging
+      #
+      # Default configuration of logger object can print logs to log.<log_instance> configured logs
+      #
+      # Custom configuration might not find the object due to no direct references,
+      # so business configuration needs to define corresponding objects or functions in
+      # global reflect.Type to avoid compiler omission.
+      logger: github.com/wfusion/gofusion/log/customlogger.metricsLogger
+
+  # Log configuration
+  log:
+    # Log configuration name, in this example it's default, there must be one default log,
+    # which can be used directly with log.Info, log.Warn
+    default:
+      # Log level, supports debug, info, warn, error, panic, fatal
+      log_level: debug
+      # Configure to print stacktrace above a certain log level, supports debug, info, warn, error, panic, fatal
+      stacktrace_level: error
+      # Configure to skip certain file locations in log printing, supports wildcard
+      skip_callers: [ ]
+      # Enable to make file location path in log printing shorter
+      shorter_filepath: true
+      # Enable console log output
+      enable_console_output: true
+      # Console output configuration
+      console_output_option:
+        # Output format, supports console, json
+        layout: console
+        # Output in color or not, affects log readability
+        colorful: false
+      # Enable file log output
+      enable_file_output: false
+      # File output configuration
+      file_output_option:
+        # Output format, supports console, json
+        layout: json
+        # Save path
+        path: .
+        # Save name, defaults to <app>.log if not configured,
+        # or <program run directory name>.log if <app> is not configured, or md5 hash if run directory is /
+        name: gofusion.log
+        # The maximum duration to retain logs. This is triggered only during log rotation due to exceeding size limits.
+        # The duration should be >= 1ms. The default value is 30 days.
+        rotation_max_age: 30d
+        # The maximum number of file copies to keep. The actual number retained includes the current log file in use,
+        # so the actual maximum number of copies is <rotation_count> + 1.
+        rotation_count: 10
+        # The size limit for log file rotation. The default value is 100 MiB.
+        rotation_size: 100mib
+        # Whether to automatically compress logs using gzip. This only applies to archived logs;
+        # the current log file in use is not compressed in real-time.
+        compress: false
+
+  # Relational database configuration
+  db:
+    # db configuration name, in this example it's read
+    read:
+      # Database type, defaults to mysql, supports mysql, postgres, sqlite, sqlserver, tidb, clickhouse
+      driver: mysql
+      # Database driver dialect, can be left empty, each database type has a default driver
+      # - When driver is postgres, supports opengauss
+      dialect: mysql
+      # Database or schema name
+      db: mysql
+      # Database address
+      host: mysql
+      # Database port
+      port: 3306
+      # Username
+      user: root
+      # User password, in this demo it's the corresponding encrypted text configured in crypto.config
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      # Maximum number of idle connections in the database connection pool
+      max_idle_conns: 20
+      # Maximum number of usable connections in the database connection pool
+      max_open_conns: 20
+      # Maximum life time for a single connection, should be less than the configuration in database server
+      conn_max_life_time: 30m
+      # Maximum idle time for a single connection
+      conn_max_idle_time: 15m
+      # Auto-increment id step, effective when driver is mysql or mariadb, when 0,
+      # will automatically get the database configuration (not corresponding table configuration)
+      # Note: Solves github.com/go-gorm/gorm/issues/5814,
+      # when business-defined table structure is nested more than two layers,
+      # the problem of mismatched steps during creation will occur
+      auto_increment_increment: 0
+      # Automatic sharding configuration
+      sharding:
+        # Table name
+        - table: "user"
+          # Custom sharding table name suffix
+          #
+          # For example, in user table, configured as az1_%02d,
+          # then sharding result will be user_az1_00, user_az1_01, etc.
+          #
+          # Default suffix is user_0, user_1, when <number_of_shards> > 10,
+          # it becomes user_00, user_01, supports up to user_9999
+          suffix: ""
+          # Sharding key, which columns in the table are used for sharding, supports multiple columns
+          columns: [ city ]
+          # Custom sharding key expression,
+          # e.g. sharding based on type and user_id columns, can be written as type << 8 | user_id
+          #
+          # Expression syntax details: github.com/PaesslerAG/gval, numbers will lose precision,
+          # as all are converted to float64 for calculation
+          #
+          # Default sharding expression: concatenate <columns> in the order of configuration in big-endian,
+          # then crc32 hash and take remainder with number_of_shards
+          sharding_key_expr: ""
+          # Enable to directly shard based on the raw values of columns,
+          # like user table az_name column can be sharded to user_az1, user_az2
+          #
+          # Note: When enabled, <number_of_shards> no longer takes effect
+          sharding_key_by_raw_value: false
+          # When <sharding_key_by_raw_value> is enabled, during db.Migrate auto-table-creation,
+          # specify which keys are needed for sharding, like [az1,az2,az3]
+          sharding_keys_for_migrating: []
+          # When using default sharding expression or custom sharding expression, maximum number of shards
+          # Note: Once configured, the number should not be arbitrarily changed as it will prevent normal
+          # reading/writing to the original sharding results. To change the number of shards,
+          # business-side needs to carry out sharding migration themselves.
+          number_of_shards: 1
+          # If sharding using primary key id, need to choose the generating algorithm for primary key id
+          #
+          # Can configure a custom implementation of common/infra/drivers/orm/idgen.Generator interface
+          #
+          # Default configuration is based on github.com/sony/sonyflake snowflake algorithm,
+          # cannot guarantee absolute non-collision, machine code expression is:
+          # byte(hash/fnv(host_ip+ip+pid) % 255) << 8 | byte(ip[24:]), host_ip defaults to host.docker.internal
+          #
+          # Custom configuration might not find the object due to no direct references,
+          # so business configuration needs to define corresponding objects or functions
+          # in global reflect.Type to avoid compiler omission.
+          idgen: github.com/wfusion/gofusion/common/infra/drivers/orm/idgen.NewSnowflake
+          # Enable logging, can be switched in real-time during program run
+          enable_logger: true
+          # Log configuration, can be switched in real-time during program run
+          # Note:
+          # 1. Conflicts with global debug configuration, prioritizes enabling gorm native debug
+          # 2. logger_config.logger configuration cannot take effect in real-time
+          logger_config:
+            # Log level, supports debug, info, warn, error
+            log_level: info
+            # When log level is below error, can print SQL logs that exceed this duration
+            slow_threshold: 500ms
+            # Can configure a custom implementation of gorm.logger.Interface interface for logging
+            #
+            # Default configuration of logger object can print logs to log.<log_instance> configured logs
+            #
+            # Custom configuration might not find the object due to no direct references,
+            # so business configuration needs to define corresponding objects or functions in
+            # global reflect.Type to avoid compiler omission.
+            logger: github.com/wfusion/gofusion/log/customlogger.gormLogger
+            # Log configuration, corresponds to the name in log component
+            log_instance: default
+    # db configuration name, in this example it's write
+    write:
+      driver: mysql
+      db: mysql
+      host: mysql
+      port: 3306
+      user: root
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+      timeout: 5s
+      read_timeout: 2s
+      write_timeout: 2s
+      max_idle_conns: 20
+      max_open_conns: 20
+      enable_logger: true
+      logger_config:
+        log_level: info
+        slow_threshold: 500ms
+
+  # mongo configuration
+  mongo:
+    # mongo configuration name, in this example it's default
+    default:
+      # database name
+      db: admin
+      # Name of database used for authentication
+      auth_db: admin
+      # username
+      user: root
+      # password, the corresponding encrypted ciphertext configured in crypto.config in this demo
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+      # 集群地址
+      endpoints:
+        - mongo:27017
+      timeout: 5s
+      conn_timeout: 30s
+      socket_timeout: 5s
+      heartbeat_interval: 10s
+      max_connecting: 2
+      min_pool_size: 0
+      max_pool_size: 100
+      max_conn_idle_time: 10s
+      retry_writes: true
+      retry_reads: true
+      # Enable logging, can be switched in real-time during program run
+      enable_logger: true
+      # Log configuration, can be switched in real-time during program run
+      # Note: logger_config.logger configuration cannot take effect in real-time
+      logger_config:
+        # Configure the mongo command that needs to be printed
+        loggable_commands: [insert,find,update,delete,aggregate,distinct,count,findAndModify]
+        # Configurable custom log object that implements the gofusion/mongo.logger interface
+        #
+        # The default configured log object can print logs to logs configured in log.<log_instance>
+        #
+        # Custom configuration may not find the object because there is no direct reference,
+        # so the global reflect. Type type of the corresponding object or function needs to be defined during
+        # business configuration to avoid being ignored by the compiler
+        logger: github.com/wfusion/gofusion/log/customlogger.mongoLogger
+        # Log configuration, corresponds to the name in log component
+        log_instance: default
+
+
+  # redis configuration
+  redis:
+    # redis configuration name, in this example it's default
+    default:
+      # Database
+      db: 0
+      # Username
+      user: ""
+      # User password, in this demo it's the corresponding encrypted text configured in crypto.config
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+      # Whether the server is in cluster mode
+      cluster: false
+      # Server address
+      endpoints:
+        - redis:6379
+      dial_timeout: 5s
+      # socket reads timeout duration, besides normal time.Duration configuration,
+      # also supports -1 (blocking), -2 (no deadline set) configuration
+      read_timeout: 2s
+      # socket writes timeout duration, besides normal time.Duration configuration,
+      # also supports -1 (blocking), -2 (no deadline set) configuration
+      write_timeout: 2s
+      min_idle_conns: 0
+      max_idle_conns: 0
+      # if the configuration is <= 0, then single connection will never expire
+      conn_max_idle_time: 30m
+      # if the configuration is <= 0, then single connection will never expire
+      conn_max_life_time: "0"
+      max_retries: 3
+      min_retry_backoff: 8ms
+      max_retry_backoff: 512ms
+      # Pool size, default is runtime.GOMAXPROCS() x 10
+      pool_size: 0
+      # Pool blocking timeout duration, default is <read_timeout> + 1s
+      pool_timeout: ""
+      # Enable logging, can be toggled in real-time while the program is running
+      enable_logger: true
+      # Redis commands that don't need log recording, can be toggled in real-time while the program is running
+      # Configuration in hooks containing gofusion/log/customlogger.redisLogger will take effect
+      unloggable_commands: [echo,ping]
+      # Log configuration, corresponds to the name in log component
+      log_instance: default
+      # Can configure custom implementation of github.com/redis/go-redis/v9/redis.Hook interface
+      #
+      # Default configuration of the object can print logs to log.<log_instance> configured logs
+      #
+      # Custom configuration might not find the object due to no direct references,
+      # so business configuration needs to define corresponding objects or functions
+      # in global reflect.Type to avoid compiler omission.
+      hooks:
+        - github.com/wfusion/gofusion/log/customlogger.redisLogger
+
+  # message queue configuration
+  mq:
+    # mq configuration name, in this example it's mysql
+    mysql:
+      # Message queue topic, or from the consumer perspective, it's consumer group
+      topic: gofusion
+      # Message queue type, supports amqp, rabbitmq, gochannel, kafka, pulsar, redis, mysql, postgres
+      type: mysql
+      # Enable the message queue producer side, enabled by default
+      producer: true
+      # Enable the message queue consumer side, for consuming messages, or can be called worker, server
+      consumer: true
+      # Consumer group
+      consumer_group: default_group
+      # Number of consumers, effective only if the message queue type supports multiple consumers
+      # Too large configuration has no effect for some message queues
+      #  - type is kafka, if the total number of consumers in distributed environment is greater than the
+      #    number of partitions, then the extra consumers will be idle and useless
+      #  - type is mysql, mariadb, postgres, due to the implementation of transaction lock on offset table,
+      #    distributed and multiple consumers are meaningless,
+      #    but can control the number of messages consumed at once in a single lock
+      consumer_concurrency: 10
+      # Server connection configuration
+      endpoint:
+        # instance type, supports redis, db, corresponds to the redis, db modules in this configuration file
+        instance_type: db
+        # instance_type corresponding configuration name
+        instance: write
+        # Connection address for non-instance type
+        addresses:
+          - rabbitmq:5672
+        # Connection username for non-instance type
+        # - type is kafka corresponds to SASL/PLAIN username
+        # - type is pulsar corresponds to basic username
+        user: "rabbitmq"
+        # Connection password or credential for non-instance type
+        # - type is kafka corresponds to SASL/PLAIN password or OAUTHBEARER token
+        # - type is pulsar corresponds to basic's username, tls, token, athenz, oauth2's json serialized credential
+        password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+        # Credential type for non-instance type
+        # - type is kafka supports plain, scram-sha-256, scram-sha-512, oauthbearer
+        # - type is pulsar supports basic, tls, token, athenz, oauth2, other than basic,
+        #   required parameters are json serialized <password>
+        auth_type: ""
+        # Server version, effective when type is kafka
+        version: 3.6.0
+      # Whether the message is persistent, effective when type is amqp, rabbitmq, gochannel, mysql, postgres, pulsar
+      # - type is gochannel means persistent to memory, next subscriber can pull historical messages when subscribed
+      # - type is pulsar, meaning is not whether the message is persistent,
+      #   but whether the subscriber's consumption offset is persistent,
+      #   if closed, consumption offset will not be persisted
+      persistent: true
+      # Message serialization algorithm, supports gob, json, msgpack, cbor, default is gob
+      serialize_type: gob
+      # Message compression algorithm, supports zstd, zlib, s2, gzip, deflate,
+      # when serialization algorithm is not configured, default is gob algorithm for serialization
+      compress_type: zstd
+      # Enable logging, can be toggled in real-time while the program is running
+      enable_logger: true
+      # Can configure custom implementation of github.com/wfusion/gofusion/common/infra/watermill.LoggerAdapter
+      # interface logger object
+      #
+      # Default configuration of logger object can print logs to log.<log_instance> configured logs
+      # Custom configuration might not find the object due to no direct references,
+      # so business configuration needs to define corresponding objects or functions in
+      # global reflect.Type to avoid compiler omission.
+      logger: github.com/wfusion/gofusion/log/customlogger.mqLogger
+      # Log configuration, corresponds to the name in log component
+      log_instance: default
+      # Message scheme name, effective when type is mongo, mysql, mariadb, postgres
+      message_scheme: gofusion_message
+      # Series scheme name, effective when type is mongo
+      series_scheme: gofusion_series
+      # Subscriber scheme name, effective when type is mongo
+      consumer_scheme: gofusion_subscriber
+      # Message consumption middleware
+      consume_middlewares:
+          # type supports throttle, retry, instance_ack, poison, timeout, circuit_breaker
+          # Can configure custom implementation of
+          # github.com/wfusion/gofusion/common/infra/watermill/message.HandlerMiddleware object
+          #
+          # Custom configuration might not find the object due to no direct references,
+          # so business configuration needs to define corresponding objects or functions in
+          # global reflect.Type to avoid compiler omission.
+        - type: throttle
+          # Effective when type is throttle, represents the number of messages
+          # that can be accepted within <throttle_duration> period
+          throttle_count: 10
+          # Effective when type is throttle, sets the unit period
+          throttle_duration: 1s
+          # Effective when type is retry, maximum retry times for a single consumption failure
+          retry_max_retries: 1
+          # Effective when type is retry, initial retry time interval
+          retry_initial_interval: 1s
+          # Effective when type is retry, maximum retry time interval
+          retry_max_interval: 10s
+          # Effective when type is retry, retry time interval multiplier,
+          # that is, the multiple between two adjacent retry time intervals
+          retry_multiplier: 1.1
+          # Effective when type is retry, maximum retry time, if configured 0, then no limit
+          retry_max_elapsed_time: 20s
+          # Effective when type is retry, jitter factor for calculating next retry time interval,
+          # in this example, after calculating the next round of retry time interval,
+          # randomly select [90%, 110%] * time interval
+          retry_randomization_factor: 0.1
+          # Effective when type is poison, failed messages will accumulate in this topic
+          poison_topic: "failed"
+          # Effective when type is timeout, sets the message processing timeout
+          timeout: 10s
+          # Effective when type is circuit_breaker, maximum requests when circuit breaker is in half-open state
+          circuit_breaker_max_requests: 0
+          # Effective when type is circuit_breaker, time interval from closed to half-open state after circuit breaker
+          circuit_breaker_interval: 15s
+          # Effective when type is circuit_breaker, time interval from open to half-open state
+          circuit_breaker_timeout: 60s
+          # Effective when type is circuit_breaker, expression for circuit breaker to recover to open state,
+          # default is consecutive_successes > 5
+          # Supports parameters requests, total_successes, total_failures, consecutive_successes, consecutive_failures
+          circuit_breaker_trip_expr: consecutive_successes > 5
+
+  # Cache Configuration
+  cache:
+    # Cache configuration name, in this example it's local
+    local:
+      # Cache pool size, effective when type is local
+      size: 10
+      # Cache object expiration time, can be toggled in real-time while the program is running
+      expired: 5s
+      # Cache object version, can be toggled in real-time while the program is running,
+      # to refresh the entire cache, modify the version number
+      version: 1
+      # Cache type, supports local (near-end cache), remote (far-end cache)
+      type: local
+      # Eviction algorithm, effective when type is local, supports simple, lru, lfu, arc
+      local_evict_type: arc
+      # Remote cache type, effective when type is remote, supports redis
+      remote_type: ""
+      # Compression algorithm, can be toggled in real-time while the program is running,
+      # supports zstd, zlib, s2, gzip, deflate, default is gob algorithm for serialization
+      # when serialization algorithm is not configured
+      compress: ""
+      # Serialization algorithm, can be toggled in real-time while the program is running,
+      # supports gob, json, msgpack, cbor
+      serialize_type: ""
+      # Log configuration, corresponds to the name in log component,
+      # can be toggled in real-time while the program is running
+      log_instance: default
+      # Callback function when cache misses, can be toggled in real-time while the program is running
+      #
+      # Can set callback function when calling Get, GetAll in business logic (higher priority than this configuration),
+      # if no callback function is passed in Get and GetAll, this configuration will be called
+      #
+      # Can configure custom implementation of gofusion/cache.callback object
+      # Custom configuration might not find the object due to no direct references,
+      # so business configuration needs to define corresponding objects or functions in
+      # global reflect.Type to avoid compiler omission
+      callback: ""
+
+  # Distributed Lock Configuration
+  lock:
+    # Lock configuration name, in this example it's default
+    default:
+      # Supports redis_lua, redis_nx, mysql, mariadb, mongo
+      type: redis_lua
+      # Corresponds to the configuration in redis or db components
+      instance: default
+      # When type is set to mongo, it becomes effective. This specifies the MongoDB collection to be used for
+      # distributed locks. The collection can be automatically generated upon initialization.
+      scheme: lock
+
+  # Distributed Asynchronous Task Configuration
+  async:
+    # Async configuration name, in this example it's default
+    default:
+      # Supports asynq (based on redis)
+      type: asynq
+      # Corresponds to the component instance
+      # - When type is asynq, corresponds to the name of redis component configuration
+      instance: default
+      # Instance type, supports redis
+      instance_type: redis
+      # Enable the producer side for triggering asynchronous tasks, enabled by default
+      producer: true
+      # Enable the consumer side for executing asynchronous tasks, or can be called worker, server
+      consumer: true
+      # Number of workers, affects execution efficiency when there are multiple timed tasks, default is runtime.NumCPU()
+      consumer_concurrency: 0
+      # Data serialization algorithm, supports gob, json, msgpack, cbor, default is gob
+      message_serialize_type: gob
+      # Data compression algorithm, supports zstd, zlib, s2, gzip, deflate, default is gob algorithm
+      # for serialization when serialization algorithm is not configured
+      message_compress_type: zstd
+      # Queue configuration, default is a single queue if not configured, queue name is <app>:async
+      queues:
+        # Queue name, default is <app>:async, in this example it's gofusion:async
+        - name: ""
+          # Queue priority, 3 means about 30% of the tasks are executed in a unit time
+          level: 3
+      # Enable strict priority mode, high priority tasks will be executed first before executing low priority tasks
+      strict_priority: false
+      # Log level, supports debug, info, warn, error, fatal
+      log_level: info
+      # Enable logging, can be toggled in real-time while the program is running
+      enable_logger: true
+      # Logger object, can configure custom implementation of interface object
+      # - When type is asynq, interface is: gofusion/common/infra/asynq.Logger
+      #
+      # Default configured object can print logs to log.<log_instance> configured logs
+      #
+      # Custom configuration might not find the object due to no direct references,
+      # so business configuration needs to define corresponding objects or functions
+      # in global reflect.Type to avoid compiler omission
+      logger: github.com/wfusion/gofusion/log/customlogger.asyncLogger
+      # Log configuration, corresponds to the name in log component
+      log_instance: default
+
+  # Distributed Timed Task Configuration
+  cron:
+    # Cron configuration name, in this example it's default
+    default:
+      # Supports asynq (based on redis)
+      type: asynq
+      # Corresponds to the component instance
+      # - When type is asynq, it corresponds to the name of redis component configuration
+      instance: default
+      # Instance type, supports redis
+      instance_type: redis
+      # Distributed lock instance name to prevent multiple timed tasks from being triggered at the same time
+      #
+      # The lock's key is cron_<task.name>
+      # - When type is asynq, this item is not configured, and the lock logic is implemented through asynq Unique option
+      lock_instance: "default"
+      # Whether to enable the trigger end for timed task triggering, or can be called producer
+      trigger: true
+      # Whether to enable the server end for timed task execution, or can be called worker, consumer
+      server: true
+      # Number of workers, affects execution efficiency when there are multiple timed tasks
+      # Default is runtime.NumCPU()
+      server_concurrency: 0
+      # Timezone configuration, default is Asia/Shanghai
+      timezone: "Asia/Shanghai"
+      # Task queue name, default is <app>:cron, in this example it's gofusion:cron
+      queue: ""
+      # Log level, supports debug, info, warn, error, fatal
+      log_level: info
+      # Whether to enable logging, can be toggled in real-time while the program is running
+      enable_logger: true
+      # Logger object, can configure custom implementation of interface object
+      # - When type is asynq, interface is: gofusion/common/infra/asynq.Logger
+      #
+      # Default configured object can print logs to log.<log_instance> configured logs
+      #
+      # Custom configuration might not find the object due to no direct references,
+      # so business configuration needs to define corresponding objects or functions
+      # in global reflect.Type to avoid compiler omission
+      logger: github.com/wfusion/gofusion/log/customlogger.cronLogger
+      # Log configuration, corresponds to the name in log component
+      log_instance: default
+      # Timed task real-time generator, effective when trigger is enabled,
+      # can append timed tasks in business on top of tasks defined in this configuration file
+      #
+      # Can configure custom implementation of interface object, effective when trigger is enabled
+      # - When type is asynq, interface is: gofusion/common/infra/asynq.PeriodicTaskConfigProvider
+      task_loader: ""
+      # Refresh timed tasks interval, i.e., re-register timed tasks every period
+      refresh_tasks_interval: 3m
+      # Task configuration, can be toggled in real-time while the program is running
+      tasks:
+        # Task name, will be formatted as <app>:cron:<name>, in this example it's gofusion:cron:test,
+        # no need to worry about it during business registration, just use test to register Handler
+        test:
+          # Crontab expression
+          crontab: "@every 1s"
+          # Timed task execution function, can be left unconfigured,
+          # business can register through Handle call and supports more function signatures
+          #
+          # Can configure functions implementing gofusion/cron.routerHandleFunc
+          #
+          # Custom configuration might not find the object due to no direct references,
+          # so business configuration needs to define corresponding objects or functions
+          # in global reflect.Type to avoid compiler omission
+          callback: ""
+          # JSON format payload, when using Handle to register,
+          # can automatically deserialize the arg object in func(context.Context, arg *JsonSerializable)
+          payload: ""
+          # Maximum retry times for the corresponding task when timed task execution fails
+          retry: 0
+          # Timed task execution timeout, time.Duration format
+          # Default timeout is the period of a single timed task trigger
+          timeout: ""
+          # Timed task deadline, format: 2006-01-02 15:04:05
+          deadline: ""
+
+# Below are business configurations simulated in unit tests,
+# unrelated to gofusion's own configuration, business can be completely customized
+
+InstanceSync:
+  Enable: true
+  Crontab: "0 0 1 * * *"
+
+Forecast:
+  Enable: true
+  Crontab: "0 0 4 * * *"
+  History: 3
+  Future: 1

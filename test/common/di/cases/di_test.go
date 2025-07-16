@@ -37,16 +37,16 @@ func (t *DI) AfterTest(suiteName, testName string) {
 
 func (t *DI) TestDI() {
 	t.Catch(func() {
-		t.NoError(comDI.Dig.Provide(NewPersonDrink))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[string]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonDrink))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[string]))
 
-		t.NoError(
+		t.Require().NoError(
 			comDI.Dig.Invoke(func(p Person) {
 				p.Show()
 			}),
 		)
-		t.NoError(
+		t.Require().NoError(
 			comDI.Dig.Invoke(func(p Person2) {
 				p.Show()
 			}),
@@ -56,9 +56,9 @@ func (t *DI) TestDI() {
 
 func (t *DI) TestName() {
 	t.Catch(func() {
-		t.NoError(comDI.Dig.Provide(NewPersonDrink, comDI.Name("ddd")))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int]))
-		t.NoError(comDI.Dig.Invoke(func(p Person3) {
+		t.Require().NoError(comDI.Dig.Provide(NewPersonDrink, comDI.Name("ddd")))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Dig.Invoke(func(p Person3) {
 			p.Show()
 		}))
 	})
@@ -66,12 +66,12 @@ func (t *DI) TestName() {
 
 func (t *DI) TestGroup() {
 	t.Catch(func() {
-		t.NoError(comDI.Dig.Provide(NewPersonDrink, comDI.Name("ddd")))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonDrink, comDI.Name("ddd")))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int]))
 
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Dig.Invoke(func(p Person4) {
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Dig.Invoke(func(p Person4) {
 			p.Show()
 		}))
 	})
@@ -79,29 +79,29 @@ func (t *DI) TestGroup() {
 
 func (t *DI) TestPopulate() {
 	t.Catch(func() {
-		t.NoError(comDI.Dig.Provide(NewPersonDrink))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonDrink))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int]))
 
 		var d Drink
-		t.NoError(comDI.Dig.Populate(&d))
+		t.Require().NoError(comDI.Dig.Populate(&d))
 		d.Water()
 	})
 }
 
 func (t *DI) TestString() {
 	t.Catch(func() {
-		t.NoError(comDI.Dig.Provide(NewPersonDrink, comDI.Name("ddd")))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonDrink, comDI.Name("ddd")))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int]))
 
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Dig.Invoke(func(p Person4) {
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Dig.Invoke(func(p Person4) {
 			p.Show()
 		}))
 
 		graph := comDI.Dig.String()
 		log.Info(context.Background(), graph)
-		t.NotEmpty(graph)
+		t.Require().NotEmpty(graph)
 	})
 }
 
@@ -109,35 +109,35 @@ func (t *DI) TestConcurrentInvoke() {
 	t.Catch(func() {
 		type pointer struct{}
 
-		t.NoError(comDI.Dig.Provide(NewPersonDrink))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonDrink))
 
-		t.NoError(comDI.Dig.Provide(NewPersonEat[bool]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[string]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[bool]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[string]))
 
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int8]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int16]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int32]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[int64]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[uint]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[uint8]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[uint16]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[uint32]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[uint64]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int8]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int16]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int32]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[int64]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[uint]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[uint8]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[uint16]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[uint32]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[uint64]))
 
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]int]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]int8]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]int16]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]int32]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]int64]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]uint]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]uint8]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]uint16]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]uint32]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]uint64]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]bool]))
-		t.NoError(comDI.Dig.Provide(NewPersonEat[[]string]))
-		t.NoError(comDI.Dig.Provide(func() *pointer { return new(pointer) }))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]int]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]int8]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]int16]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]int32]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]int64]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]uint]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]uint8]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]uint16]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]uint32]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]uint64]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]bool]))
+		t.Require().NoError(comDI.Dig.Provide(NewPersonEat[[]string]))
+		t.Require().NoError(comDI.Dig.Provide(func() *pointer { return new(pointer) }))
 
 		comDI.Dig.Preload()
 
@@ -155,7 +155,7 @@ func (t *DI) TestConcurrentInvoke() {
 		wg := new(sync.WaitGroup)
 		for i := 0; i < 10; i++ {
 			wg.Add(1)
-			go func() { defer wg.Done(); t.NoError(comDI.Dig.Invoke(invokeAllFn)) }()
+			go func() { defer wg.Done(); t.Require().NoError(comDI.Dig.Invoke(invokeAllFn)) }()
 		}
 
 		wg.Wait()

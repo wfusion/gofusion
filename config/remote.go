@@ -30,6 +30,7 @@ type RemoteConfigurable interface {
 	GetAllSettings() map[string]any
 	OnConfigChange(run func(in Event))
 	MergeConfigMap(cfg map[string]any) (err error)
+
 	getConfigType() (tag string)
 }
 

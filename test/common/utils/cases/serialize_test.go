@@ -74,17 +74,17 @@ func (t *Serialize) TestBytes() {
 			t.Run(algo.String(), func() {
 				// single
 				marshaled, err := marshalFunc(expected)
-				t.NoError(err)
+				t.Require().NoError(err)
 				actualSingle, err := unmarshalSingleFunc(marshaled)
-				t.NoError(err)
-				t.EqualValues(expected, actualSingle)
+				t.Require().NoError(err)
+				t.Require().EqualValues(expected, actualSingle)
 
 				// multiple
 				marshaled, err = marshalFunc(expectedList)
-				t.NoError(err)
+				t.Require().NoError(err)
 				actualMultiple, err := unmarshalMultipleFunc(marshaled)
-				t.NoError(err)
-				t.EqualValues(expectedList, actualMultiple)
+				t.Require().NoError(err)
+				t.Require().EqualValues(expectedList, actualMultiple)
 			})
 		}
 	})
@@ -126,19 +126,19 @@ func (t *Serialize) TestStream() {
 
 				// single
 				err := marshalFunc(marshaled, expected)
-				t.NoError(err)
+				t.Require().NoError(err)
 				actualSingle, err := unmarshalSingleFunc(marshaled)
-				t.NoError(err)
-				t.EqualValues(expected, actualSingle)
+				t.Require().NoError(err)
+				t.Require().EqualValues(expected, actualSingle)
 
 				marshaled.Reset()
 
 				// multiple
 				err = marshalFunc(marshaled, expectedList)
-				t.NoError(err)
+				t.Require().NoError(err)
 				actualMultiple, err := unmarshalMultipleFunc(marshaled)
-				t.NoError(err)
-				t.EqualValues(expectedList, actualMultiple)
+				t.Require().NoError(err)
+				t.Require().EqualValues(expectedList, actualMultiple)
 			})
 		}
 	})

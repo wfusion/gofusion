@@ -55,7 +55,7 @@ func (t *Transaction) testDefault(read, write string) {
 		ctx := context.Background()
 		ctx = db.SetCtxGormDB(ctx, db.Use(ctx, read, db.AppName(t.AppName())))
 		ctx = db.SetCtxGormDB(ctx, db.Use(ctx, write, db.AppName(t.AppName())))
-		t.NoError(db.WithinTx(ctx,
+		t.Require().NoError(db.WithinTx(ctx,
 			func(ctx context.Context) (err error) { return },
 			db.TxUse(write),
 		))

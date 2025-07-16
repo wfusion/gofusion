@@ -62,8 +62,8 @@ func (t *Asynq) TestMultiCronWithoutLock() {
 		})
 
 		// When
-		t.NoError(r1.Start())
-		t.NoError(r2.Start())
+		t.Require().NoError(r1.Start())
+		t.Require().NoError(r2.Start())
 		time.Sleep(expect * time.Second)
 
 		// Then
@@ -96,8 +96,8 @@ func (t *Asynq) TestMultiCronWithLock() {
 		})
 
 		// When
-		t.NoError(r1.Start())
-		t.NoError(r2.Start())
+		t.Require().NoError(r1.Start())
+		t.Require().NoError(r2.Start())
 		time.Sleep(expect * time.Second)
 
 		// Then
@@ -113,7 +113,7 @@ func (t *Asynq) cleanByQueue(ctx context.Context, queue string) {
 
 	rdsCli := redis.Use(ctx, "default", redis.AppName(t.AppName()))
 	keys, err := rdsCli.Keys(ctx, pattern).Result()
-	t.NoError(err)
+	t.Require().NoError(err)
 
 	if len(keys) > 0 {
 		rdsCli.Del(ctx, keys...)

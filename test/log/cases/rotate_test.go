@@ -58,14 +58,14 @@ func (t *Rotate) TestRotateSize() {
 
 		time.Sleep(time.Second)
 		matches, err := filepath.Glob(filepath.Join(projectRoot, "gofusion*.log"))
-		t.NoError(err)
+		t.Require().NoError(err)
 		t.Greater(len(matches), 1)
 		t.LessOrEqual(len(matches), 1+5)
 		for _, match := range matches {
 			fs, err := os.Stat(match)
-			t.NoError(err)
+			t.Require().NoError(err)
 			t.LessOrEqual(fs.Size(), int64(1024))
-			t.NoError(os.Remove(match))
+			t.Require().NoError(os.Remove(match))
 		}
 	})
 }
@@ -91,13 +91,13 @@ func (t *Rotate) TestRotateTime() {
 
 		time.Sleep(time.Second)
 		matches, err := filepath.Glob(filepath.Join(projectRoot, "gofusion*.log"))
-		t.NoError(err)
-		t.Equal(len(matches), 1+1)
+		t.Require().NoError(err)
+		t.Require().Equal(len(matches), 1+1)
 		for _, match := range matches {
 			fs, err := os.Stat(match)
-			t.NoError(err)
+			t.Require().NoError(err)
 			t.NotZero(fs.Size())
-			t.NoError(os.Remove(match))
+			t.Require().NoError(os.Remove(match))
 		}
 	})
 }
@@ -122,13 +122,13 @@ func (t *Rotate) TestRotateCount() {
 
 		time.Sleep(time.Second)
 		matches, err := filepath.Glob(filepath.Join(projectRoot, "gofusion*.log"))
-		t.NoError(err)
+		t.Require().NoError(err)
 		t.LessOrEqual(len(matches), 1+1)
 		for _, match := range matches {
 			fs, err := os.Stat(match)
-			t.NoError(err)
+			t.Require().NoError(err)
 			t.LessOrEqual(fs.Size(), int64(1024))
-			t.NoError(os.Remove(match))
+			t.Require().NoError(os.Remove(match))
 		}
 	})
 }

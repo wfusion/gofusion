@@ -13,7 +13,7 @@ mkdir -p "${OUTPUT}"
 touch "${OUTPUT}"/coverage.out
 
 # dep install
-go install gotest.tools/gotestsum@latest
+go install gotest.tools/gotestsum@v1.12.0
 go install github.com/axw/gocov/gocov@v1.1.0
 go install github.com/matm/gocov-html/cmd/gocov-html@v1.4.0
 go install github.com/tdewolff/minify/v2/cmd/minify@v2.21.2
@@ -26,7 +26,7 @@ fi
 
 # run test
 COVER_PKG=$(find . -type d | sed 's|^./||' | sed 's|^\.$||' | egrep -v '^$|^.git/*|^test/*|^assets/*|^.idea/*|^common/fus/*|^common/infra/drivers/orm/opengauss/*|^common/infra/drivers/orm/sqlite/*|^common/infra/asynq/*|^common/infra/metrics/*|^common/infra/watermill/*|^common/infra/rotatelog/*|^common/utils/gomonkey/*|^common/utils/sqlparser/*' | awk '{print "github.com/wfusion/gofusion/" $0}' | tr '\n' ',' | sed 's/,$//')
-gotestsum --junitfile "${OUTPUT}"/junit.xml -- -timeout 30m -parallel 1 ./test/... -coverpkg="${COVER_PKG}" -coverprofile="${OUTPUT}"/coverage.out -covermode count || true
+gotestsum --junitfile "${OUTPUT}"/junit.xml -- -timeout 30m -parallel "$(getconf _NPROCESSORS_ONLN)" ./test/... -coverpkg="${COVER_PKG}" -coverprofile="${OUTPUT}"/coverage.out -covermode count || true
 
 # export test report
 echo "export complete.xml"
