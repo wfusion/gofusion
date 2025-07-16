@@ -635,8 +635,8 @@ func (r *registry) initComponents(parent context.Context,
 }
 
 func (r *registry) watchRemoteConfigChange(
-	ctx context.Context, vp RemoteConfigurable, tag utils.MarshalType) func(in Event) {
-	return func(in Event) {
+	ctx context.Context, vp RemoteConfigurable, tag utils.MarshalType) func(event *ChangeEvent) {
+	return func(event *ChangeEvent) {
 		allSettings := vp.GetAllSettings()
 		allSettingString := utils.Must(utils.Marshal(allSettings, tag))
 

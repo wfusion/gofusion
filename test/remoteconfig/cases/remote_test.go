@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/http"
 	"github.com/wfusion/gofusion/log"
 	"github.com/wfusion/gofusion/test/remoteconfig"
 
@@ -67,21 +70,46 @@ func (t *Remote) TestApollo() {
 	})
 }
 
-func (t *Remote) mockApolloData() (cl func()) {
-	apolloAddr := apolloPortalAddr
-	jsonFilename := fmt.Sprintf("%s.app.json", t.AppName())
-	yamlFilename := "app.required.yml"
-	switch {
-	case env.GetEnv() == env.Dev:
-		apolloAddr = apolloPortalLocalAddr
-		yamlFilename = "app.required.local.yml"
-	}
-	yamlData, err := os.ReadFile(filepath.Join(env.WorkDir, "configs", yamlFilename))
-	t.Require().NoError(err)
-	jsonData, err := os.ReadFile(filepath.Join(env.WorkDir, "configs", jsonFilename))
-	t.Require().NoError(err)
+func (t *Remote) TestApolloHotUpdate() {
+	t.Catch(func() {
+		// Given
+		files := []string{
+			"app.required.local.yml",
+			"app.required.yml",
+		}
+		defer t.RawCopy(files, 1)()
+		defer t.mockApolloData()()
+		appSetting := new(appConf)
+		defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()))()
+		conf := new(http.Conf)
+		t.Require().NoError(fusCfg.Use(t.AppName()).LoadComponentConfig(fusCfg.ComponentHttp, &conf))
+		t.Require().EqualValues(9002, conf.Port)
 
-	cli := newApolloAdminClient(apolloAddr)
+		// When
+		yamlData := string(t.readAppYamlConfig())
+		yamlData = strings.ReplaceAll(yamlData, "port: 9002", "port: 9003")
+		cli := t.newApolloAdminClient()
+		t.Require().NoError(cli.UpsertItem(apolloYamlNamespace, "content", yamlData))
+		t.Require().NoError(cli.PublishRelease(apolloYamlNamespace))
+		t.Require().NoError(cli.UpsertItem(apolloTxtNamespace, "content", "updated now"))
+		t.Require().NoError(cli.PublishRelease(apolloTxtNamespace))
+
+		// Then
+		time.Sleep(5 * time.Second)
+		conf = new(http.Conf)
+		t.Require().NoError(fusCfg.Use(t.AppName()).LoadComponentConfig(fusCfg.ComponentHttp, &conf))
+		t.Require().EqualValues(9003, conf.Port)
+
+		txtSettings := fusCfg.Remote("txt", fusCfg.AppName(t.AppName())).GetAllSettings()
+		txtContent := txtSettings[fusCfg.FormatApolloTxtKey(apolloTxtNamespace)]
+		t.Require().EqualValues("updated now", txtContent)
+	})
+}
+
+func (t *Remote) mockApolloData() (cl func()) {
+	yamlData := t.readAppYamlConfig()
+	jsonData := t.readAppJsonConfig()
+	cli := t.newApolloAdminClient()
 	cl = func() {
 		for k := range apolloProperties {
 			_ = cli.DeleteItem("application", k)
@@ -112,4 +140,31 @@ func (t *Remote) mockApolloData() (cl func()) {
 	t.Require().NoError(cli.PublishRelease(apolloTxtNamespace))
 
 	return
+}
+
+func (t *Remote) readAppYamlConfig() (yamlData []byte) {
+	yamlFilename := "app.required.yml"
+	switch {
+	case env.GetEnv() == env.Dev:
+		yamlFilename = "app.required.local.yml"
+	}
+	yamlData, err := os.ReadFile(filepath.Join(env.WorkDir, "configs", yamlFilename))
+	t.Require().NoError(err)
+	return yamlData
+}
+
+func (t *Remote) readAppJsonConfig() (jsonData []byte) {
+	jsonFilename := fmt.Sprintf("%s.app.json", t.AppName())
+	jsonData, err := os.ReadFile(filepath.Join(env.WorkDir, "configs", jsonFilename))
+	t.Require().NoError(err)
+	return
+}
+
+func (t *Remote) newApolloAdminClient() (cli *apolloAdminClient) {
+	apolloAddr := apolloPortalAddr
+	switch {
+	case env.GetEnv() == env.Dev:
+		apolloAddr = apolloPortalLocalAddr
+	}
+	return newApolloAdminClient(apolloAddr)
 }
