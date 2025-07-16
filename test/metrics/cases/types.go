@@ -4,7 +4,7 @@ import "time"
 
 const (
 	nameMock           = "mock"
-	namePrometheusPush = "prometheus_push"
+	namePrometheusPush = "prometheus-push"
 
 	timeout = 3 * time.Second
 )

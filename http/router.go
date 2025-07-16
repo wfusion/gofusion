@@ -490,7 +490,7 @@ func (r *router) parseReqFromBody(c *gin.Context, typ reflect.Type) (dst reflect
 	err = utils.ParseTag(
 		dst.Addr().Interface(),
 		utils.ParseTagName("default"),
-		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
 	)
 
 	return
@@ -536,7 +536,7 @@ func (r *router) parseReqFromQuery(c *gin.Context, typ reflect.Type) (dst reflec
 	err = utils.ParseTag(
 		dst.Addr().Interface(),
 		utils.ParseTagName("default"),
-		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
 	)
 
 	return

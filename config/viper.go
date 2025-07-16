@@ -1,6 +1,7 @@
 package config
 
 import (
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -12,8 +13,9 @@ import (
 // viper.Viper are not safe for concurrent Get() and Set() operations in its notes.
 type safeViper struct {
 	*viper.Viper
-	lock      sync.RWMutex
-	watchOnce sync.Once
+	namespaces []string
+	lock       sync.RWMutex
+	watchOnce  sync.Once
 }
 
 func (s *safeViper) Set(key string, value any) {
@@ -76,6 +78,12 @@ func (s *safeViper) GetDuration(key string) time.Duration {
 	return s.Viper.GetDuration(key)
 }
 
+func (s *safeViper) GetAllSettings() map[string]any {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	return s.Viper.AllSettings()
+}
+
 func (s *safeViper) Unmarshal(rawVal any) error {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
@@ -86,6 +94,15 @@ func (s *safeViper) UnmarshalKey(key string, rawVal any) error {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
 	return s.Viper.UnmarshalKey(key, rawVal)
+}
+
+func (s *safeViper) getConfigType() (tag string) {
+	for _, namespace := range s.namespaces {
+		if ext := filepath.Ext(namespace); len(ext) > 0 {
+			tag = ext[1:]
+		}
+	}
+	return
 }
 
 // Event represents a file system notification.

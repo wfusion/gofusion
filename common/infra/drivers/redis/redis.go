@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/redis/go-redis/v9"
 
 	"github.com/wfusion/gofusion/common/utils"
@@ -13,8 +14,11 @@ var Default Dialect = new(defaultDialect)
 
 type defaultDialect struct{}
 
-func (d *defaultDialect) New(ctx context.Context, option Option, opts ...utils.OptionExtender) (
-	r *Redis, err error) {
+func (d *defaultDialect) New(ctx context.Context, option Option, opts ...utils.OptionExtender) (r *Redis, err error) {
+	if len(option.Endpoints) == 0 {
+		return nil, errors.New("redis endpoints are empty")
+	}
+
 	if option.Cluster {
 		opt := d.parseClusterOption(option)
 		d.wrapDurationSetter(option.PoolTimeout, func(du time.Duration) { opt.PoolTimeout = du })

@@ -93,7 +93,6 @@ services:
     restart: always
     environment:
       - MYSQL_ROOT_PASSWORD=ci
-      - MYSQL_DATABASE=ApolloConfigDB
     ports:
       - "23306:3306"
   postgres:
@@ -146,18 +145,61 @@ services:
       - "./metrics/configs/prometheus.yml:/etc/prometheus/prometheus.yml"
     ports:
       - "29090:9090"
-  apollo:
-    image: apolloconfig/apollo-configservice:2.4.0
-    container_name: apollo
+  apollo-mysql:
+    image: mariadb:10.6
+    container_name: apollo-mysql
+    networks: [ gofusion ]
+    restart: always
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/ApolloConfigDB?characterEncoding=utf8
+      - MYSQL_ROOT_PASSWORD=ci
+      - MYSQL_DATABASE=ApolloConfigDB
+    ports:
+      - "23307:3306"
+    volumes:
+      - ./mock/apollo-db-init:/docker-entrypoint-initdb.d
+  apollo-config:
+    image: apolloconfig/apollo-configservice:2.4.0
+    container_name: apollo-config
+    networks: [ gofusion ]
+    depends_on:
+      - apollo-mysql
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://apollo-mysql:3306/ApolloConfigDB?characterEncoding=utf8
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=ci
+      - JAVA_OPTS=-Dspring.profiles.active=github,database-discovery
     ports:
       - "38080:8080"
-  prometheus_push:
+  apollo-admin:
+    image: apolloconfig/apollo-adminservice:2.4.0
+    container_name: apollo-admin
+    networks: [ gofusion ]
+    depends_on:
+      - apollo-config
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://apollo-mysql:3306/ApolloConfigDB?characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=ci
+      - JAVA_OPTS=-Dspring.profiles.active=github,database-discovery
+    ports:
+      - "38090:8090"
+  apollo-portal:
+    image: apolloconfig/apollo-portal:2.4.0
+    container_name: apollo-portal
+    networks: [ gofusion ]
+    depends_on:
+      - apollo-admin
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://apollo-mysql:3306/ApolloPortalDB?characterEncoding=utf8
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=ci
+      - APOLLO_PORTAL_ENVS=dev
+      - DEV_META=http://apollo-config:8080
+    ports:
+      - "38070:8070"
+  prometheus-push:
     image: prom/pushgateway:v1.6.2
-    container_name: prometheus_push
+    container_name: prometheus-push
     networks: [ gofusion ]
     restart: always
     ports:
@@ -189,3 +231,6 @@ services:
 
 networks:
   gofusion:
+
+volumes:
+  apollo-db-init:

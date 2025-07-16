@@ -63,12 +63,13 @@ func newApolloConfig(conf *ApolloConf, appName string) (instance RemoteConfigura
 
 	vp := viper.New()
 	for _, namespace := range namespaces {
+		vp.SetConfigFile(namespace)
 		if err = parseApolloNamespaceContent(cli, vp, namespace); err != nil {
 			return
 		}
 	}
 
-	instance = &safeViper{Viper: vp}
+	instance = &safeViper{Viper: vp, namespaces: strings.Split(conf.Namespaces, constant.Comma)}
 	cli.AddChangeListener(&apolloListener{conf: conf, instance: instance})
 
 	return

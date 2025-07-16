@@ -17,9 +17,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 	"github.com/spf13/pflag"
-	"github.com/wfusion/gofusion/common/env"
 
 	"github.com/wfusion/gofusion/common/di"
+	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/clone"
 	"github.com/wfusion/gofusion/common/utils/serialize/json"
@@ -296,6 +296,18 @@ func (r *registry) initAllConfig(parent context.Context, businessConfig any,
 	r.initAllConfigByFlag()
 	destructor := r.initAllConfigByRemote(parent)
 
+	_ = utils.ParseTag(
+		r.componentConfigValue.Load(),
+		utils.ParseTagName("default"),
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
+	)
+
+	_ = utils.ParseTag(
+		r.businessConfigValue.Load(),
+		utils.ParseTagName("default"),
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
+	)
+
 	appName := r.AppName()
 	registryLocker.Lock()
 	if _, ok := registryMap[appName]; !ok {
@@ -497,38 +509,49 @@ func (r *registry) initAllConfigByFlag() {
 			if utils.IsStrPtrNotBlank(com.flagString) {
 				utils.MustSuccess(json.Unmarshal([]byte(*com.flagString), comValp.Interface()))
 			}
-
-			// process defaults
-			_ = utils.ParseTag(
-				comValp.Interface(),
-				utils.ParseTagName("default"),
-				utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
-			)
 		}
 	}
 
 	if len(appBizFlagString) > 0 {
 		utils.MustSuccess(json.Unmarshal([]byte(appBizFlagString), r.businessConfigValue.Load()))
 	}
-	_ = utils.ParseTag(
-		r.businessConfigValue.Load(),
-		utils.ParseTagName("default"),
-		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
-	)
 }
 
 func (r *registry) initAllConfigByRemote(ctx context.Context) (destructor reflect.Value) {
+	_ = utils.ParseTag(
+		r.componentConfigValue.Load(),
+		utils.ParseTagName("default"),
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
+	)
 	destructor = reflect.ValueOf(RemoteConstruct(ctx, r.remoteConfig(), AppName(r.AppName()), DI(r.di), App(r.app)))
 	vp := Remote(DefaultInstanceKey, AppName(r.AppName()))
 	if vp == nil {
 		return reflect.Value{}
 	}
+	tag := utils.MarshalTypeYaml
+	if configType := vp.getConfigType(); configType != "" {
+		tag = utils.MarshalType(configType)
+	}
 
-	configVal := utils.IndirectValue(reflect.ValueOf(r.componentConfigValue.Load()))
-	configValp := configVal.Addr()
-	utils.MustSuccess(vp.Unmarshal(configValp.Interface()))
-	utils.MustSuccess(vp.Unmarshal(r.businessConfigValue.Load()))
-	vp.OnConfigChange(r.watchRemoteConfigChange(ctx, vp))
+	allSettings := vp.GetAllSettings()
+	allSettingString := utils.Must(utils.Marshal(allSettings, tag))
+	utils.MustSuccess(utils.Unmarshal(allSettingString, r.componentConfigValue.Load(), tag))
+
+	type withBeforeCallback interface {
+		BeforeLoad(opts ...utils.OptionExtender)
+	}
+	type withAfterCallback interface {
+		AfterLoad(opts ...utils.OptionExtender)
+	}
+	if cb, ok := r.businessConfigValue.Load().(withBeforeCallback); ok {
+		cb.BeforeLoad()
+	}
+	if cb, ok := r.businessConfigValue.Load().(withAfterCallback); ok {
+		defer cb.AfterLoad()
+	}
+	utils.MustSuccess(utils.Unmarshal(allSettingString, r.businessConfigValue.Load(), tag))
+
+	vp.OnConfigChange(r.watchRemoteConfigChange(ctx, vp, tag))
 	return
 }
 
@@ -599,16 +622,45 @@ func (r *registry) initComponents(parent context.Context,
 	}
 }
 
-func (r *registry) watchRemoteConfigChange(ctx context.Context, vp RemoteConfigurable) func(in Event) {
+func (r *registry) watchRemoteConfigChange(
+	ctx context.Context, vp RemoteConfigurable, tag utils.MarshalType) func(in Event) {
 	return func(in Event) {
+		allSettings := vp.GetAllSettings()
+		allSettingString := utils.Must(utils.Marshal(allSettings, tag))
+
 		configVal := r.componentConfigValue.Load()
 		configClone := clone.Clone(configVal)
-		if err := vp.Unmarshal(configClone); err == nil {
+		if err := utils.Unmarshal(allSettingString, configClone, tag); err == nil {
+			_ = utils.ParseTag(
+				configClone,
+				utils.ParseTagName("default"),
+				utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
+			)
 			r.componentConfigValue.Store(configClone)
+		}
+
+		type withBeforeCallback interface {
+			BeforeLoad(opts ...utils.OptionExtender)
+		}
+		type withAfterCallback interface {
+			AfterLoad(opts ...utils.OptionExtender)
 		}
 		appConfigVal := r.businessConfigValue.Load()
 		appConfigClone := clone.Clone(appConfigVal)
-		if err := vp.Unmarshal(appConfigClone); err == nil {
+		if cb, ok := appConfigClone.(withBeforeCallback); ok {
+			cb.BeforeLoad()
+		}
+
+		if err := utils.Unmarshal(allSettingString, appConfigClone, tag); err == nil {
+			if cb, ok := appConfigClone.(withAfterCallback); ok {
+				defer cb.AfterLoad()
+			}
+
+			_ = utils.ParseTag(
+				appConfigClone,
+				utils.ParseTagName("default"),
+				utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
+			)
 			r.businessConfigValue.Store(appConfigClone)
 		}
 	}

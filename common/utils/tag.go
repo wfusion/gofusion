@@ -7,7 +7,7 @@ import (
 type parseTagOption struct {
 	tag           string
 	overwrite     bool
-	unmarshalType unmarshalType
+	unmarshalType MarshalType
 }
 
 func ParseTagName(tag string) OptionFunc[parseTagOption] {
@@ -22,7 +22,7 @@ func ParseTagOverwrite(overwrite bool) OptionFunc[parseTagOption] {
 	}
 }
 
-func ParseTagUnmarshalType(unmarshalTag unmarshalType) OptionFunc[parseTagOption] {
+func ParseTagUnmarshalType(unmarshalTag MarshalType) OptionFunc[parseTagOption] {
 	return func(o *parseTagOption) {
 		o.unmarshalType = unmarshalTag
 	}

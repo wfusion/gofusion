@@ -24,11 +24,13 @@ type RemoteConfigurable interface {
 	GetFloat64(key string) float64
 	GetStringSlice(key string) []string
 	GetTime(key string) time.Time
-	Unmarshal(rawVal any) error
-	UnmarshalKey(key string, rawVal any) error
+	Unmarshal(rawVal any) error                // mapstructure decode
+	UnmarshalKey(key string, rawVal any) error // mapstructure decode
 	GetDuration(key string) time.Duration
+	GetAllSettings() map[string]any
 	OnConfigChange(run func(in Event))
 	MergeConfigMap(cfg map[string]any) (err error)
+	getConfigType() (tag string)
 }
 
 type confType string

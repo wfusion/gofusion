@@ -185,5 +185,5 @@ func useClient(opts ...utils.OptionExtender) (cli *resty.Client) {
 func init() {
 	_ = utils.ParseTag(defaultClientConf,
 		utils.ParseTagName("default"),
-		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml))
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml))
 }

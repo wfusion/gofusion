@@ -401,7 +401,7 @@ func (c *Configor) load(config any, watchMode bool, files ...string) (err error,
 	}
 
 	// process defaults after process file because map struct should be assigned first
-	_ = utils.ParseTag(config, utils.ParseTagName("default"), utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml))
+	_ = utils.ParseTag(config, utils.ParseTagName("default"), utils.ParseTagUnmarshalType(utils.MarshalTypeYaml))
 
 	// process file again to ensure read config from file
 	for _, file := range configFiles {
@@ -423,7 +423,7 @@ func (c *Configor) load(config any, watchMode bool, files ...string) (err error,
 	}
 
 	// process defaults
-	_ = utils.ParseTag(config, utils.ParseTagName("default"), utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml))
+	_ = utils.ParseTag(config, utils.ParseTagName("default"), utils.ParseTagUnmarshalType(utils.MarshalTypeYaml))
 
 	return err, true
 }
