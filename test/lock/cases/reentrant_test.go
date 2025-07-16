@@ -76,8 +76,8 @@ func (t *Reentrant) testReentrant(locker lock.Lockable, key string) {
 				for j := 0; j < parallel; j++ {
 					rwg.Add(1)
 					routine.Go(func() {
-						t.NoError(locker.Lock(ctx, key, lock.Expire(time.Millisecond), lock.ReentrantKey(reentrantKey)))
-						defer t.NoError(locker.Unlock(ctx, key, lock.ReentrantKey(reentrantKey)))
+						t.Require().NoError(locker.Lock(ctx, key, lock.Expire(time.Millisecond), lock.ReentrantKey(reentrantKey)))
+						defer t.Require().NoError(locker.Unlock(ctx, key, lock.ReentrantKey(reentrantKey)))
 						// jitter within 10ms
 						time.Sleep(time.Duration(rand.Float64() * float64(10*time.Millisecond)))
 					}, routine.WaitGroup(rwg), routine.AppName(t.AppName()))
@@ -86,11 +86,11 @@ func (t *Reentrant) testReentrant(locker lock.Lockable, key string) {
 
 				return
 			}, lock.ReentrantKey(reentrantKey), lock.AppName(t.AppName()))
-			t.NoError(err)
+			t.Require().NoError(err)
 		}, routine.Args(i), routine.WaitGroup(wg), routine.AppName(t.AppName()))
 	}
 
 	wg.Wait()
 	t.Len(unsafeMap, parallel)
-	t.EqualValues(parallel, unsafeInt)
+	t.Require().EqualValues(parallel, unsafeInt)
 }

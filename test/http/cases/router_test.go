@@ -66,8 +66,8 @@ func (t *Router) TestExample01() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Equal(string(utils.MustJsonMarshal(rspBody)), w.Body.String())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Equal(string(utils.MustJsonMarshal(rspBody)), w.Body.String())
 	})
 }
 
@@ -117,8 +117,8 @@ func (t *Router) TestExample02() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -155,8 +155,8 @@ func (t *Router) TestExample03() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -222,7 +222,7 @@ func (t *Router) TestExample04() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 		t.Require().EqualValues(1, *rsp.Page)
@@ -295,7 +295,7 @@ func (t *Router) TestExample05() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
@@ -369,7 +369,7 @@ func (t *Router) TestExample06() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
@@ -436,7 +436,7 @@ func (t *Router) TestExample07() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
@@ -502,7 +502,7 @@ func (t *Router) TestExample08() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 		t.Require().EqualValues(1, *rsp.Page)
@@ -563,7 +563,7 @@ func (t *Router) TestExample09() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
@@ -629,7 +629,7 @@ func (t *Router) TestExample10() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
@@ -693,7 +693,7 @@ func (t *Router) TestExample11() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 
@@ -737,8 +737,8 @@ func (t *Router) TestExample12() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -804,8 +804,8 @@ func (t *Router) TestExample13() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -837,8 +837,8 @@ func (t *Router) TestExample14() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -870,8 +870,8 @@ func (t *Router) TestExample15() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -923,8 +923,8 @@ func (t *Router) TestExample16() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusTemporaryRedirect, w.Code)
-		t.Contains(w.Header().Get("Location"), "ctyun")
+		t.Require().Equal(http.StatusTemporaryRedirect, w.Code)
+		t.Require().Contains(w.Header().Get("Location"), "ctyun")
 	})
 }
 
@@ -974,8 +974,8 @@ func (t *Router) TestExample17() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1034,8 +1034,8 @@ func (t *Router) TestExample18() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1085,8 +1085,8 @@ func (t *Router) TestExample19() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1116,8 +1116,8 @@ func (t *Router) TestExample20() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1149,8 +1149,8 @@ func (t *Router) TestExample21() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1186,8 +1186,8 @@ func (t *Router) TestExample22() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1218,8 +1218,8 @@ func (t *Router) TestExample23() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1252,8 +1252,8 @@ func (t *Router) TestExample24() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1290,8 +1290,8 @@ func (t *Router) TestExample25() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1357,8 +1357,8 @@ func (t *Router) TestExample28() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1426,7 +1426,7 @@ func (t *Router) TestExample29() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[rspStruct](w.Body.Bytes())
 		t.Require().EqualValues(1, rsp.Page)
@@ -1470,8 +1470,8 @@ func (t *Router) TestExample30() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1529,7 +1529,7 @@ func (t *Router) TestExample31() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
 		t.Require().EqualValues(1, *rsp.Page)
@@ -1586,9 +1586,9 @@ func (t *Router) TestExample32() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
-		t.Contains(w.Body.String(), "[1,2,3,4,5]")
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Contains(w.Body.String(), "[1,2,3,4,5]")
 	})
 }
 
@@ -1629,9 +1629,9 @@ func (t *Router) TestExample33() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
-		t.Contains(w.Body.String(), `"3":3`)
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Contains(w.Body.String(), `"3":3`)
 	})
 }
 
@@ -1671,8 +1671,8 @@ func (t *Router) TestExample34() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -1726,8 +1726,8 @@ func (t *Router) TestExample35() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 

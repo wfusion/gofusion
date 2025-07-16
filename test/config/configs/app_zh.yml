@@ -6,6 +6,44 @@ base:
   # 应用或系统名称, 同一运行环境不重名即可
   app: gofusion
 
+  # 配置中心
+  config:
+    # 配置中心名称, 本例中为 json, 而 default 配置会覆盖默认的组件配置和业务配置
+    #json:
+    #  # 配置中心类型, 本例中为 apollo, 目前仅支持 apollo
+    #  type: apollo
+    #  apollo:
+    #    # 应用 id
+    #    app_id: gofusion
+    #    # 集群名称
+    #    cluster: default
+    #    # 命名空间, 本例中为 app.json, 支持逗号拼接如 application,application.yaml
+    #    namespaces: app.json
+    #    # apollo 服务地址
+    #    endpoint: http://apollo-config:8080
+    #    # 是否开启备份配置, 开启后会将配置中心的配置备份到本地, 即使配置中心服务宕机也可通过备份配置获取老配置
+    #    is_backup_config: true
+    #    # 备份配置路径, 本例中为 ./, 会将配置备份到程序运行目录下
+    #    backup_config_path: ./
+    #    # apollo 安全通信的密钥
+    #    secret: "e16e6897b788a18357a79a834f37e492f155c879"
+    #    # apollo 标签
+    #    label: ""
+    #    # 获取配置中心数据超时时间, 默认为 10s, 最小支持时间单位为秒
+    #    sync_server_timeout: 10s
+    #    # 第一次获取配置是否必须成功
+    #    must_start: false
+    #txt:
+    #  type: apollo
+    #  apollo:
+    #    app_id: gofusion
+    #    cluster: default
+    #    namespaces: test.txt
+    #    endpoint: http://apollo-config:8080
+    #    is_backup_config: false
+    #    secret: "e16e6897b788a18357a79a834f37e492f155c879"
+    #    must_start: false
+
   # 加密配置
   crypto:
     # 本配置文件的加密
@@ -217,8 +255,8 @@ base:
         path: .
         # 保存名称, 未配置则默认按照 <app>.log 输出, 若未配置 <app> 则按照<程序运行目录名>.log 输出, 若运行目录为 / 则 md5 哈希
         name: gofusion.log
-        # 日志最长保留时间, 只会在因为日志过大进行切分时触发, 要求 >= 1ms, 默认值为 720h
-        rotation_max_age: 720h
+        # 日志最长保留时间, 只会在因为日志过大进行切分时触发, 要求 >= 1ms, 默认值为 30d
+        rotation_max_age: 30d
         # 文件最大保存份数, 实际保留中会存在当前正在使用的日志文件, 所以实际最大保存分数为 <rotation_count> + 1
         rotation_count: 10
         # 文件切割大小, 默认值为 100mib

@@ -348,7 +348,7 @@ func setSlice(vals []string, value reflect.Value, field reflect.StructField) err
 }
 
 func setTimeDuration(val string, value reflect.Value, field reflect.StructField) error {
-	d, err := time.ParseDuration(val)
+	d, err := utils.ParseDuration(val)
 	if err != nil {
 		return err
 	}

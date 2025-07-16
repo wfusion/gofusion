@@ -44,10 +44,10 @@ func (t *Pool) TestSubmit() {
 			routine.WithoutTimeout(), routine.AppName(t.AppName()))
 		defer pool.Release()
 
-		t.NoError(pool.Submit(func() { defer wg.Done(); i += 1 }))
+		t.Require().NoError(pool.Submit(func() { defer wg.Done(); i += 1 }))
 		wg.Wait()
 
-		t.EqualValues(1, i)
+		t.Require().EqualValues(1, i)
 	})
 }
 
@@ -60,9 +60,9 @@ func (t *Pool) TestSubmitWithArgs() {
 			routine.WithoutTimeout(), routine.AppName(t.AppName()))
 		defer pool.Release()
 
-		t.NoError(pool.Submit(func(delta int) { defer wg.Done(); i += delta }, routine.Args(2)))
+		t.Require().NoError(pool.Submit(func(delta int) { defer wg.Done(); i += delta }, routine.Args(2)))
 		wg.Wait()
 
-		t.EqualValues(2, i)
+		t.Require().EqualValues(2, i)
 	})
 }

@@ -60,7 +60,7 @@ func addConfig(ctx context.Context, name string, conf *Conf, opt *config.InitOpt
 		interval time.Duration
 	)
 	if utils.IsStrNotBlank(conf.Interval) {
-		interval, err = time.ParseDuration(conf.Interval)
+		interval, err = utils.ParseDuration(conf.Interval)
 		if err != nil {
 			panic(errors.Errorf("metrics component parse %s interval failed: %s", name, err))
 		}

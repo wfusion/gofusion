@@ -72,14 +72,14 @@ func (t *TableSharding) testMigrate(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
 
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
-		t.NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
+		t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
 
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingByRawValue)))
-		t.NoError(orm.Migrator().DropTable(new(modelWithShardingByRawValue)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingByRawValue)))
+		t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingByRawValue)))
 	})
 }
 
@@ -87,28 +87,28 @@ func (t *TableSharding) testInsert(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
 		}()
 
 		m1 := &modelWithSharding{
 			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 		}
-		t.NoError(orm.Create(m1).Error)
-		t.NoError(orm.Delete(m1).Error)
+		t.Require().NoError(orm.Create(m1).Error)
+		t.Require().NoError(orm.Delete(m1).Error)
 
 		m2 := &modelWithShardingPtr{
 			Name: "sharding_ptr1",
 			Age:  18,
 		}
-		t.NoError(orm.Create(m2).Error)
-		t.NoError(orm.Delete(m2).Error)
+		t.Require().NoError(orm.Create(m2).Error)
+		t.Require().NoError(orm.Delete(m2).Error)
 	})
 }
 
@@ -116,11 +116,11 @@ func (t *TableSharding) testInsertNested(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
 		}()
 
 		mws := &modelWithSharding{
@@ -142,13 +142,13 @@ func (t *TableSharding) testInsertNested(read, write string) {
 			},
 		}
 
-		t.NoError(orm.Create(mws).Error)
-		t.NoError(orm.Delete(mws).Error)
+		t.Require().NoError(orm.Create(mws).Error)
+		t.Require().NoError(orm.Delete(mws).Error)
 		if read == nameOpenGauss {
-			t.NoError(orm.Where("az_name = ? AND model_id = ?", mws.AZName, mws.ID).Find(&mws.EmbedList).Error)
+			t.Require().NoError(orm.Where("az_name = ? AND model_id = ?", mws.AZName, mws.ID).Find(&mws.EmbedList).Error)
 		}
 
-		t.NoError(orm.Delete(mws.EmbedList).Error)
+		t.Require().NoError(orm.Delete(mws.EmbedList).Error)
 	})
 }
 
@@ -156,13 +156,13 @@ func (t *TableSharding) testBatchInsert(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
 		}()
 		mList1 := []*modelWithSharding{
 			{
@@ -178,8 +178,8 @@ func (t *TableSharding) testBatchInsert(read, write string) {
 				Name:   "sharding3",
 			},
 		}
-		t.NoError(orm.Create(mList1).Error)
-		t.NoError(orm.Unscoped().Delete(mList1).Error)
+		t.Require().NoError(orm.Create(mList1).Error)
+		t.Require().NoError(orm.Unscoped().Delete(mList1).Error)
 
 		mList2 := []*modelWithShardingPtr{
 			{
@@ -198,8 +198,8 @@ func (t *TableSharding) testBatchInsert(read, write string) {
 				Age:      18,
 			},
 		}
-		t.NoError(orm.Create(mList2).Error)
-		t.NoError(orm.Unscoped().Delete(mList2).Error)
+		t.Require().NoError(orm.Create(mList2).Error)
+		t.Require().NoError(orm.Unscoped().Delete(mList2).Error)
 	})
 }
 
@@ -207,13 +207,13 @@ func (t *TableSharding) testBatchInInsert(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
 		}()
 		mList1 := []*modelWithSharding{
 			{
@@ -229,8 +229,8 @@ func (t *TableSharding) testBatchInInsert(read, write string) {
 				Name:   "sharding3",
 			},
 		}
-		t.NoError(orm.CreateInBatches(mList1, 2).Error)
-		t.NoError(orm.Unscoped().Delete(mList1).Error)
+		t.Require().NoError(orm.CreateInBatches(mList1, 2).Error)
+		t.Require().NoError(orm.Unscoped().Delete(mList1).Error)
 
 		mList2 := []*modelWithShardingPtr{
 			{
@@ -249,8 +249,8 @@ func (t *TableSharding) testBatchInInsert(read, write string) {
 				Age:      18,
 			},
 		}
-		t.NoError(orm.CreateInBatches(mList2, 2).Error)
-		t.NoError(orm.Unscoped().Delete(mList2).Error)
+		t.Require().NoError(orm.CreateInBatches(mList2, 2).Error)
+		t.Require().NoError(orm.Unscoped().Delete(mList2).Error)
 	})
 }
 
@@ -259,13 +259,13 @@ func (t *TableSharding) testQuery(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
 		}()
 		mList1 := []*modelWithSharding{
 			{
@@ -281,11 +281,11 @@ func (t *TableSharding) testQuery(read, write string) {
 				Name:   "sharding3",
 			},
 		}
-		t.NoError(orm.Create(mList1).Error)
+		t.Require().NoError(orm.Create(mList1).Error)
 		var mList1Dup []*modelWithSharding
-		t.NoError(orm.Where("az_name = 'az1'").Find(&mList1Dup).Error)
-		t.EqualValues(mList1, mList1Dup)
-		t.NoError(orm.Unscoped().Delete(mList1).Error)
+		t.Require().NoError(orm.Where("az_name = 'az1'").Find(&mList1Dup).Error)
+		t.Require().EqualValues(mList1, mList1Dup)
+		t.Require().NoError(orm.Unscoped().Delete(mList1).Error)
 
 		mList2 := []*modelWithShardingPtr{
 			{
@@ -304,12 +304,12 @@ func (t *TableSharding) testQuery(read, write string) {
 				Age:      18,
 			},
 		}
-		t.NoError(orm.Create(mList2).Error)
+		t.Require().NoError(orm.Create(mList2).Error)
 		var m2Dup *modelWithShardingPtr
 		m2 := mList2[0]
-		t.NoError(orm.Where("name = ? AND id = ? AND age = ?", m2.Name, m2.ID, m2.Age).First(&m2Dup).Error)
-		t.EqualValues(m2, m2Dup)
-		t.NoError(orm.Unscoped().Delete(mList2).Error)
+		t.Require().NoError(orm.Where("name = ? AND id = ? AND age = ?", m2.Name, m2.ID, m2.Age).First(&m2Dup).Error)
+		t.Require().EqualValues(m2, m2Dup)
+		t.Require().NoError(orm.Unscoped().Delete(mList2).Error)
 	})
 }
 
@@ -318,11 +318,11 @@ func (t *TableSharding) testQueryNested(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
 		}()
 		mws := &modelWithSharding{
 			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
@@ -343,22 +343,22 @@ func (t *TableSharding) testQueryNested(read, write string) {
 			},
 		}
 
-		t.NoError(orm.Create(mws).Error)
+		t.Require().NoError(orm.Create(mws).Error)
 
 		var mwsList []*modelWithSharding
-		t.NoError(orm.
+		t.Require().NoError(orm.
 			Preload("EmbedList", "az_name = ?", "az1").
 			Where("az_name = ?", "az1").
 			Find(&mwsList).Error,
 		)
-		t.NotEmpty(mwsList)
+		t.Require().NotEmpty(mwsList)
 
-		t.NoError(orm.Unscoped().Delete(mws).Error)
+		t.Require().NoError(orm.Unscoped().Delete(mws).Error)
 		if read == nameOpenGauss {
-			t.NoError(orm.Where("az_name = ? AND model_id = ?", mws.AZName, mws.ID).Find(&mws.EmbedList).Error)
+			t.Require().NoError(orm.Where("az_name = ? AND model_id = ?", mws.AZName, mws.ID).Find(&mws.EmbedList).Error)
 		}
 
-		t.NoError(orm.Unscoped().Delete(mws.EmbedList).Error)
+		t.Require().NoError(orm.Unscoped().Delete(mws.EmbedList).Error)
 	})
 }
 
@@ -366,20 +366,20 @@ func (t *TableSharding) testDelete(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingPtr)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingPtr)))
 		}()
 		m1 := &modelWithSharding{
 			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 		}
-		t.NoError(orm.Create(m1).Error)
-		t.NoError(orm.Unscoped().
+		t.Require().NoError(orm.Create(m1).Error)
+		t.Require().NoError(orm.Unscoped().
 			Where("az_name = ? AND name = ?", m1.AZName, m1.Name).
 			Delete(new(modelWithSharding)).Error)
 
@@ -387,8 +387,8 @@ func (t *TableSharding) testDelete(read, write string) {
 			Name: "sharding_ptr1",
 			Age:  18,
 		}
-		t.NoError(orm.Create(m2).Error)
-		t.NoError(orm.Unscoped().
+		t.Require().NoError(orm.Create(m2).Error)
+		t.Require().NoError(orm.Unscoped().
 			Where("name = ? AND id = ? AND age = ?", m2.Name, m2.ID, m2.Age).
 			Delete(new(modelWithShardingPtr)).Error)
 	})
@@ -398,11 +398,11 @@ func (t *TableSharding) testDAL(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		dal1 := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
-		t.NoError(dal1.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(dal1.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(dal1.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(dal1.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
-			t.NoError(dal1.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(dal1.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(dal1.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(dal1.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingEmbed)))
 		}()
 
 		mList1 := []*modelWithSharding{
@@ -419,17 +419,17 @@ func (t *TableSharding) testDAL(read, write string) {
 				Name:   "sharding3",
 			},
 		}
-		t.NoError(dal1.InsertInBatches(ctx, mList1, 1))
+		t.Require().NoError(dal1.InsertInBatches(ctx, mList1, 1))
 		if read != nameOpenGauss {
-			t.NoError(dal1.Save(ctx, mList1))
+			t.Require().NoError(dal1.Save(ctx, mList1))
 		}
 		_, err := dal1.Delete(ctx, mList1, db.Unscoped())
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		dal2 := db.NewDAL[modelWithShardingPtr, []*modelWithShardingPtr](read, write, db.AppName(t.AppName()))
-		t.NoError(dal2.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingPtr)))
+		t.Require().NoError(dal2.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingPtr)))
 		defer func() {
-			t.NoError(dal2.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingPtr)))
+			t.Require().NoError(dal2.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingPtr)))
 		}()
 
 		mList2 := []*modelWithShardingPtr{
@@ -449,12 +449,12 @@ func (t *TableSharding) testDAL(read, write string) {
 				Age:      20,
 			},
 		}
-		t.NoError(dal2.InsertInBatches(ctx, mList2, 1))
+		t.Require().NoError(dal2.InsertInBatches(ctx, mList2, 1))
 		if read != nameOpenGauss {
-			t.NoError(dal2.Save(ctx, mList2))
+			t.Require().NoError(dal2.Save(ctx, mList2))
 		}
 		_, err = dal2.Delete(ctx, mList2, db.Unscoped())
-		t.NoError(err)
+		t.Require().NoError(err)
 	})
 }
 
@@ -463,11 +463,11 @@ func (t *TableSharding) testDALQueryWithDeletedAt(read, write string) {
 		ctx := context.Background()
 
 		dal := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
-		t.NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
 		defer func() {
-			t.NoError(dal.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(dal.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(dal.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(dal.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingEmbed)))
 		}()
 
 		expected := []*modelWithSharding{
@@ -484,18 +484,18 @@ func (t *TableSharding) testDALQueryWithDeletedAt(read, write string) {
 				Name:   "sharding3",
 			},
 		}
-		t.NoError(dal.InsertInBatches(ctx, expected, 1))
+		t.Require().NoError(dal.InsertInBatches(ctx, expected, 1))
 
 		tx := dal.ReadDB(ctx)
 		tx = tx.Where("az_name = ?", "az1")
 		tx = tx.Where("name like ?", "%sharding%")
 
 		var actual []*modelWithSharding
-		t.NoError(tx.Find(&actual).Error)
-		t.NotEmpty(actual)
+		t.Require().NoError(tx.Find(&actual).Error)
+		t.Require().NotEmpty(actual)
 
 		_, err := dal.Delete(ctx, expected)
-		t.NoError(err)
+		t.Require().NoError(err)
 	})
 }
 
@@ -505,20 +505,20 @@ func (t *TableSharding) testJoins(read, write string) {
 		mwsDAL := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
 		mwseDAL := db.NewDAL[modelWithShardingExtend, []*modelWithShardingExtend](
 			read, write, db.AppName(t.AppName()))
-		t.NoError(mwsDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
-		t.NoError(mwsDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
-		t.NoError(mwseDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingExtend)))
+		t.Require().NoError(mwsDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(mwsDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingEmbed)))
+		t.Require().NoError(mwseDAL.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithShardingExtend)))
 		defer func() {
-			t.NoError(mwsDAL.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
-			t.NoError(mwsDAL.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingEmbed)))
-			t.NoError(mwseDAL.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingExtend)))
+			t.Require().NoError(mwsDAL.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(mwsDAL.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingEmbed)))
+			t.Require().NoError(mwseDAL.WriteDB(ctx).Migrator().DropTable(new(modelWithShardingExtend)))
 		}()
 
 		mws := &modelWithSharding{
 			AZBase: AZBase{RegionBase: RegionBase{RegionID: "12345"}, AZName: "az1"},
 			Name:   "sharding1",
 		}
-		t.NoError(mwsDAL.InsertOne(ctx, mws))
+		t.Require().NoError(mwsDAL.InsertOne(ctx, mws))
 		defer func() { _, _ = mwsDAL.Delete(ctx, mws) }()
 		mwsTblName := mws.TableName()
 
@@ -527,7 +527,7 @@ func (t *TableSharding) testJoins(read, write string) {
 			OtherName: "sharding1",
 			ModelID:   mws.ID,
 		}
-		t.NoError(mwseDAL.InsertOne(ctx, mwse))
+		t.Require().NoError(mwseDAL.InsertOne(ctx, mwse))
 		defer func() { _, _ = mwseDAL.Delete(ctx, mwse) }()
 		mwseTblName := mwse.TableName()
 
@@ -537,8 +537,8 @@ func (t *TableSharding) testJoins(read, write string) {
 			Where(fmt.Sprintf("%s.id = ?", mwsTblName), mws.ID).
 			Where(fmt.Sprintf("%s.az_name = ?", mwsTblName), "az1").
 			Where(fmt.Sprintf("%s.az_name = ?", mwseTblName), "az1")
-		t.NoError(joins.Find(&mwsList).Error)
-		t.NotEmpty(mwsList)
+		t.Require().NoError(joins.Find(&mwsList).Error)
+		t.Require().NotEmpty(mwsList)
 	})
 }
 
@@ -547,9 +547,9 @@ func (t *TableSharding) testDALFindAndCount(read, write string) {
 		ctx := context.Background()
 
 		dal := db.NewDAL[modelWithSharding, []*modelWithSharding](read, write, db.AppName(t.AppName()))
-		t.NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
+		t.Require().NoError(dal.WriteDB(ctx).Migrator().AutoMigrate(new(modelWithSharding)))
 		defer func() {
-			t.NoError(dal.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
+			t.Require().NoError(dal.WriteDB(ctx).Migrator().DropTable(new(modelWithSharding)))
 		}()
 		mList := []*modelWithSharding{
 			{
@@ -573,7 +573,7 @@ func (t *TableSharding) testDALFindAndCount(read, write string) {
 				Name:   "sharding5",
 			},
 		}
-		t.NoError(dal.InsertInBatches(ctx, mList, 100))
+		t.Require().NoError(dal.InsertInBatches(ctx, mList, 100))
 		defer dal.WriteDB(ctx).Unscoped().Delete(mList)
 
 		var (
@@ -584,9 +584,9 @@ func (t *TableSharding) testDALFindAndCount(read, write string) {
 			count = 0
 			result = nil
 
-			t.NoError(dal.ReadDB(ctx).Where("az_name = ?", azName).Find(&result).Error)
-			t.NoError(dal.ReadDB(ctx).Where("az_name = ?", azName).Count(&count).Error)
-			t.EqualValues(count, len(result))
+			t.Require().NoError(dal.ReadDB(ctx).Where("az_name = ?", azName).Find(&result).Error)
+			t.Require().NoError(dal.ReadDB(ctx).Where("az_name = ?", azName).Count(&count).Error)
+			t.Require().EqualValues(count, len(result))
 		}
 	})
 }
@@ -595,9 +595,9 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithShardingByRawValue)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithShardingByRawValue)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithShardingByRawValue)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithShardingByRawValue)))
 		}()
 
 		m1 := &modelWithShardingByRawValue{
@@ -605,9 +605,9 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}
-		t.NoError(orm.Create(m1).Error)
+		t.Require().NoError(orm.Create(m1).Error)
 		defer func() {
-			t.NoError(orm.Unscoped().Delete(m1).Error)
+			t.Require().NoError(orm.Unscoped().Delete(m1).Error)
 		}()
 
 		m2 := &modelWithShardingByRawValue{
@@ -615,9 +615,9 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}
-		t.NoError(orm.Create(m2).Error)
+		t.Require().NoError(orm.Create(m2).Error)
 		defer func() {
-			t.NoError(orm.Unscoped().Delete(m2).Error)
+			t.Require().NoError(orm.Unscoped().Delete(m2).Error)
 		}()
 
 		m3 := &modelWithShardingByRawValue{
@@ -625,9 +625,9 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}
-		t.NoError(orm.Create(m3).Error)
+		t.Require().NoError(orm.Create(m3).Error)
 		defer func() {
-			t.NoError(orm.Unscoped().Delete(m3).Error)
+			t.Require().NoError(orm.Unscoped().Delete(m3).Error)
 		}()
 
 		m4 := &modelWithShardingByRawValue{
@@ -635,9 +635,9 @@ func (t *TableSharding) testShardingKeyByRawValue(read, write string) {
 			Name:   "sharding_ptr1",
 			Age:    18,
 		}
-		t.NoError(orm.Create(m4).Error)
+		t.Require().NoError(orm.Create(m4).Error)
 		defer func() {
-			t.NoError(orm.Unscoped().Delete(m4).Error)
+			t.Require().NoError(orm.Unscoped().Delete(m4).Error)
 		}()
 	})
 }

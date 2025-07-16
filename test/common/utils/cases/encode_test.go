@@ -131,7 +131,7 @@ func (t *Encode) runCodecCases(cases [][]encode.EncodedType) {
 
 					// case: encode then decode
 					encoded, err := encode.From(data).Encode(options...).ToBytes()
-					t.NoError(err)
+					t.Require().NoError(err)
 					t.NotEqualValues(data, encoded)
 
 					codec := encode.From(encoded)
@@ -139,8 +139,8 @@ func (t *Encode) runCodecCases(cases [][]encode.EncodedType) {
 						codec = codec.Decode(reversed[i])
 					}
 					decoded, err := codec.ToString()
-					t.NoError(err)
-					t.EqualValues(data, []byte(decoded))
+					t.Require().NoError(err)
+					t.Require().EqualValues(data, []byte(decoded))
 
 					// case: encoded and decode together
 					actual, err := encode.
@@ -148,8 +148,8 @@ func (t *Encode) runCodecCases(cases [][]encode.EncodedType) {
 						Encode(options...).
 						Decode(reversed...).
 						ToBytes()
-					t.NoError(err)
-					t.EqualValues(data, actual)
+					t.Require().NoError(err)
+					t.Require().EqualValues(data, actual)
 				})
 			}
 		}
@@ -167,15 +167,15 @@ func (t *Encode) runStreamCases(cases [][]encode.EncodedType) {
 
 					encodedBuffer := bytes.NewBuffer(nil)
 					_, err := codecStream.Encode(encodedBuffer, dataBuffer)
-					t.NoError(err)
+					t.Require().NoError(err)
 					t.NotZero(encodedBuffer.Len())
 					t.NotEqualValues(data, encodedBuffer.Bytes())
 
 					decodedBuffer := bytes.NewBuffer(nil)
 					_, err = codecStream.Decode(decodedBuffer, encodedBuffer)
-					t.NoError(err)
+					t.Require().NoError(err)
 
-					t.EqualValues(data, decodedBuffer.Bytes())
+					t.Require().EqualValues(data, decodedBuffer.Bytes())
 				})
 			}
 		}
@@ -201,15 +201,15 @@ func (t *Encode) runStreamParallelCases(cases [][]encode.EncodedType) {
 
 						encodedBuffer := bytes.NewBuffer(nil)
 						_, err := codecStream.Encode(encodedBuffer, dataBuffer)
-						t.NoError(err)
+						t.Require().NoError(err)
 						t.NotZero(encodedBuffer.Len())
 						t.NotEqualValues(data, encodedBuffer.Bytes())
 
 						decodedBuffer := bytes.NewBuffer(nil)
 						_, err = codecStream.Decode(decodedBuffer, encodedBuffer)
-						t.NoError(err)
+						t.Require().NoError(err)
 
-						t.EqualValues(data, decodedBuffer.Bytes())
+						t.Require().EqualValues(data, decodedBuffer.Bytes())
 					}()
 				}
 			}
@@ -227,7 +227,7 @@ func (t *Encode) randomData() (data []byte) {
 	data = make([]byte, largeLength+rand.Int()%(jitterLength/2))
 	//data = make([]byte, 10)
 	_, err := utils.Random(data, utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	return
 }
 
@@ -240,7 +240,7 @@ func (t *Encode) smallRandomData() (data []byte) {
 	// 32kb ± 2kb
 	data = make([]byte, smallLength+rand.Int()%(jitterLength/2))
 	_, err := utils.Random(data, utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	return
 }
 
@@ -296,21 +296,21 @@ func (t *Encode) cipherStreamOptions() (opt *option) {
 		k256      [256]byte
 	)
 	_, err := utils.Random(k1[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k8[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(iv8[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k16[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(iv16[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k24[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k32[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k256[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 
 	for _, mode := range cipherModes {
 		if mode != cipher.ModeGCM {
@@ -371,21 +371,21 @@ func (t *Encode) cipherOptions() (opt *option) {
 		k256      [256]byte
 	)
 	_, err := utils.Random(k1[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k8[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(iv8[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k16[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(iv16[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k24[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k32[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	_, err = utils.Random(k256[:], utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 
 	for _, mode := range cipherModes {
 		if mode != cipher.ModeGCM {

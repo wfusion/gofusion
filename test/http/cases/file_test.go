@@ -50,15 +50,15 @@ func (t *File) TestStatic() {
 		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.%s", t.AppName(), files[len(files)-1]))
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/TestStatic.yml", nil)
-		t.NoError(err)
+		t.Require().NoError(err)
 		engine := t.ServerGiven("File", "/TestStatic.yml", p)
 
 		// When
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.NotEmpty(w.Body.String())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().NotEmpty(w.Body.String())
 	})
 }
 
@@ -69,7 +69,7 @@ func (t *File) TestStaticZeroCopy() {
 		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.%s", t.AppName(), files[len(files)-1]))
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/TestStaticZeroCopy.yml", nil)
-		t.NoError(err)
+		t.Require().NoError(err)
 		engine := t.ServerGiven("File", "/TestStaticZeroCopyMock.yml", p)
 		engine.GET("/TestStaticZeroCopy.yml", fusHtp.StaticFileZeroCopy(p))
 
@@ -77,8 +77,8 @@ func (t *File) TestStaticZeroCopy() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.NotEmpty(w.Body.String())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().NotEmpty(w.Body.String())
 	})
 }
 
@@ -89,7 +89,7 @@ func (t *File) TestContentZeroCopy() {
 		p := filepath.Join(env.WorkDir, fmt.Sprintf("/configs/%s.%s", t.AppName(), files[len(files)-1]))
 		w := httptest.NewRecorder()
 		req, err := http.NewRequest(http.MethodGet, "/TestContentZeroCopy.yml", nil)
-		t.NoError(err)
+		t.Require().NoError(err)
 		engine := t.ServerGiven("File", "/TestContentZeroCopyMock.yml", p)
 		engine.GET("/TestContentZeroCopy.yml", fusHtp.ContentZeroCopy(func(c *gin.Context) (
 			name string, modTime time.Time, content io.ReadSeeker, err error) {
@@ -108,7 +108,7 @@ func (t *File) TestContentZeroCopy() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.NotEmpty(w.Body.String())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().NotEmpty(w.Body.String())
 	})
 }

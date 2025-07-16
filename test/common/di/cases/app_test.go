@@ -116,7 +116,7 @@ func (t *App) TestShutdown() {
 
 		ctx := context.Background()
 		t.Require().NoError(comDI.Fx.Start(ctx))
-		t.NoError(s.Shutdown(fx.ExitCode(0)))
+		t.Require().NoError(s.Shutdown(fx.ExitCode(0)))
 		t.Require().Zero((<-comDI.Fx.Wait()).ExitCode)
 		t.Require().NoError(comDI.Fx.Stop(ctx))
 
@@ -127,42 +127,42 @@ func (t *App) TestShutdown() {
 
 func (t *App) TestName() {
 	t.Catch(func() {
-		t.NoError(comDI.Fx.Provide(NewPersonDrink, comDI.Name("ddd")))
-		t.NoError(comDI.Fx.Provide(NewPersonEat[int]))
-		t.NoError(comDI.Fx.Invoke(func(p Person3) { p.Show() }))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonDrink, comDI.Name("ddd")))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Fx.Invoke(func(p Person3) { p.Show() }))
 
 		ctx := context.Background()
-		t.NoError(comDI.Fx.Start(ctx))
-		t.NoError(comDI.Fx.Stop(ctx))
+		t.Require().NoError(comDI.Fx.Start(ctx))
+		t.Require().NoError(comDI.Fx.Stop(ctx))
 	})
 }
 
 func (t *App) TestGroup() {
 	t.Catch(func() {
-		t.NoError(comDI.Fx.Provide(NewPersonDrink, comDI.Name("ddd")))
-		t.NoError(comDI.Fx.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonDrink, comDI.Name("ddd")))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonEat[int]))
 
-		t.NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Fx.Invoke(func(p Person4) { p.Show() }))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Fx.Invoke(func(p Person4) { p.Show() }))
 
 		ctx := context.Background()
-		t.NoError(comDI.Fx.Start(ctx))
-		t.NoError(comDI.Fx.Stop(ctx))
+		t.Require().NoError(comDI.Fx.Start(ctx))
+		t.Require().NoError(comDI.Fx.Stop(ctx))
 	})
 }
 
 func (t *App) TestString() {
 	t.Catch(func() {
-		t.NoError(comDI.Fx.Provide(NewPersonDrink, comDI.Name("ddd")))
-		t.NoError(comDI.Fx.Provide(NewPersonEat[int]))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonDrink, comDI.Name("ddd")))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonEat[int]))
 
-		t.NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
-		t.NoError(comDI.Fx.Invoke(func(p Person4) { p.Show() }))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Fx.Provide(NewPersonEat[int], comDI.Group("aaa")))
+		t.Require().NoError(comDI.Fx.Invoke(func(p Person4) { p.Show() }))
 
 		graph := comDI.Fx.String()
 		log.Info(context.Background(), graph)
-		t.NotEmpty(graph)
+		t.Require().NotEmpty(graph)
 	})
 }

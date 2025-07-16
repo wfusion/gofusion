@@ -87,8 +87,8 @@ func (t *Group) TestGroupDispatch() {
 		fusHtp.Use(fusHtp.AppName(t.AppName())).ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }
 
@@ -140,8 +140,8 @@ func (t *Group) TestUseDispatch() {
 		fusHtp.Use(fusHtp.AppName(t.AppName())).ServeHTTP(w, req)
 
 		// Then
-		t.EqualValues(cnt, 1)
-		t.Equal(http.StatusOK, w.Code)
-		t.Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
+		t.Require().EqualValues(cnt, 1)
+		t.Require().Equal(http.StatusOK, w.Code)
+		t.Require().Contains(w.Body.String(), io.ErrUnexpectedEOF.Error())
 	})
 }

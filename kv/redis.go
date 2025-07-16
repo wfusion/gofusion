@@ -165,12 +165,21 @@ func (r *redisKV) Has(ctx context.Context, key string, opts ...utils.OptionExten
 	if !strings.Contains(key, "*") {
 		pattern += "*"
 	}
-
-	keys, _, err := r.cli.GetProxy().Scan(ctx, 0, pattern, 1).Result()
 	cmd := rdsDrv.NewIntCmd(ctx, pattern)
-	cmd.SetErr(err)
-	cmd.SetVal(int64(len(keys)))
-	return &redisExistsValue{IntCmd: cmd, key: pattern}
+	iter := r.Paginate(ctx, pattern, 100, KeysOnly())
+	for iter.More() {
+		kvs, err := iter.Next()
+		if err != nil {
+			cmd.SetErr(err)
+			cmd.SetVal(int64(len(kvs)))
+			return &redisExistsValue{IntCmd: cmd, key: pattern}
+		}
+		if len(kvs) > 0 {
+			cmd.SetVal(int64(len(kvs)))
+			return &redisExistsValue{IntCmd: cmd, key: pattern}
+		}
+	}
+	return &redisExistsValue{IntCmd: rdsDrv.NewIntCmd(ctx, pattern), key: pattern}
 }
 
 func (r *redisKV) Paginate(ctx context.Context, pattern string, pageSize int, opts ...utils.OptionExtender) Paginated {

@@ -41,7 +41,7 @@ func (t *Conn) TestPing() {
 		defer cancel()
 		mgoCli := mongo.Use(nameDefault, mongo.AppName(t.AppName()))
 		err := mgoCli.Client().Ping(ctx, nil)
-		t.NoError(err)
+		t.Require().NoError(err)
 	})
 }
 
@@ -53,14 +53,14 @@ func (t *Conn) TestCollections() {
 
 		db := mongo.Use(nameDefault, mongo.AppName(t.AppName()))
 		err := db.CreateCollection(ctx, name)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		coll := db.Collection(name)
 		defer func() {
-			t.NoError(coll.Drop(ctx))
+			t.Require().NoError(coll.Drop(ctx))
 		}()
 
 		err = coll.FindOne(ctx, nil).Err()
-		t.EqualValues(mgoDrv.ErrNilDocument, err)
+		t.Require().EqualValues(mgoDrv.ErrNilDocument, err)
 	})
 }

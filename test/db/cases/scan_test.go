@@ -55,9 +55,9 @@ func (t *Scan) testDefault(read, write string) {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName()))
 
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithData)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithData)))
 		}()
 
 		expected := []*modelWithData{
@@ -65,11 +65,11 @@ func (t *Scan) testDefault(read, write string) {
 			{Name: "test4"}, {Name: "test5"}, {Name: "test6"},
 			{Name: "test7"}, {Name: "test8"},
 		}
-		t.NoError(orm.Create(expected).Error)
-		defer func() { t.NoError(orm.Delete(expected).Error) }()
+		t.Require().NoError(orm.Create(expected).Error)
+		defer func() { t.Require().NoError(orm.Delete(expected).Error) }()
 
 		actual := make([]*modelWithData, 0, len(expected))
-		t.NoError(
+		t.Require().NoError(
 			db.Scan[modelWithData, []*modelWithData](
 				ctx,
 				func(mList []*modelWithData) bool { actual = append(actual, mList...); return true },
@@ -81,6 +81,6 @@ func (t *Scan) testDefault(read, write string) {
 			),
 		)
 
-		t.EqualValues(expected, actual)
+		t.Require().EqualValues(expected, actual)
 	})
 }

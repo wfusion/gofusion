@@ -11,9 +11,11 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+
 	"github.com/wfusion/gofusion/common/infra/asynq/pkg/base"
 	"github.com/wfusion/gofusion/common/infra/asynq/pkg/errors"
 	"github.com/wfusion/gofusion/common/infra/asynq/pkg/rdb"
+	"github.com/wfusion/gofusion/common/utils"
 )
 
 // Inspector is a client interface to inspect and mutate the state of
@@ -928,7 +930,7 @@ func parseOption(s string) (Option, error) {
 		}
 		return MaxRetry(n), nil
 	case "Timeout":
-		d, err := time.ParseDuration(arg)
+		d, err := utils.ParseDuration(arg)
 		if err != nil {
 			return nil, err
 		}
@@ -940,7 +942,7 @@ func parseOption(s string) (Option, error) {
 		}
 		return Deadline(t), nil
 	case "Unique":
-		d, err := time.ParseDuration(arg)
+		d, err := utils.ParseDuration(arg)
 		if err != nil {
 			return nil, err
 		}
@@ -952,13 +954,13 @@ func parseOption(s string) (Option, error) {
 		}
 		return ProcessAt(t), nil
 	case "ProcessIn":
-		d, err := time.ParseDuration(arg)
+		d, err := utils.ParseDuration(arg)
 		if err != nil {
 			return nil, err
 		}
 		return ProcessIn(d), nil
 	case "Retention":
-		d, err := time.ParseDuration(arg)
+		d, err := utils.ParseDuration(arg)
 		if err != nil {
 			return nil, err
 		}

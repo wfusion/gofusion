@@ -9,10 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
-	"github.com/wfusion/gofusion/common/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/config"
 	"github.com/wfusion/gofusion/log"
 )
@@ -173,5 +173,5 @@ func (g *gormLogger) reloadConfig() {
 		return
 	}
 	g.logLevel = g.getLogLevel(cast.ToString(logCfg["log_level"]))
-	g.slowThreshold, _ = time.ParseDuration(cast.ToString(logCfg["slow_threshold"]))
+	g.slowThreshold, _ = utils.ParseDuration(cast.ToString(logCfg["slow_threshold"]))
 }

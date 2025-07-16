@@ -97,7 +97,7 @@ func (t *Event) testPubSubEvent(name string) {
 		wg := new(sync.WaitGroup)
 		structSub := mq.NewEventSubscriber[*structCreated](name, mq.AppName(t.AppName()))
 		structMsgCh, err := structSub.SubscribeEvent(ctx, mq.ChannelLen(expected))
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		wg.Add(1)
 		go func() {
@@ -107,13 +107,13 @@ func (t *Event) testPubSubEvent(name string) {
 				case msg := <-structMsgCh:
 					cnt.Add(1)
 
-					t.True(msg.Ack())
+					t.Require().True(msg.Ack())
 					ctx := msg.Context()
 					log.Info(ctx, "subscriber get struct created event consumed [event[%s]]", msg.ID())
 
-					t.NotEmpty(msg.ID())
-					t.EqualValues(msg.Type(), structEventType)
-					t.EqualValues(structObjMap[msg.ID()], msg.Payload())
+					t.Require().NotEmpty(msg.ID())
+					t.Require().EqualValues(msg.Type(), structEventType)
+					t.Require().EqualValues(structObjMap[msg.ID()], msg.Payload())
 					if cnt.Load() == int64(len(structObjList)) {
 						return
 					}
@@ -127,7 +127,7 @@ func (t *Event) testPubSubEvent(name string) {
 
 		// Then
 		wg.Wait()
-		t.EqualValues(len(structObjList), cnt.Load())
+		t.Require().EqualValues(len(structObjList), cnt.Load())
 	})
 }
 
@@ -156,9 +156,9 @@ func (t *Event) testPubHandlerEvent(name string) {
 			func(ctx context.Context, event mq.Event[*mock.RandomObj]) (err error) {
 				// Then
 				cnt.Add(1)
-				t.EqualValues(traceID, fusCtx.GetTraceID(ctx))
-				t.EqualValues(event.Type(), randomEventType)
-				t.EqualValues(randomObjMap[event.ID()], event.Payload())
+				t.Require().EqualValues(traceID, fusCtx.GetTraceID(ctx))
+				t.Require().EqualValues(event.Type(), randomEventType)
+				t.Require().EqualValues(randomObjMap[event.ID()], event.Payload())
 
 				log.Info(ctx, "router get random event consumed [event[%s]]", event.ID())
 				return
@@ -182,7 +182,7 @@ func (t *Event) testPubHandlerEvent(name string) {
 				}
 			}
 		}
-		t.EqualValues(len(randomObjList), cnt.Load())
+		t.Require().EqualValues(len(randomObjList), cnt.Load())
 	})
 }
 
@@ -195,7 +195,7 @@ func (t *Event) publishRandom(ctx context.Context, name string, objList []*mock.
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			t.NoError(p.PublishEvent(ctx, mq.Events(event)))
+			t.Require().NoError(p.PublishEvent(ctx, mq.Events(event)))
 		}()
 	}
 }
@@ -209,7 +209,7 @@ func (t *Event) publishStruct(ctx context.Context, name string, objList []*struc
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			t.NoError(p.PublishEvent(ctx, mq.Events(event)))
+			t.Require().NoError(p.PublishEvent(ctx, mq.Events(event)))
 		}()
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/pkg/errors"
@@ -127,7 +126,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 				conf.FileOutputOption.RotationSize, name, err))
 		}
 
-		maxAge, err := time.ParseDuration(conf.FileOutputOption.RotationMaxAge)
+		maxAge, err := utils.ParseDuration(conf.FileOutputOption.RotationMaxAge)
 		if err != nil {
 			panic(errors.Errorf("log component parse ratation time %s failed for name %s: %s",
 				conf.FileOutputOption.RotationMaxAge, name, err))

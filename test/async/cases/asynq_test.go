@@ -62,7 +62,7 @@ func (t *Asynq) TestDefault() {
 		css = append(css, t.testDefault(ctx, c, p, times))
 		css = append(css, t.testVariadicHandler(ctx, c, p, times))
 
-		t.NoError(c.Start())
+		t.Require().NoError(c.Start())
 
 		// Then
 		wg := new(sync.WaitGroup)
@@ -90,7 +90,7 @@ func (t *Asynq) testDefault(ctx context.Context, c async.Consumable, p async.Pro
 		cnt.Add(1)
 		deadline, ok := ctx.Deadline()
 		log.Info(ctx, "testDefault get async task args: ctx(%s,%v)", deadline, ok)
-		t.EqualValues(obj, arg)
+		t.Require().EqualValues(obj, arg)
 		return
 	})
 
@@ -124,10 +124,10 @@ func (t *Asynq) testVariadicHandler(ctx context.Context, c async.Consumable, p a
 		cnt.Add(1)
 		deadline, ok := ctx.Deadline()
 		log.Info(ctx, "testVariadicHandler get async task args: ctx(%s,%v)", deadline, ok)
-		t.EqualValues(obj1, a1)
-		t.EqualValues(obj2, a2)
-		t.EqualValues(obj3, a3)
-		t.EqualValues(obj4, a4)
+		t.Require().EqualValues(obj1, a1)
+		t.Require().EqualValues(obj2, a2)
+		t.Require().EqualValues(obj3, a3)
+		t.Require().EqualValues(obj4, a4)
 		return
 	}
 
@@ -172,10 +172,10 @@ func (t *Asynq) TestWithQueue() {
 			cnt.Add(1)
 			deadline, ok := ctx.Deadline()
 			log.Info(ctx, "TestWithQueue get async task args: ctx(%s,%v)", deadline, ok)
-			t.EqualValues(obj1, a1)
-			t.EqualValues(obj2, a2)
-			t.EqualValues(obj3, a3)
-			t.EqualValues(obj4, a4)
+			t.Require().EqualValues(obj1, a1)
+			t.Require().EqualValues(obj2, a2)
+			t.Require().EqualValues(obj3, a3)
+			t.Require().EqualValues(obj4, a4)
 			return
 		}
 
@@ -189,7 +189,7 @@ func (t *Asynq) TestWithQueue() {
 		}
 
 		// When
-		t.NoError(c.Start())
+		t.Require().NoError(c.Start())
 		time.Sleep(expect * time.Second)
 
 		// Then
@@ -206,7 +206,7 @@ func (t *Asynq) cleanByQueue(ctx context.Context, queue string) {
 
 	rdsCli := redis.Use(ctx, "default", redis.AppName(t.AppName()))
 	keys, err := rdsCli.Keys(ctx, pattern).Result()
-	t.NoError(err)
+	t.Require().NoError(err)
 
 	if len(keys) > 0 {
 		rdsCli.Del(ctx, keys...)

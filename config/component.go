@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+
 	"github.com/wfusion/gofusion/common/constant"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/clone"
@@ -16,6 +17,7 @@ import (
 const (
 	ComponentApp           = "App"
 	ComponentDebug         = "Debug"
+	ComponentRemoteConfig  = "RemoteConfig"
 	ComponentCrypto        = "Crypto"
 	ComponentMetrics       = "Metrics"
 	ComponentLog           = "Log"
@@ -42,6 +44,7 @@ var (
 	componentOrder = []string{
 		ComponentApp,
 		ComponentDebug,
+		ComponentRemoteConfig,
 		ComponentCrypto,
 		ComponentLog,
 		ComponentMetrics,

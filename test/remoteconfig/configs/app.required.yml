@@ -1,0 +1,81 @@
+base:
+  debug: true
+  app: gofusion
+  crypto:
+    config:
+      mode: gcm
+      algorithm: sm4
+      key_base64: MTIzNDU2NzhhYmNkZWZnaA==
+      confuse_key: true
+      output_algorithm: base64
+  http:
+    port: 9001
+  i18n:
+  goroutine_pool:
+  metrics:
+    prometheus:
+      type: prometheus
+      mode: push
+      interval: 15s
+      endpoint:
+        addresses: [ prometheus:9091 ]
+  log:
+    default:
+      enable_console_output: true
+      enable_file_output: true
+  db:
+    default:
+      driver: mysql
+      db: mysql
+      host: mysql
+      port: 3306
+      user: root
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+  mongo:
+    default:
+      db: admin
+      user: root
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+      endpoints:
+        - mongo:27017
+  redis:
+    default:
+      db: 0
+      user: ""
+      password: "j8RJId7eTMAUJ3NUytlZGqVzP6wOzrbTX7YcizC8"
+      cluster: false
+      endpoints:
+        - redis:6379
+  mq:
+    default:
+      topic: gofusion
+      type: mysql
+      producer: true
+      consumer: true
+      consumer_group: default_group
+      endpoint:
+        instance_type: db
+        instance: default
+  cache:
+    local:
+      type: local
+  lock:
+    default:
+      type: redis_lua
+      instance: default
+  async:
+    default:
+      type: asynq
+      instance: default
+      instance_type: redis
+      producer: true
+      consumer: true
+  cron:
+    default:
+      type: asynq
+      instance: default
+      instance_type: redis
+      lock_instance: "default"
+      trigger: true
+      server: true
+      queue: ""

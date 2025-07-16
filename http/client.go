@@ -5,7 +5,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
@@ -86,10 +85,10 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 	if cliCfg := cfg.c; cliCfg == nil || !cliCfg.Mock {
 		c.EnableTrace()
 	} else {
-		c.SetTimeout(utils.Must(time.ParseDuration(cliCfg.Timeout)))
+		c.SetTimeout(utils.Must(utils.ParseDuration(cliCfg.Timeout)))
 		c.SetRetryCount(cliCfg.RetryCount)
-		c.SetRetryWaitTime(utils.Must(time.ParseDuration(cliCfg.RetryWaitTime)))
-		c.SetRetryMaxWaitTime(utils.Must(time.ParseDuration(cliCfg.RetryMaxWaitTime)))
+		c.SetRetryWaitTime(utils.Must(utils.ParseDuration(cliCfg.RetryWaitTime)))
+		c.SetRetryMaxWaitTime(utils.Must(utils.ParseDuration(cliCfg.RetryMaxWaitTime)))
 		for _, funcName := range cliCfg.RetryConditionFuncs {
 			c.AddRetryCondition(*(*resty.RetryConditionFunc)(inspect.FuncOf(funcName)))
 		}
@@ -98,8 +97,8 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 		}
 
 		dialer := &net.Dialer{
-			Timeout:   utils.Must(time.ParseDuration(cliCfg.DialTimeout)),
-			KeepAlive: utils.Must(time.ParseDuration(cliCfg.DialKeepaliveTime)),
+			Timeout:   utils.Must(utils.ParseDuration(cliCfg.DialTimeout)),
+			KeepAlive: utils.Must(utils.ParseDuration(cliCfg.DialKeepaliveTime)),
 		}
 
 		c.SetTransport(&http.Transport{
@@ -107,9 +106,9 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 			DialContext:           dialer.DialContext,
 			ForceAttemptHTTP2:     cliCfg.ForceAttemptHTTP2,
 			DisableCompression:    cliCfg.DisableCompression,
-			IdleConnTimeout:       utils.Must(time.ParseDuration(cliCfg.IdleConnTimeout)),
-			TLSHandshakeTimeout:   utils.Must(time.ParseDuration(cliCfg.TLSHandshakeTimeout)),
-			ExpectContinueTimeout: utils.Must(time.ParseDuration(cliCfg.TLSHandshakeTimeout)),
+			IdleConnTimeout:       utils.Must(utils.ParseDuration(cliCfg.IdleConnTimeout)),
+			TLSHandshakeTimeout:   utils.Must(utils.ParseDuration(cliCfg.TLSHandshakeTimeout)),
+			ExpectContinueTimeout: utils.Must(utils.ParseDuration(cliCfg.TLSHandshakeTimeout)),
 			MaxIdleConns:          cliCfg.MaxIdleConns,
 			MaxIdleConnsPerHost:   cliCfg.MaxIdleConnsPerHost,
 			MaxConnsPerHost:       cliCfg.MaxConnsPerHost,
@@ -186,5 +185,5 @@ func useClient(opts ...utils.OptionExtender) (cli *resty.Client) {
 func init() {
 	_ = utils.ParseTag(defaultClientConf,
 		utils.ParseTagName("default"),
-		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml))
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml))
 }

@@ -5,7 +5,6 @@ import (
 	"log"
 	"reflect"
 	"syscall"
-	"time"
 
 	"github.com/panjf2000/ants/v2"
 	"go.uber.org/atomic"
@@ -67,7 +66,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 			}
 		}
 	}
-	maxReleaseTime := utils.Must(time.ParseDuration(conf.MaxReleaseTimePerPool))
+	maxReleaseTime := utils.Must(utils.ParseDuration(conf.MaxReleaseTimePerPool))
 
 	go startDaemonRoutines(ctx, opt.AppName, &conf)
 

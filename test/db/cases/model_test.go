@@ -64,35 +64,35 @@ func (t *Model) testDataModel(read, write string) {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
 
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithBusiness)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithBusinessAndUser)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithBusiness)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithBusinessAndUser)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithData)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithBusiness)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithBusinessAndUser)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithData)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithBusiness)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithBusinessAndUser)))
 		}()
 
 		mwd1 := &modelWithData{Name: "az1"}
-		t.NoError(orm.Create(mwd1).Error)
-		t.NoError(orm.Where("name = 'az1'").Delete(mwd1).Error)
+		t.Require().NoError(orm.Create(mwd1).Error)
+		t.Require().NoError(orm.Where("name = 'az1'").Delete(mwd1).Error)
 
 		mwd2 := &modelWithData{Name: "az2"}
-		t.NoError(orm.Create(mwd2).Error)
-		t.NoError(orm.Where("name = 'az2'").Delete(mwd2).Error)
+		t.Require().NoError(orm.Create(mwd2).Error)
+		t.Require().NoError(orm.Where("name = 'az2'").Delete(mwd2).Error)
 
 		//ret := orm.Exec("insert into model_with_data(create_time, modify_time, name) values(1685702487694,1685702487694,'az3')")
-		//t.NoError(ret.Error)
+		//t.Require().NoError(ret.Error)
 		//id, _ := ret.Statement.Schema.PrioritizedPrimaryField.ValueOf(ret.Statement.Context, ret.Statement.ReflectValue)
-		//t.NoError(orm.Delete(mwd2, "name = 'az3' AND id = ?", id).Error)
+		//t.Require().NoError(orm.Delete(mwd2, "name = 'az3' AND id = ?", id).Error)
 
 		mwb := &modelWithBusiness{Name: "test"}
-		t.NoError(orm.Create(mwb).Error)
-		t.NoError(orm.Delete(mwb).Error)
+		t.Require().NoError(orm.Create(mwb).Error)
+		t.Require().NoError(orm.Delete(mwb).Error)
 
 		mwbu := &modelWithBusinessAndUser{Name: "test"}
-		t.NoError(orm.Create(mwbu).Error)
-		t.NoError(orm.Delete(mwbu).Error)
+		t.Require().NoError(orm.Create(mwbu).Error)
+		t.Require().NoError(orm.Delete(mwbu).Error)
 	})
 }
 
@@ -101,18 +101,18 @@ func (t *Model) testJoins(read, write string) {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
 
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithDataExtend)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithData)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithDataExtend)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithData)))
-			t.NoError(orm.Migrator().DropTable(new(modelWithDataExtend)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithData)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithDataExtend)))
 		}()
 		mwd := &modelWithData{Name: "az1"}
-		t.NoError(orm.Create(mwd).Error)
+		t.Require().NoError(orm.Create(mwd).Error)
 		mwdTableName := mwd.TableName()
 
 		mwdt := &modelWithDataExtend{OtherName: "test", ModelID: mwd.ID}
-		t.NoError(orm.Create(mwdt).Error)
+		t.Require().NoError(orm.Create(mwdt).Error)
 		mwdtTableName := mwdt.TableName()
 
 		var mwdList []*modelWithData
@@ -120,11 +120,11 @@ func (t *Model) testJoins(read, write string) {
 			ReadDB(ctx).
 			Joins(fmt.Sprintf("left join %s on %s.model_id = %s.id",
 				mwdtTableName, mwdtTableName, mwdTableName))
-		t.NoError(joins.Find(&mwdList).Error)
-		t.NotEmpty(mwdList)
+		t.Require().NoError(joins.Find(&mwdList).Error)
+		t.Require().NotEmpty(mwdList)
 
-		t.NoError(orm.Delete(mwd).Error)
-		t.NoError(orm.Delete(mwdt).Error)
+		t.Require().NoError(orm.Delete(mwd).Error)
+		t.Require().NoError(orm.Delete(mwdt).Error)
 	})
 }
 
@@ -132,28 +132,28 @@ func (t *Model) testSoftDelete(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSoftDeleted)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSoftDeleted)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSoftDeleted)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSoftDeleted)))
 		}()
 		mwb := &modelWithSoftDeleted{Name: "test"}
-		t.NoError(orm.Create(mwb).Error)
+		t.Require().NoError(orm.Create(mwb).Error)
 		defer func() {
-			t.NoError(orm.Unscoped().Model(mwb).Delete(nil, "id = ?", mwb.ID).Error)
+			t.Require().NoError(orm.Unscoped().Model(mwb).Delete(nil, "id = ?", mwb.ID).Error)
 		}()
 
 		var found *modelWithSoftDeleted
-		t.NoError(orm.First(&found, "id = ?", mwb.ID).Error)
-		t.Equal(mwb.Name, found.Name)
+		t.Require().NoError(orm.First(&found, "id = ?", mwb.ID).Error)
+		t.Require().Equal(mwb.Name, found.Name)
 		found = nil
 
 		mwb.Name = "test2"
-		t.NoError(orm.Updates(mwb).Error)
-		t.NoError(orm.First(&found, "id = ?", mwb.ID).Error)
-		t.Equal(mwb.Name, found.Name)
+		t.Require().NoError(orm.Updates(mwb).Error)
+		t.Require().NoError(orm.First(&found, "id = ?", mwb.ID).Error)
+		t.Require().Equal(mwb.Name, found.Name)
 		found = nil
 
-		t.NoError(orm.Delete(mwb).Error)
+		t.Require().NoError(orm.Delete(mwb).Error)
 		t.Error(orm.First(&found, "id = ?", mwb.ID).Error)
 	})
 }
@@ -162,27 +162,27 @@ func (t *Model) testBusinessSoftDelete(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
-		t.NoError(orm.Migrator().AutoMigrate(new(modelBizWithSoftDeleted)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelBizWithSoftDeleted)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelBizWithSoftDeleted)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelBizWithSoftDeleted)))
 		}()
 		mwb := &modelBizWithSoftDeleted{Name: "test"}
-		t.NoError(orm.Create(mwb).Error)
+		t.Require().NoError(orm.Create(mwb).Error)
 		defer func() {
-			t.NoError(orm.Unscoped().Model(mwb).Delete(nil, "id = ?", mwb.ID).Error)
+			t.Require().NoError(orm.Unscoped().Model(mwb).Delete(nil, "id = ?", mwb.ID).Error)
 		}()
 
 		var found *modelBizWithSoftDeleted
-		t.NoError(orm.First(&found, "id = ?", mwb.ID).Error)
-		t.Equal(mwb.Name, found.Name)
+		t.Require().NoError(orm.First(&found, "id = ?", mwb.ID).Error)
+		t.Require().Equal(mwb.Name, found.Name)
 		found = nil
 		mwb.Name = "test2"
-		t.NoError(orm.Updates(mwb).Error)
-		t.NoError(orm.First(&found, "id = ?", mwb.ID).Error)
-		t.Equal(mwb.Name, found.Name)
+		t.Require().NoError(orm.Updates(mwb).Error)
+		t.Require().NoError(orm.First(&found, "id = ?", mwb.ID).Error)
+		t.Require().Equal(mwb.Name, found.Name)
 		found = nil
 
-		t.NoError(orm.Delete(mwb).Error)
+		t.Require().NoError(orm.Delete(mwb).Error)
 		t.Error(orm.First(&found, "id = ?", mwb.ID).Error)
 	})
 }
@@ -191,32 +191,32 @@ func (t *Model) testSoftDeleteUnscoped(read, write string) {
 	t.Catch(func() {
 		ctx := context.Background()
 		orm := db.Use(ctx, write, db.AppName(t.AppName())).WithContext(ctx)
-		t.NoError(orm.Migrator().AutoMigrate(new(modelWithSoftDeleted)))
+		t.Require().NoError(orm.Migrator().AutoMigrate(new(modelWithSoftDeleted)))
 		defer func() {
-			t.NoError(orm.Migrator().DropTable(new(modelWithSoftDeleted)))
+			t.Require().NoError(orm.Migrator().DropTable(new(modelWithSoftDeleted)))
 		}()
 		dal := db.NewDAL[modelWithSoftDeleted, []*modelWithSoftDeleted](read, write, db.AppName(t.AppName()))
 
 		mwb := &modelWithSoftDeleted{Name: "test"}
-		t.NoError(dal.InsertOne(ctx, mwb))
+		t.Require().NoError(dal.InsertOne(ctx, mwb))
 		defer func() {
 			_, err := dal.Delete(ctx, "id = ?", mwb.ID, db.Unscoped())
-			t.NoError(err)
+			t.Require().NoError(err)
 		}()
 
 		found, err := dal.QueryFirst(ctx, "id = ?", mwb.ID)
-		t.NoError(err)
-		t.Equal(mwb.Name, found.Name)
+		t.Require().NoError(err)
+		t.Require().Equal(mwb.Name, found.Name)
 
 		_, err = dal.Delete(ctx, "id = ?", mwb.ID)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		found, err = dal.QueryFirst(ctx, "id = ?", mwb.ID)
-		t.NoError(err)
+		t.Require().NoError(err)
 		t.Empty(found)
 
 		found, err = dal.QueryFirst(ctx, "id = ?", mwb.ID, db.Unscoped())
-		t.NoError(err)
-		t.Equal(mwb.Name, found.Name)
+		t.Require().NoError(err)
+		t.Require().Equal(mwb.Name, found.Name)
 	})
 }

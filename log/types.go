@@ -72,7 +72,7 @@ type Conf struct {
 		Layout         string `yaml:"layout" json:"layout" toml:"layout" default:"json"`
 		Path           string `yaml:"path" json:"path" toml:"path"` // Log save path
 		Name           string `yaml:"name" json:"name" toml:"name"` // Name of the saved log, defaults to random generation
-		RotationMaxAge string `yaml:"rotation_max_age" json:"rotation_max_age" toml:"rotation_max_age" default:"720h"`
+		RotationMaxAge string `yaml:"rotation_max_age" json:"rotation_max_age" toml:"rotation_max_age" default:"30d"`
 		RotationCount  int    `yaml:"rotation_count" json:"rotation_count" toml:"rotation_count"`               // Maximum number of files to keep
 		RotationSize   string `yaml:"rotation_size" json:"rotation_size" toml:"rotation_size" default:"100mib"` // File rotation size
 		Compress       bool   `yaml:"compress" json:"compress" toml:"compress" default:"false"`

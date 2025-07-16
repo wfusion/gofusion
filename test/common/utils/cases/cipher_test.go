@@ -50,9 +50,9 @@ func (t *Cipher) TestDES() {
 			iv  [des.BlockSize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 		_, err = utils.Random(iv[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmDES, key[:], iv[:], cipher.ModeGCM)
 	})
@@ -65,9 +65,9 @@ func (t *Cipher) Test3DES() {
 			iv  [des.BlockSize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 		_, err = utils.Random(iv[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.Algorithm3DES, key[:], iv[:], cipher.ModeGCM)
 	})
@@ -80,9 +80,9 @@ func (t *Cipher) TestAES128() {
 			iv  [aes.BlockSize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 		_, err = utils.Random(iv[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmAES, key[:], iv[:])
 	})
@@ -95,9 +95,9 @@ func (t *Cipher) TestAES192() {
 			iv  [aes.BlockSize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 		_, err = utils.Random(iv[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmAES, key[:], iv[:])
 	})
@@ -110,9 +110,9 @@ func (t *Cipher) TestAES256() {
 			iv  [aes.BlockSize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 		_, err = utils.Random(iv[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmAES, key[:], iv[:])
 	})
@@ -124,7 +124,7 @@ func (t *Cipher) TestRC4_8() {
 			key [1]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmRC4, key[:], nil,
 			cipher.ModeCBC, cipher.ModeCFB, cipher.ModeCTR, cipher.ModeOFB, cipher.ModeGCM)
@@ -137,7 +137,7 @@ func (t *Cipher) TestRC4_256() {
 			key [32]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmRC4, key[:], nil,
 			cipher.ModeCBC, cipher.ModeCFB, cipher.ModeCTR, cipher.ModeOFB, cipher.ModeGCM)
@@ -150,7 +150,7 @@ func (t *Cipher) TestRC4_2048() {
 			key [256]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmRC4, key[:], nil,
 			cipher.ModeCBC, cipher.ModeCFB, cipher.ModeCTR, cipher.ModeOFB, cipher.ModeGCM)
@@ -163,7 +163,7 @@ func (t *Cipher) TestChaCha20poly1305() {
 			key [chacha20poly1305.KeySize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmChaCha20poly1305, key[:], nil,
 			cipher.ModeCBC, cipher.ModeCFB, cipher.ModeCTR, cipher.ModeOFB, cipher.ModeGCM)
@@ -176,7 +176,7 @@ func (t *Cipher) TestXChaCha20poly1305() {
 			key [chacha20poly1305.KeySize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmXChaCha20poly1305, key[:], nil,
 			cipher.ModeCBC, cipher.ModeCFB, cipher.ModeCTR, cipher.ModeOFB, cipher.ModeGCM)
@@ -190,9 +190,9 @@ func (t *Cipher) TestSM4() {
 			iv  [aes.BlockSize]byte
 		)
 		_, err := utils.Random(key[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 		_, err = utils.Random(iv[:], 0)
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		t.runTest(cipher.AlgorithmSM4, key[:], iv[:])
 	})
@@ -257,19 +257,19 @@ func (t *Cipher) testModes(algo cipher.Algorithm, key, iv []byte, ignoreModes ..
 		name := algo.String() + "_" + cs.mode.String()
 		t.Run(name, func() {
 			enc, err := cipher.EncryptBytesFunc(algo, cs.mode, key, iv)
-			t.NoError(err)
+			t.Require().NoError(err)
 			dec, err := cipher.DecryptBytesFunc(algo, cs.mode, key, iv)
-			t.NoError(err)
+			t.Require().NoError(err)
 
 			ciphertext, err := enc(cs.data)
-			t.NoError(err)
-			t.NotEmpty(ciphertext)
+			t.Require().NoError(err)
+			t.Require().NotEmpty(ciphertext)
 			t.NotEqualValues(cs.data, ciphertext)
 
 			actual, err := dec(ciphertext)
-			t.NoError(err)
+			t.Require().NoError(err)
 
-			t.EqualValues(cs.data, actual)
+			t.Require().EqualValues(cs.data, actual)
 		})
 	}
 }
@@ -309,19 +309,19 @@ func (t *Cipher) testLargeBytes(algo cipher.Algorithm, key, iv []byte, ignoreMod
 		name := algo.String() + "_" + cs.mode.String() + "_large_bytes"
 		t.Run(name, func() {
 			enc, err := cipher.EncryptBytesFunc(algo, cs.mode, key, iv)
-			t.NoError(err)
+			t.Require().NoError(err)
 			dec, err := cipher.DecryptBytesFunc(algo, cs.mode, key, iv)
-			t.NoError(err)
+			t.Require().NoError(err)
 
 			ciphertext, err := enc(data)
-			t.NoError(err)
-			t.NotEmpty(ciphertext)
+			t.Require().NoError(err)
+			t.Require().NotEmpty(ciphertext)
 			t.NotEqualValues(data, ciphertext)
 
 			actual, err := dec(ciphertext)
-			t.NoError(err)
+			t.Require().NoError(err)
 
-			t.EqualValues(data, actual)
+			t.Require().EqualValues(data, actual)
 		})
 	}
 }
@@ -371,19 +371,19 @@ func (t *Cipher) testBytesParallel(algo cipher.Algorithm, key, iv []byte, ignore
 					defer wg.Done()
 
 					enc, err := cipher.EncryptBytesFunc(algo, mode, key, iv)
-					t.NoError(err)
+					t.Require().NoError(err)
 					dec, err := cipher.DecryptBytesFunc(algo, mode, key, iv)
-					t.NoError(err)
+					t.Require().NoError(err)
 
 					ciphertext, err := enc(data)
-					t.NoError(err)
-					t.NotEmpty(ciphertext)
+					t.Require().NoError(err)
+					t.Require().NotEmpty(ciphertext)
 					t.NotEqualValues(data, ciphertext)
 
 					actual, err := dec(ciphertext)
-					t.NoError(err)
+					t.Require().NoError(err)
 
-					t.EqualValues(data, actual)
+					t.Require().EqualValues(data, actual)
 				}()
 			}
 		}
@@ -432,21 +432,21 @@ func (t *Cipher) testStreaming(algo cipher.Algorithm, key, iv []byte, ignoreMode
 			dataBuffer := bytes.NewReader(data)
 
 			enc, err := cipher.EncryptStreamFunc(algo, mode, key, iv)
-			t.NoError(err)
+			t.Require().NoError(err)
 			dec, err := cipher.DecryptStreamFunc(algo, mode, key, iv)
-			t.NoError(err)
+			t.Require().NoError(err)
 
 			cipherBuffer := bytes.NewBuffer(nil)
 			err = enc(cipherBuffer, dataBuffer)
-			t.NoError(err)
+			t.Require().NoError(err)
 			t.NotZero(cipherBuffer.Len())
 			t.NotEqualValues(data, cipherBuffer.Bytes())
 
 			plainBuffer := bytes.NewBuffer(nil)
 			err = dec(plainBuffer, cipherBuffer)
-			t.NoError(err)
+			t.Require().NoError(err)
 
-			t.EqualValues(data, plainBuffer.Bytes())
+			t.Require().EqualValues(data, plainBuffer.Bytes())
 		})
 	}
 }
@@ -501,21 +501,21 @@ func (t *Cipher) testStreamingParallel(algo cipher.Algorithm, key, iv []byte, ig
 					dataBuffer := bytes.NewReader(data)
 
 					enc, err := cipher.EncryptStreamFunc(algo, mode, key, iv)
-					t.NoError(err)
+					t.Require().NoError(err)
 					dec, err := cipher.DecryptStreamFunc(algo, mode, key, iv)
-					t.NoError(err)
+					t.Require().NoError(err)
 
 					cipherBuffer := bytes.NewBuffer(nil)
 					err = enc(cipherBuffer, dataBuffer)
-					t.NoError(err)
+					t.Require().NoError(err)
 					t.NotZero(cipherBuffer.Len())
 					t.NotEqualValues(data, cipherBuffer.Bytes())
 
 					plainBuffer := bytes.NewBuffer(nil)
 					err = dec(plainBuffer, cipherBuffer)
-					t.NoError(err)
+					t.Require().NoError(err)
 
-					t.EqualValues(data, plainBuffer.Bytes())
+					t.Require().EqualValues(data, plainBuffer.Bytes())
 				}()
 			}
 		}
@@ -533,6 +533,6 @@ func (t *Cipher) randomData() (data []byte) {
 	data = make([]byte, largeLength+rand.Int()%(jitterLength/2))
 	//data = make([]byte, 10)
 	_, err := utils.Random(data, utils.GetTimeStamp(time.Now()))
-	t.NoError(err)
+	t.Require().NoError(err)
 	return
 }

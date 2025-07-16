@@ -6,6 +6,47 @@ base:
   # Application or system name, just ensure uniqueness within the same runtime environment
   app: gofusion
 
+  # remote configuration
+  config:
+    # Name of the configuration profile.
+    # Note 'default' profile's settings will override the default component configurations.
+    #json:
+    #  # The type of the configuration center. Currently, only 'apollo' is supported.
+    #  type: apollo
+    #  apollo:
+    #    # The App ID for this application in Apollo.
+    #    app_id: gofusion
+    #    # The name of the Apollo cluster.
+    #    cluster: default
+    #    # The namespace(s) to listen to. Multiple namespaces can be specified,
+    #    # separated by a comma (e.g., "application,application.yaml").
+    #    namespaces: app.json
+    #    # The address of the Apollo meta server (Config Service).
+    #    endpoint: http://apollo-config:8080
+    #    # Enable local backup. If true, configurations fetched from Apollo will be saved to a local file.
+    #    # This allows the application to use the last known configuration if the Apollo service is down.
+    #    is_backup_config: true
+    #    # Path for the backup file. For example, './' saves the file in the current working directory.
+    #    backup_config_path: ./
+    #    # The secret key used for accessing namespaces with access control.
+    #    secret: "e16e6897b788a18357a79a834f37e492f155c879"
+    #    # The label used for gray releases.
+    #    label: ""
+    #    # Timeout for fetching configurations from the server. The default is 10s. The unit is seconds.
+    #    sync_server_timeout: 10s
+    #    # Determines if the application must successfully fetch the configuration on its first attempt to start.
+    #    must_start: true
+    #txt:
+    #  type: apollo
+    #  apollo:
+    #    app_id: gofusion
+    #    cluster: default
+    #    namespaces: test.txt
+    #    endpoint: http://apollo-config:8080
+    #    is_backup_config: false
+    #    secret: "e16e6897b788a18357a79a834f37e492f155c879"
+    #    must_start: false
+
   # Encryption configuration
   crypto:
     # Encryption of this configuration file
@@ -240,8 +281,8 @@ base:
         # or <program run directory name>.log if <app> is not configured, or md5 hash if run directory is /
         name: gofusion.log
         # The maximum duration to retain logs. This is triggered only during log rotation due to exceeding size limits.
-        # The duration should be >= 1ms. The default value is 720 hours.
-        rotation_max_age: 720h
+        # The duration should be >= 1ms. The default value is 30 days.
+        rotation_max_age: 30d
         # The maximum number of file copies to keep. The actual number retained includes the current log file in use,
         # so the actual maximum number of copies is <rotation_count> + 1.
         rotation_count: 10

@@ -49,7 +49,7 @@ func (t *Log) TestCustomLogger() {
 		_, err := c.AddFunc("*/1 * * * * *", func() {
 			i++
 		})
-		t.NoError(err)
+		t.Require().NoError(err)
 		c.Start()
 		defer c.Stop()
 		time.Sleep(2 * time.Second)

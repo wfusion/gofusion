@@ -1,13 +1,17 @@
 package utils
 
 import (
+	"bytes"
 	"encoding/gob"
-	"reflect"
+	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/hashicorp/hcl"
+	"github.com/hashicorp/hcl/hcl/printer"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 
+	"github.com/wfusion/gofusion/common/utils/clone"
 	"github.com/wfusion/gofusion/common/utils/serialize/json"
 )
 
@@ -42,32 +46,41 @@ func MustJsonMarshal(s any) []byte             { return Must(json.Marshal(s)) }
 func MustJsonMarshalString(s any) string       { return string(MustJsonMarshal(s)) }
 func MustJsonUnmarshal[T any](s []byte) (t *T) { MustSuccess(json.Unmarshal(s, &t)); return }
 
-type unmarshalType string
+type MarshalType string
 
 const (
-	UnmarshalTypeJson unmarshalType = "json"
-	UnmarshalTypeYaml unmarshalType = "yaml"
-	UnmarshalTypeToml unmarshalType = "toml"
+	MarshalTypeJson   MarshalType = "json"
+	MarshalTypeYaml   MarshalType = "yaml"
+	MarshalTypeYml    MarshalType = "yml"
+	MarshalTypeToml   MarshalType = "toml"
+	MarshalTypeHCL    MarshalType = "hcl"
+	MarshalTypeTFVars MarshalType = "tfvars"
 )
 
-// An InvalidUnmarshalError describes an invalid argument passed to Unmarshal.
-// (The argument to Unmarshal must be a non-nil pointer.)
-type InvalidUnmarshalError struct {
-	Type reflect.Type
+func Marshal(s any, tag MarshalType) (d []byte, err error) {
+	bs, cb := BytesBufferPool.Get(nil)
+	defer cb()
+
+	switch tag {
+	case MarshalTypeJson:
+		err = json.NewEncoder(bs).Encode(s)
+	case MarshalTypeYaml, MarshalTypeYml:
+		err = yaml.NewEncoder(bs).Encode(s)
+	case MarshalTypeToml:
+		err = toml.NewEncoder(bs).Encode(s)
+	case MarshalTypeHCL, MarshalTypeTFVars:
+		err = marshalHCL(bs, d)
+	default:
+		err = gob.NewDecoder(bs).Decode(s)
+	}
+	if err != nil {
+		return
+	}
+	d = clone.SliceComparable(bs.Bytes())
+	return
 }
 
-func (e *InvalidUnmarshalError) Error() string {
-	if e.Type == nil {
-		return "common/utils: Unmarshal(nil)"
-	}
-
-	if e.Type.Kind() != reflect.Pointer {
-		return "common/utils: Unmarshal(non-pointer " + e.Type.String() + ")"
-	}
-	return "common/utils: Unmarshal(nil " + e.Type.String() + ")"
-}
-
-func Unmarshal(s, d any, tag unmarshalType) (err error) {
+func Unmarshal(s, d any, tag MarshalType) (err error) {
 	switch s.(type) {
 	case string, []byte:
 		bs, cb := BytesBufferPool.Get(nil)
@@ -79,20 +92,34 @@ func Unmarshal(s, d any, tag unmarshalType) (err error) {
 		}
 
 		switch tag {
-		case UnmarshalTypeJson:
+		case MarshalTypeJson:
 			return json.NewDecoder(bs).Decode(d)
-		case UnmarshalTypeYaml:
-			err = yaml.NewDecoder(bs).Decode(d)
-			return
-		case UnmarshalTypeToml:
+		case MarshalTypeYaml, MarshalTypeYml:
+			return yaml.NewDecoder(bs).Decode(d)
+		case MarshalTypeToml:
 			_, err = toml.NewDecoder(bs).Decode(d)
 			return
+		case MarshalTypeHCL, MarshalTypeTFVars:
+			return hcl.Unmarshal(bs.Bytes(), d)
 		default:
 			err = gob.NewDecoder(bs).Decode(d)
 			return
 		}
 	default:
-		cfg := &mapstructure.DecoderConfig{Result: d}
+		cfg := &mapstructure.DecoderConfig{
+			Result:           d,
+			WeaklyTypedInput: true,
+			DecodeHook: mapstructure.OrComposeDecodeHookFunc(
+				mapstructure.StringToTimeDurationHookFunc(),
+				mapstructure.StringToSliceHookFunc(","),
+				mapstructure.StringToIPHookFunc(),
+				mapstructure.StringToIPNetHookFunc(),
+				mapstructure.StringToTimeHookFunc("2006-01-02 15:04:05"),       // time.DateTime format
+				mapstructure.StringToTimeHookFunc("2006-01-02 15:04:05Z07:00"), // time.DateTime with timezone
+				mapstructure.StringToTimeHookFunc(time.RFC1123),
+				mapstructure.StringToTimeHookFunc(time.RFC3339),
+			),
+		}
 		if tag != "" {
 			cfg.TagName = string(tag)
 		}
@@ -104,4 +131,26 @@ func Unmarshal(s, d any, tag unmarshalType) (err error) {
 		err = dec.Decode(s)
 		return
 	}
+}
+
+// marshalHCL fork from github.com/spf13/viper@v1.16.0/internal/encoding/hcl/codec.go
+func marshalHCL(buf *bytes.Buffer, v any) (err error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return
+	}
+
+	// TODO: use printer.Format? Is the trailing newline an issue?
+
+	ast, err := hcl.Parse(string(b))
+	if err != nil {
+		return
+	}
+
+	err = printer.Fprint(buf, ast.Node)
+	if err != nil {
+		return
+	}
+
+	return
 }

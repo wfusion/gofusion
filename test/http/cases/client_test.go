@@ -51,7 +51,7 @@ func (t *Client) TestMock() {
 		}
 		actual := new(fusHtp.Response)
 		responder, err := httpmock.NewJsonResponder(http.StatusOK, expected)
-		t.NoError(err)
+		t.Require().NoError(err)
 		httpmock.RegisterResponder(http.MethodGet, fakeUrl, responder)
 		cli := fusHtp.NewRequest(context.Background(), fusHtp.AppName(t.AppName())).SetResult(&actual)
 
@@ -59,8 +59,8 @@ func (t *Client) TestMock() {
 		rsp, err := cli.Get(fakeUrl)
 
 		// Then
-		t.NoError(err)
-		t.Equal(http.StatusOK, rsp.StatusCode())
-		t.EqualValues(expected.Data, actual.Data)
+		t.Require().NoError(err)
+		t.Require().Equal(http.StatusOK, rsp.StatusCode())
+		t.Require().EqualValues(expected.Data, actual.Data)
 	})
 }

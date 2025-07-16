@@ -97,7 +97,7 @@ func (t *Raw) testPubSubRaw(name string) {
 		// When
 		sub := mq.Sub(name, mq.AppName(t.AppName()))
 		msgCh, err := sub.SubscribeRaw(ctx, mq.ChannelLen(expected))
-		t.NoError(err)
+		t.Require().NoError(err)
 
 		wg := new(sync.WaitGroup)
 		wg.Add(1)
@@ -108,16 +108,16 @@ func (t *Raw) testPubSubRaw(name string) {
 				case msg := <-msgCh:
 					cnt.Add(1)
 					if msg == nil {
-						t.NotNil(msg)
+						t.Require().NotNil(msg)
 						break
 					}
 
 					ctx := msg.Context()
 					log.Info(ctx, "we get raw message consumed [raw_message[%s]]", msg.ID())
-					t.NotEmpty(msg.ID())
+					t.Require().NotEmpty(msg.ID())
 					actual := utils.MustJsonUnmarshal[mock.CommonObj](msg.Payload())
-					t.EqualValues(objMap[msg.ID()], actual)
-					t.True(msg.Ack())
+					t.Require().EqualValues(objMap[msg.ID()], actual)
+					t.Require().True(msg.Ack())
 
 					if cnt.Load() == int64(len(objList)) {
 						return
@@ -133,7 +133,7 @@ func (t *Raw) testPubSubRaw(name string) {
 
 		// Then
 		wg.Wait()
-		t.EqualValues(len(objList), cnt.Load())
+		t.Require().EqualValues(len(objList), cnt.Load())
 	})
 }
 
@@ -162,7 +162,7 @@ func (t *Raw) testPubHandleRaw(name string) {
 
 			log.Info(msg.Context(), "we get raw message consumed [raw_message[%s]]", msg.ID())
 			actual := utils.MustJsonUnmarshal[mock.CommonObj](msg.Payload())
-			t.EqualValues(objMap[msg.ID()], actual)
+			t.Require().EqualValues(objMap[msg.ID()], actual)
 			return
 		})
 		r.Start()
@@ -183,7 +183,7 @@ func (t *Raw) testPubHandleRaw(name string) {
 				}
 			}
 		}
-		t.EqualValues(len(objList), cnt.Load())
+		t.Require().EqualValues(len(objList), cnt.Load())
 	})
 }
 
@@ -196,7 +196,7 @@ func (t *Raw) publishAsMessage(ctx context.Context, name string, objList []*mock
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			t.NoError(p.PublishRaw(ctx, mq.Messages(msg)))
+			t.Require().NoError(p.PublishRaw(ctx, mq.Messages(msg)))
 		}()
 	}
 }

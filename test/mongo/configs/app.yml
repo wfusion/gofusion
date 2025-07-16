@@ -25,7 +25,7 @@ base:
       shorter_filepath: true
 
   metrics:
-    prometheus_push:
+    prometheus-push:
       type: prometheus
       mode: push
       interval: 1s

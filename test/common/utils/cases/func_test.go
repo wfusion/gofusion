@@ -41,13 +41,13 @@ func (t *Func) TestWrapFuncMissInAndOutMatch() {
 		ctx := context.Background()
 		obj := mock.GenObjBySerializeAlgo(serialize.AlgorithmGob).(*mock.RandomObj)
 		hd := func(paramCtx context.Context, paramObj *mock.CommonObj) {
-			t.EqualValues(ctx, paramCtx)
-			t.EqualValues(obj.Basic.Str, paramObj.Basic.Str)
+			t.Require().EqualValues(ctx, paramCtx)
+			t.Require().EqualValues(obj.Basic.Str, paramObj.Basic.Str)
 		}
 		wrapper := utils.WrapFunc1[error](hd)
 
 		// When
 		err := wrapper(ctx, obj)
-		t.NoError(err)
+		t.Require().NoError(err)
 	})
 }

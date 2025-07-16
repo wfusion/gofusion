@@ -13,7 +13,7 @@ mkdir -p "${OUTPUT}"
 touch "${OUTPUT}"/coverage.out
 
 # dep install
-go install gotest.tools/gotestsum@latest
+go install gotest.tools/gotestsum@v1.12.0
 go install github.com/axw/gocov/gocov@v1.1.0
 go install github.com/matm/gocov-html/cmd/gocov-html@v1.4.0
 go install github.com/tdewolff/minify/v2/cmd/minify@v2.21.2
@@ -51,7 +51,7 @@ GOBIN=$(go env GOPATH)/bin
 
 # run test
 COVER_PKG=$(find -type d -printf '%P\n' | egrep -v '^$|^.git/*|^test/*|^assets/*|^.idea/*|^common/fus/*|^common/infra/drivers/orm/opengauss/*|^common/infra/drivers/orm/sqlite/*|^common/infra/asynq/*|^common/infra/metrics/*|^common/infra/watermill/*|^common/infra/rotatelog/*|^common/utils/gomonkey/*|^common/utils/sqlparser/*' | awk '{print "github.com/wfusion/gofusion/" $0}' | sed ':a;N;$!ba;s/\n/,/g')
-"${GOBIN}"/gotestsum --junitfile "${OUTPUT}"/junit.xml -- -timeout 30m -parallel 1 ./test/... -coverpkg="${COVER_PKG}" -coverprofile="${OUTPUT}"/coverage.out -covermode count || true
+"${GOBIN}"/gotestsum --junitfile "${OUTPUT}"/junit.xml -- -timeout 30m -parallel "$(getconf _NPROCESSORS_ONLN)" ./test/... -coverpkg="${COVER_PKG}" -coverprofile="${OUTPUT}"/coverage.out -covermode count || true
 
 # export test report
 echo "export complete.xml"

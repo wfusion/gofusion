@@ -53,8 +53,8 @@ func (t *Middleware) TestRecover() {
 		req := fusHtp.NewRequest(ctx, fusHtp.CName(clientLocalName), fusHtp.AppName(t.AppName()))
 		req.SetHeader("Origin", "localhost")
 		rsp, err := req.Post(t.addr() + path)
-		t.NoError(err)
-		t.EqualValues(http.StatusInternalServerError, rsp.StatusCode())
+		t.Require().NoError(err)
+		t.Require().EqualValues(http.StatusInternalServerError, rsp.StatusCode())
 	})
 }
 

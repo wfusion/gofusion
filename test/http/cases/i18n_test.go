@@ -99,8 +99,8 @@ func (t *I18n) TestValidator() {
 		engine.ServeHTTP(w, req)
 
 		// Then
-		t.Equal(http.StatusOK, w.Code)
+		t.Require().Equal(http.StatusOK, w.Code)
 		rsp := utils.MustJsonUnmarshal[fusHtp.Response](w.Body.Bytes())
-		t.Equal(rsp.Code, -1)
+		t.Require().Equal(rsp.Code, -1)
 	})
 }

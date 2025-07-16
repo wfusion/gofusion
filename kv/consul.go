@@ -374,7 +374,7 @@ func parseConsulConfig(conf *Conf) *api.Config {
 	cfg.Address = epConf.Addresses[0]
 	cfg.Datacenter = epConf.ConsulDatacenter
 	if epConf.ConsulWaitTime != "" {
-		cfg.WaitTime = utils.Must(time.ParseDuration(epConf.ConsulWaitTime))
+		cfg.WaitTime = utils.Must(utils.ParseDuration(epConf.ConsulWaitTime))
 	}
 
 	return cfg

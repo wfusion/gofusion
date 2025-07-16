@@ -9,7 +9,6 @@ import (
 	"mime"
 	"net/http"
 	"reflect"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -232,8 +231,8 @@ func (r *router) Config() OutputConf {
 		Key:          cfg.Key,
 		NextProtos:   cfg.NextProtos,
 		SuccessCode:  cfg.SuccessCode,
-		ReadTimeout:  utils.Must(time.ParseDuration(cfg.ReadTimeout)),
-		WriteTimeout: utils.Must(time.ParseDuration(cfg.WriteTimeout)),
+		ReadTimeout:  utils.Must(utils.ParseDuration(cfg.ReadTimeout)),
+		WriteTimeout: utils.Must(utils.ParseDuration(cfg.WriteTimeout)),
 		AsynqConf:    clone.Slowly(cfg.Asynq),
 	}
 }
@@ -491,7 +490,7 @@ func (r *router) parseReqFromBody(c *gin.Context, typ reflect.Type) (dst reflect
 	err = utils.ParseTag(
 		dst.Addr().Interface(),
 		utils.ParseTagName("default"),
-		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
 	)
 
 	return
@@ -537,7 +536,7 @@ func (r *router) parseReqFromQuery(c *gin.Context, typ reflect.Type) (dst reflec
 	err = utils.ParseTag(
 		dst.Addr().Interface(),
 		utils.ParseTagName("default"),
-		utils.ParseTagUnmarshalType(utils.UnmarshalTypeYaml),
+		utils.ParseTagUnmarshalType(utils.MarshalTypeYaml),
 	)
 
 	return
