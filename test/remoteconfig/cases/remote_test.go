@@ -101,7 +101,7 @@ func (t *Remote) TestApolloHotUpdate() {
 		t.Require().EqualValues(9003, conf.Port)
 
 		txtSettings := fusCfg.Remote("txt", fusCfg.AppName(t.AppName())).GetAllSettings()
-		txtContent := txtSettings[fusCfg.FormatApolloTxtKey(apolloTxtNamespace)]
+		txtContent := txtSettings[fusCfg.KeyFormat(apolloTxtNamespace)]
 		t.Require().EqualValues("updated now", txtContent)
 	})
 }

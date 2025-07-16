@@ -1,6 +1,7 @@
 package config
 
 import (
+	"context"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -19,17 +20,17 @@ var (
 	apolloClientMap    = make(map[string]map[string]agollo.Client) // app - env - client
 	apolloClientLocker sync.RWMutex
 	changeTypeMapping  = map[storage.ConfigChangeType]ChangeType{
-		storage.ADDED:    ADDED,
-		storage.MODIFIED: MODIFIED,
-		storage.DELETED:  DELETED,
+		storage.ADDED:    ChangeTypeAdded,
+		storage.MODIFIED: ChangeTypeModified,
+		storage.DELETED:  ChangeTypeDeleted,
 	}
 )
 
-func FormatApolloTxtKey(namespace string) string {
+func KeyFormat(namespace string) string {
 	return strings.ReplaceAll(namespace, ".", "~~")
 }
 
-func newApolloConfig(conf *ApolloConf, appName string) (instance RemoteConfigurable, err error) {
+func newApolloInstance(ctx context.Context, conf *ApolloConf, appName string) (instance RemoteConfigurable, err error) {
 	if utils.IsStrBlank(conf.AppID) {
 		conf.AppID = appName
 	}
@@ -59,7 +60,6 @@ func newApolloConfig(conf *ApolloConf, appName string) (instance RemoteConfigura
 	if err != nil {
 		return
 	}
-
 	apolloClientLocker.Lock()
 	defer apolloClientLocker.Unlock()
 	clusterMap, ok := apolloClientMap[appName]
@@ -111,7 +111,7 @@ func parseApolloNamespaceContent(cli agollo.Client, vp *viper.Viper, namespace s
 	content := cli.GetConfig(namespace).GetContent()
 	content = strings.TrimPrefix(content, "content=")
 	if isTxt {
-		vp.Set(FormatApolloTxtKey(namespace), content)
+		vp.Set(KeyFormat(namespace), content)
 		return
 	}
 
@@ -171,7 +171,7 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 		switch change.ChangeType {
 		case storage.ADDED, storage.MODIFIED:
 			if isTxt {
-				a.instance.Set(FormatApolloTxtKey(namespace), content)
+				a.instance.Set(KeyFormat(namespace), content)
 				return
 			}
 			jsonvp := viper.New()
@@ -180,7 +180,7 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 			_ = a.instance.MergeConfigMap(jsonvp.AllSettings())
 		case storage.DELETED:
 			if isTxt {
-				txtKey := FormatApolloTxtKey(namespace)
+				txtKey := KeyFormat(namespace)
 				if a.instance.Get(txtKey) != nil {
 					a.instance.Set(txtKey, nil)
 				}

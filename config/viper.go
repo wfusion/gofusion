@@ -1,12 +1,35 @@
 package config
 
 import (
+	"bytes"
+	"io"
+	"os"
+	"reflect"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/sagikazarmark/crypt/config"
 	"github.com/spf13/viper"
-
 	"github.com/wfusion/gofusion/common/utils"
+)
+
+type ChangeEvent struct {
+	Changes map[string]*Change
+}
+
+type Change struct {
+	OldValue   interface{}
+	NewValue   interface{}
+	ChangeType ChangeType
+}
+
+type ChangeType int
+
+const (
+	ChangeTypeAdded ChangeType = 1 + iota
+	ChangeTypeModified
+	ChangeTypeDeleted
 )
 
 // safeViper is a wrapper for viper.Viper that provides thread-safe access to the underlying viper instance.
@@ -17,7 +40,8 @@ type safeViper struct {
 	watchOnce      sync.Once
 	configTypeList []string
 
-	onConfigChangeList []func(evt *ChangeEvent)
+	onConfigChangeList   []func(evt *ChangeEvent)
+	remoteConfigProvider *remoteConfigProvider
 }
 
 func (s *safeViper) Set(key string, value any) {
@@ -127,20 +151,127 @@ func (s *safeViper) pushChangeEvent(evt *ChangeEvent) {
 	}
 }
 
-type ChangeEvent struct {
-	Changes map[string]*Change
+// remoteConfigProvider
+// fork from github.com/spf13/viper@v1.16.0/remote/remote.go
+// with https://github.com/sagikazarmark/crypt@v1.12.0
+type remoteConfigProvider struct {
+	key                   string
+	listener              RemoteConfigurable
+	viperValue            reflect.Value
+	kvStoreValue          reflect.Value
+	unmarshalReaderMethod reflect.Value
 }
 
-type Change struct {
-	OldValue   interface{}
-	NewValue   interface{}
-	ChangeType ChangeType
+func (r *remoteConfigProvider) Get(rp viper.RemoteProvider) (io.Reader, error) {
+	cm, err := getConfigManager(rp)
+	if err != nil {
+		return nil, err
+	}
+	b, err := cm.Get(rp.Path())
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(b), nil
 }
 
-type ChangeType int
+func (r *remoteConfigProvider) Watch(rp viper.RemoteProvider) (io.Reader, error) {
+	cm, err := getConfigManager(rp)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := cm.Get(rp.Path())
+	if err != nil {
+		return nil, err
+	}
 
-const (
-	ADDED ChangeType = 1 + iota
-	MODIFIED
-	DELETED
-)
+	return bytes.NewReader(resp), nil
+}
+
+func (r *remoteConfigProvider) WatchChannel(rp viper.RemoteProvider) (<-chan *viper.RemoteResponse, chan bool) {
+	cm, err := getConfigManager(rp)
+	if err != nil {
+		return nil, nil
+	}
+	quit := make(chan bool)
+	quitwc := make(chan bool)
+	viperResponsCh := make(chan *viper.RemoteResponse)
+	cryptoResponseCh := cm.Watch(rp.Path(), quit)
+	// need this function to convert the Channel response form crypt.Response to viper.Response
+	go func(cr <-chan *config.Response, vr chan<- *viper.RemoteResponse, quitwc <-chan bool, quit chan<- bool) {
+		for {
+			select {
+			case <-quitwc:
+				quit <- true
+				return
+			case resp := <-cr:
+				changes := &viper.RemoteResponse{
+					Error: resp.Error,
+					Value: resp.Value,
+				}
+				// Call this function in advance, so that when the notification is triggered,
+				// the latest changes can be obtained.
+				reader := bytes.NewReader(changes.Value)
+				r.unmarshalReaderMethod.Call([]reflect.Value{reflect.ValueOf(reader), r.kvStoreValue})
+				r.listener.pushChangeEvent(&ChangeEvent{
+					Changes: map[string]*Change{
+						r.key: {
+							OldValue:   nil,
+							NewValue:   changes.Value,
+							ChangeType: ChangeTypeModified,
+						},
+					}},
+				)
+			}
+		}
+	}(cryptoResponseCh, viperResponsCh, quitwc, quit)
+
+	return viperResponsCh, quitwc
+}
+
+func getConfigManager(rp viper.RemoteProvider) (config.ConfigManager, error) {
+	var cm config.ConfigManager
+	var err error
+
+	endpoints := strings.Split(rp.Endpoint(), ",")
+	if rp.SecretKeyring() != "" {
+		var kr *os.File
+		kr, err = os.Open(rp.SecretKeyring())
+		if err != nil {
+			return nil, err
+		}
+		defer utils.CloseAnyway(kr)
+		switch kvProvider(rp.Provider()) {
+		case kvTypeEtcd:
+			cm, err = config.NewEtcdConfigManager(endpoints, kr)
+		case kvTypeEtcd3:
+			cm, err = config.NewEtcdV3ConfigManager(endpoints, kr)
+		case kvTypeFirestore:
+			cm, err = config.NewFirestoreConfigManager(endpoints, kr)
+		case kvTypeConsul:
+			cm, err = config.NewConsulConfigManager(endpoints, kr)
+		default:
+			err = ErrUnsupportedKVType
+		}
+	} else {
+		switch kvProvider(rp.Provider()) {
+		case kvTypeEtcd:
+			cm, err = config.NewStandardEtcdConfigManager(endpoints)
+		case kvTypeEtcd3:
+			cm, err = config.NewStandardEtcdV3ConfigManager(endpoints)
+		case kvTypeFirestore:
+			cm, err = config.NewStandardFirestoreConfigManager(endpoints)
+		case kvTypeConsul:
+			cm, err = config.NewStandardConsulConfigManager(endpoints)
+		default:
+			err = ErrUnsupportedKVType
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+	return cm, nil
+}
+
+func init() {
+	viper.RemoteConfig = &remoteConfigProvider{}
+}
