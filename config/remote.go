@@ -28,10 +28,11 @@ type RemoteConfigurable interface {
 	UnmarshalKey(key string, rawVal any) error // mapstructure decode
 	GetDuration(key string) time.Duration
 	GetAllSettings() map[string]any
-	OnConfigChange(run func(in Event))
+	OnConfigChange(run func(evt *ChangeEvent))
 	MergeConfigMap(cfg map[string]any) (err error)
 
 	getConfigType() (tag string)
+	pushChangeEvent(evt *ChangeEvent)
 }
 
 type confType string

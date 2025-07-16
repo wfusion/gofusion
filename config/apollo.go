@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -18,7 +18,16 @@ import (
 var (
 	apolloClientMap    = make(map[string]map[string]agollo.Client) // app - env - client
 	apolloClientLocker sync.RWMutex
+	changeTypeMapping  = map[storage.ConfigChangeType]ChangeType{
+		storage.ADDED:    ADDED,
+		storage.MODIFIED: MODIFIED,
+		storage.DELETED:  DELETED,
+	}
 )
+
+func FormatApolloTxtKey(namespace string) string {
+	return strings.ReplaceAll(namespace, ".", "~~")
+}
 
 func newApolloConfig(conf *ApolloConf, appName string) (instance RemoteConfigurable, err error) {
 	if utils.IsStrBlank(conf.AppID) {
@@ -32,12 +41,11 @@ func newApolloConfig(conf *ApolloConf, appName string) (instance RemoteConfigura
 	for _, namespace := range namespaceSplits {
 		namespaces = append(namespaces, strings.TrimSpace(namespace))
 	}
-	conf.Namespaces = strings.Join(namespaces, constant.Comma)
 
 	cfg := &config.AppConfig{
 		AppID:             conf.AppID,
 		Cluster:           conf.Cluster,
-		NamespaceName:     conf.Namespaces,
+		NamespaceName:     strings.Join(namespaces, constant.Comma),
 		IP:                conf.Endpoint,
 		IsBackupConfig:    conf.IsBackupConfig,
 		BackupConfigPath:  conf.BackupConfigPath,
@@ -62,14 +70,18 @@ func newApolloConfig(conf *ApolloConf, appName string) (instance RemoteConfigura
 	clusterMap[cfg.Cluster] = cli
 
 	vp := viper.New()
+	configTypeList := make([]string, 0, len(namespaces))
 	for _, namespace := range namespaces {
-		vp.SetConfigFile(namespace)
+		if ext := filepath.Ext(namespace); len(ext) > 0 {
+			vp.SetConfigType(ext[1:])
+			configTypeList = append(configTypeList, ext[1:])
+		}
 		if err = parseApolloNamespaceContent(cli, vp, namespace); err != nil {
 			return
 		}
 	}
 
-	instance = &safeViper{Viper: vp, namespaces: strings.Split(conf.Namespaces, constant.Comma)}
+	instance = &safeViper{Viper: vp, configTypeList: configTypeList}
 	cli.AddChangeListener(&apolloListener{conf: conf, instance: instance})
 
 	return
@@ -98,9 +110,8 @@ func parseApolloNamespaceContent(cli agollo.Client, vp *viper.Viper, namespace s
 
 	content := cli.GetConfig(namespace).GetContent()
 	content = strings.TrimPrefix(content, "content=")
-	content = strings.TrimSpace(content)
 	if isTxt {
-		vp.Set(formatApolloTxtKey(namespace), content)
+		vp.Set(FormatApolloTxtKey(namespace), content)
 		return
 	}
 
@@ -115,10 +126,6 @@ func parseApolloNamespaceContent(cli agollo.Client, vp *viper.Viper, namespace s
 	return
 }
 
-func formatApolloTxtKey(namespace string) string {
-	return fmt.Sprintf("%s%s", namespace, "~~txt~~")
-}
-
 type apolloListener struct {
 	initOnce sync.Once
 	conf     *ApolloConf
@@ -129,6 +136,18 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 	if changeEvent == nil {
 		return
 	}
+
+	defer func() {
+		evt := &ChangeEvent{Changes: make(map[string]*Change, len(changeEvent.Changes))}
+		for k, v := range changeEvent.Changes {
+			evt.Changes[k] = &Change{
+				OldValue:   v.OldValue,
+				NewValue:   v.NewValue,
+				ChangeType: changeTypeMapping[v.ChangeType],
+			}
+		}
+		a.instance.pushChangeEvent(evt)
+	}()
 
 	namespace := changeEvent.Namespace
 	isTxt := strings.HasSuffix(namespace, ".txt")
@@ -149,12 +168,11 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 
 	for _, change := range utils.MapValues(changeEvent.Changes) {
 		content := strings.TrimPrefix(cast.ToString(change.NewValue), "content=")
-		content = strings.TrimSpace(content)
-
 		switch change.ChangeType {
 		case storage.ADDED, storage.MODIFIED:
 			if isTxt {
-				a.instance.Set(formatApolloTxtKey(namespace), content)
+				a.instance.Set(FormatApolloTxtKey(namespace), content)
+				return
 			}
 			jsonvp := viper.New()
 			jsonvp.SetConfigType("json")
@@ -162,21 +180,22 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 			_ = a.instance.MergeConfigMap(jsonvp.AllSettings())
 		case storage.DELETED:
 			if isTxt {
-				txtKey := formatApolloTxtKey(namespace)
+				txtKey := FormatApolloTxtKey(namespace)
 				if a.instance.Get(txtKey) != nil {
 					a.instance.Set(txtKey, nil)
 				}
-			} else {
-				content = strings.TrimPrefix(cast.ToString(change.OldValue), "content=")
-				content = strings.TrimSpace(content)
+				return
+			}
 
-				jsonvp := viper.New()
-				jsonvp.SetConfigType("json")
-				_ = jsonvp.MergeConfig(strings.NewReader(content))
-				for k := range jsonvp.AllSettings() {
-					if a.instance.Get(k) != nil {
-						a.instance.Set(k, nil)
-					}
+			content = strings.TrimPrefix(cast.ToString(change.OldValue), "content=")
+			content = strings.TrimSpace(content)
+
+			jsonvp := viper.New()
+			jsonvp.SetConfigType("json")
+			_ = jsonvp.MergeConfig(strings.NewReader(content))
+			for k := range jsonvp.AllSettings() {
+				if a.instance.Get(k) != nil {
+					a.instance.Set(k, nil)
 				}
 			}
 		}

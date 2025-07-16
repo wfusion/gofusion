@@ -12,6 +12,6 @@ var (
 	apolloTxtNamespace  = "test.txt"
 	apolloTxtData       = "This is a plain text configuration."
 
-	apolloPortalAddr      = "http://apollo_portal:8070"
+	apolloPortalAddr      = "http://apollo-portal:8070"
 	apolloPortalLocalAddr = "http://localhost:38070"
 )
