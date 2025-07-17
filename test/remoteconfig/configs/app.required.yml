@@ -1,6 +1,51 @@
 base:
   debug: true
   app: gofusion
+  config:
+    default:
+      type: apollo
+      apollo:
+        app_id: gofusion
+        cluster: default
+        namespaces: app.yaml
+        endpoint: http://apollo-config:8080
+        secret: "e16e6897b788a18357a79a834f37e492f155c879"
+    json:
+      type: apollo
+      apollo:
+        app_id: gofusion
+        cluster: default
+        namespaces: app.json
+        endpoint: http://apollo-config:8080
+        secret: "e16e6897b788a18357a79a834f37e492f155c879"
+    txt:
+      type: apollo
+      apollo:
+        app_id: gofusion
+        cluster: default
+        namespaces: test.txt
+        endpoint: http://apollo-config:8080
+        is_backup_config: false
+        secret: "e16e6897b788a18357a79a834f37e492f155c879"
+    etcd:
+      type: kv
+      must_start: false
+      kv:
+        endpoint_configs:
+          - provider: etcd3
+            endpoints: etcd:2379
+            path: gofusion/etcd
+          - provider: consul
+            endpoints: consul:8500
+            path: gofusion/etcd
+    consul:
+      type: kv
+      must_start: false
+      kv:
+        endpoint_configs:
+        - provider: consul
+          endpoints: consul:8500
+          path: gofusion/consul
   crypto:
     config:
       mode: gcm
@@ -16,3 +61,12 @@ base:
     default:
       enable_console_output: true
       enable_file_output: true
+  kv:
+    etcd:
+      type: etcd
+      endpoint:
+        addresses: [ "etcd:2379" ]
+    consul:
+      type: consul
+      endpoint:
+        addresses: [ "consul:8500" ]

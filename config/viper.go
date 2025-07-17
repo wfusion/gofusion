@@ -3,15 +3,17 @@ package config
 import (
 	"bytes"
 	"io"
+	"log"
 	"os"
-	"reflect"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/sagikazarmark/crypt/config"
 	"github.com/spf13/viper"
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/common/utils/inspect"
 )
 
 type ChangeEvent struct {
@@ -155,11 +157,11 @@ func (s *safeViper) pushChangeEvent(evt *ChangeEvent) {
 // fork from github.com/spf13/viper@v1.16.0/remote/remote.go
 // with https://github.com/sagikazarmark/crypt@v1.12.0
 type remoteConfigProvider struct {
-	key                   string
-	listener              RemoteConfigurable
-	viperValue            reflect.Value
-	kvStoreValue          reflect.Value
-	unmarshalReaderMethod reflect.Value
+	name        string
+	appName     string
+	key         string
+	listener    *safeViper
+	defaultType bool
 }
 
 func (r *remoteConfigProvider) Get(rp viper.RemoteProvider) (io.Reader, error) {
@@ -196,6 +198,8 @@ func (r *remoteConfigProvider) WatchChannel(rp viper.RemoteProvider) (<-chan *vi
 	quitwc := make(chan bool)
 	viperResponsCh := make(chan *viper.RemoteResponse)
 	cryptoResponseCh := cm.Watch(rp.Path(), quit)
+
+	key := []byte(r.key + "=")
 	// need this function to convert the Channel response form crypt.Response to viper.Response
 	go func(cr <-chan *config.Response, vr chan<- *viper.RemoteResponse, quitwc <-chan bool, quit chan<- bool) {
 		for {
@@ -203,24 +207,47 @@ func (r *remoteConfigProvider) WatchChannel(rp viper.RemoteProvider) (<-chan *vi
 			case <-quitwc:
 				quit <- true
 				return
-			case resp := <-cr:
-				changes := &viper.RemoteResponse{
-					Error: resp.Error,
-					Value: resp.Value,
+			case rsp := <-cr:
+				_, err := utils.Catch(func() (err error) {
+					if rsp.Error != nil {
+						return rsp.Error
+					}
+					if r.defaultType {
+						legalized := make([]byte, 0, len(key)+len(rsp.Value))
+						legalized = append(legalized, key...)
+						legalized = append(legalized, rsp.Value...)
+						rsp.Value = legalized
+					}
+
+					changes := &viper.RemoteResponse{
+						Error: rsp.Error,
+						Value: rsp.Value,
+					}
+
+					// Call this function in advance, so that when the notification is triggered,
+					// the latest changes can be obtained.
+					_ = viperUnmarshalReader(
+						r.listener.Viper,
+						bytes.NewReader(changes.Value),
+						inspect.GetField[map[string]any](r.listener.Viper, "kvstore"),
+					)
+					r.listener.pushChangeEvent(&ChangeEvent{
+						Changes: map[string]*Change{
+							r.key: {
+								OldValue:   nil,
+								NewValue:   changes.Value,
+								ChangeType: ChangeTypeModified,
+							},
+						}},
+					)
+					return
+				})
+				if err != nil {
+					pid := syscall.Getpid()
+					log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
+					log.Printf("%v [Gofusion] %s %s.%s watch provider channel error: %s \n",
+						pid, r.appName, ComponentRemoteConfig, r.name, err)
 				}
-				// Call this function in advance, so that when the notification is triggered,
-				// the latest changes can be obtained.
-				reader := bytes.NewReader(changes.Value)
-				r.unmarshalReaderMethod.Call([]reflect.Value{reflect.ValueOf(reader), r.kvStoreValue})
-				r.listener.pushChangeEvent(&ChangeEvent{
-					Changes: map[string]*Change{
-						r.key: {
-							OldValue:   nil,
-							NewValue:   changes.Value,
-							ChangeType: ChangeTypeModified,
-						},
-					}},
-				)
 			}
 		}
 	}(cryptoResponseCh, viperResponsCh, quitwc, quit)

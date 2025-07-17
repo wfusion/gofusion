@@ -30,29 +30,29 @@ func KeyFormat(namespace string) string {
 	return strings.ReplaceAll(namespace, ".", "~~")
 }
 
-func newApolloInstance(ctx context.Context, conf *ApolloConf, appName string) (instance RemoteConfigurable, err error) {
-	if utils.IsStrBlank(conf.AppID) {
-		conf.AppID = appName
+func newApolloInstance(ctx context.Context, conf *RemoteConf, appName string) (instance RemoteConfigurable, err error) {
+	if utils.IsStrBlank(conf.Apollo.AppID) {
+		conf.Apollo.AppID = appName
 	}
-	if utils.IsStrBlank(conf.Namespaces) {
+	if utils.IsStrBlank(conf.Apollo.Namespaces) {
 		panic(ErrApolloNameSpacesRequired)
 	}
-	namespaceSplits := strings.Split(conf.Namespaces, constant.Comma)
+	namespaceSplits := strings.Split(conf.Apollo.Namespaces, constant.Comma)
 	namespaces := make([]string, 0, len(namespaceSplits))
 	for _, namespace := range namespaceSplits {
 		namespaces = append(namespaces, strings.TrimSpace(namespace))
 	}
 
 	cfg := &config.AppConfig{
-		AppID:             conf.AppID,
-		Cluster:           conf.Cluster,
+		AppID:             conf.Apollo.AppID,
+		Cluster:           conf.Apollo.Cluster,
 		NamespaceName:     strings.Join(namespaces, constant.Comma),
-		IP:                conf.Endpoint,
-		IsBackupConfig:    conf.IsBackupConfig,
-		BackupConfigPath:  conf.BackupConfigPath,
-		Secret:            conf.Secret,
-		Label:             conf.Label,
-		SyncServerTimeout: int(utils.Must(utils.ParseDuration(conf.SyncServerTimeout)).Seconds()),
+		IP:                conf.Apollo.Endpoint,
+		IsBackupConfig:    conf.Apollo.IsBackupConfig,
+		BackupConfigPath:  conf.Apollo.BackupConfigPath,
+		Secret:            conf.Apollo.Secret,
+		Label:             conf.Apollo.Label,
+		SyncServerTimeout: int(utils.Must(utils.ParseDuration(conf.Apollo.SyncServerTimeout)).Seconds()),
 		MustStart:         conf.MustStart,
 	}
 
@@ -82,7 +82,7 @@ func newApolloInstance(ctx context.Context, conf *ApolloConf, appName string) (i
 	}
 
 	instance = &safeViper{Viper: vp, configTypeList: configTypeList}
-	cli.AddChangeListener(&apolloListener{conf: conf, instance: instance})
+	cli.AddChangeListener(&apolloListener{instance: instance})
 
 	return
 }
@@ -128,7 +128,6 @@ func parseApolloNamespaceContent(cli agollo.Client, vp *viper.Viper, namespace s
 
 type apolloListener struct {
 	initOnce sync.Once
-	conf     *ApolloConf
 	instance RemoteConfigurable
 }
 

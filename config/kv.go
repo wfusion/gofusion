@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 
 	"github.com/wfusion/gofusion/common/utils"
@@ -12,45 +13,52 @@ import (
 	_ "github.com/spf13/viper/remote"
 )
 
-func newKVInstance(ctx context.Context, name string, cfg *KVConf, appName string) (instance RemoteConfigurable, err error) {
+func newKVInstance(ctx context.Context, name string, conf *RemoteConf, appName string) (
+	instance RemoteConfigurable, err error) {
 	vp := viper.New()
 
-	configTypeList := make([]string, 0, len(cfg.Endpoints))
-	for _, conf := range cfg.Endpoints {
-		if utils.IsStrBlank(conf.Secret) {
-			err = vp.AddRemoteProvider(string(conf.Provider), conf.Endpoints, conf.Path)
+	defaultType := false
+	configTypeList := make([]string, 0, len(conf.KV.EndPointConfigs))
+	for _, cfg := range conf.KV.EndPointConfigs {
+		if utils.IsStrBlank(cfg.SecretKeyring) {
+			err = vp.AddRemoteProvider(string(cfg.Provider), cfg.Endpoints, cfg.Path)
 		} else {
-			err = vp.AddSecureRemoteProvider(string(conf.Provider), conf.Endpoints, conf.Path, conf.Secret)
+			err = vp.AddSecureRemoteProvider(string(cfg.Provider), cfg.Endpoints, cfg.Path, cfg.SecretKeyring)
 		}
 		if err != nil {
 			return
 		}
-		if ext := filepath.Ext(conf.Path); len(ext) > 0 {
+		if ext := filepath.Ext(cfg.Path); len(ext) > 0 {
 			vp.SetConfigType(ext[1:])
 			configTypeList = append(configTypeList, ext[1:])
+		} else {
+			defaultType = true
+			vp.SetConfigType("properties")
 		}
 	}
-	if cfg.MustStart {
+	if conf.MustStart {
 		if err = vp.ReadRemoteConfig(); err != nil {
 			return
 		}
 	}
 
-	instance = &safeViper{Viper: vp, configTypeList: configTypeList}
-	v := reflect.ValueOf(vp)
-	m := v.MethodByName("unmarshalReader")
-	kvstore := utils.IndirectValue(v).FieldByName("kvstore")
+	sv := &safeViper{Viper: vp, configTypeList: configTypeList}
+	kvStoreValue := utils.IndirectValue(reflect.ValueOf(vp)).FieldByName("kvstore")
+	if !kvStoreValue.IsValid() {
+		panic(errors.New("viper.Viper.kvstore field is invalid"))
+	}
 
 	viper.RemoteConfig = &remoteConfigProvider{
-		key:                   KeyFormat(name),
-		listener:              instance,
-		viperValue:            v,
-		unmarshalReaderMethod: m,
-		kvStoreValue:          kvstore,
+		name:        name,
+		appName:     appName,
+		key:         KeyFormat(name),
+		listener:    sv,
+		defaultType: defaultType,
 	}
 	if err = vp.WatchRemoteConfigOnChannel(); err != nil {
 		return
 	}
 
+	instance = sv
 	return
 }

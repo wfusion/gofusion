@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	"github.com/wfusion/gofusion/kv"
 
 	"github.com/wfusion/gofusion/common/env"
 	"github.com/wfusion/gofusion/common/utils"
@@ -43,7 +44,7 @@ func (t *Remote) AfterTest(suiteName, testName string) {
 	})
 }
 
-func (t *Remote) TestApollo() {
+func (t *Remote) TestApolloRead() {
 	t.Catch(func() {
 		// Given
 		files := []string{
@@ -103,6 +104,51 @@ func (t *Remote) TestApolloHotUpdate() {
 		txtSettings := fusCfg.Remote("txt", fusCfg.AppName(t.AppName())).GetAllSettings()
 		txtContent := txtSettings[fusCfg.KeyFormat(apolloTxtNamespace)]
 		t.Require().EqualValues("updated now", txtContent)
+	})
+}
+
+func (t *Remote) TestETCD() {
+	t.testKV("etcd", time.Second)
+}
+
+func (t *Remote) TestConsul() {
+	t.testKV("consul", 10*time.Second)
+}
+
+func (t *Remote) testKV(name string, waitTime time.Duration) {
+	// Given
+	files := []string{
+		"app.required.local.yml",
+		"app.required.yml",
+	}
+	defer t.RawCopy(files, 1)()
+	defer t.mockApolloData()()
+
+	// When & Then
+	t.Run("KVRead", func() { t.testKVRead(name, waitTime) })
+}
+
+func (t *Remote) testKVRead(name string, waitTime time.Duration) {
+	t.Catch(func() {
+		// Given
+		ctx := context.Background()
+		appSetting := new(appConf)
+		defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()))()
+
+		instance := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		t.Require().NotNil(instance)
+
+		// When
+		key := "gofusion" + "/" + name
+		expected := `kv read value`
+		t.Require().NoError(instance.Put(ctx, key, expected).Err())
+		defer instance.Del(ctx, key)
+
+		// Then
+		time.Sleep(waitTime)
+		actual := fusCfg.Remote(name, fusCfg.AppName(t.AppName())).GetAllSettings()
+		t.Require().NotEmpty(actual)
+		t.Require().EqualValues(expected, actual[fusCfg.KeyFormat(name)])
 	})
 }
 
