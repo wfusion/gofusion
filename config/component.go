@@ -20,6 +20,7 @@ const (
 	ComponentRemoteConfig  = "RemoteConfig"
 	ComponentCrypto        = "Crypto"
 	ComponentMetrics       = "Metrics"
+	ComponentTrace         = "Trace"
 	ComponentLog           = "Log"
 	ComponentDB            = "DB"
 	ComponentRedis         = "Redis"
@@ -48,6 +49,7 @@ var (
 		ComponentCrypto,
 		ComponentLog,
 		ComponentMetrics,
+		ComponentTrace,
 		ComponentRedis,
 		ComponentKV,
 		ComponentCache,

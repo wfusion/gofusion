@@ -26,10 +26,6 @@ var (
 	}
 )
 
-func KeyFormat(namespace string) string {
-	return strings.ReplaceAll(namespace, ".", "~~")
-}
-
 func newApolloInstance(ctx context.Context, conf *RemoteConf, appName string) (instance RemoteConfigurable, err error) {
 	if utils.IsStrBlank(conf.Apollo.AppID) {
 		conf.Apollo.AppID = appName
@@ -111,7 +107,7 @@ func parseApolloNamespaceContent(cli agollo.Client, vp *viper.Viper, namespace s
 	content := cli.GetConfig(namespace).GetContent()
 	content = strings.TrimPrefix(content, "content=")
 	if isTxt {
-		vp.Set(KeyFormat(namespace), content)
+		vp.Set(RemoteDefaultKeyFormat(namespace), content)
 		return
 	}
 
@@ -170,7 +166,7 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 		switch change.ChangeType {
 		case storage.ADDED, storage.MODIFIED:
 			if isTxt {
-				a.instance.Set(KeyFormat(namespace), content)
+				a.instance.Set(RemoteDefaultKeyFormat(namespace), content)
 				return
 			}
 			jsonvp := viper.New()
@@ -179,7 +175,7 @@ func (a *apolloListener) OnChange(changeEvent *storage.ChangeEvent) {
 			_ = a.instance.MergeConfigMap(jsonvp.AllSettings())
 		case storage.DELETED:
 			if isTxt {
-				txtKey := KeyFormat(namespace)
+				txtKey := RemoteDefaultKeyFormat(namespace)
 				if a.instance.Get(txtKey) != nil {
 					a.instance.Set(txtKey, nil)
 				}
