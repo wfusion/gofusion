@@ -102,7 +102,7 @@ func (t *Remote) TestApolloHotUpdate() {
 		t.Require().EqualValues(9003, conf.Port)
 
 		txtSettings := fusCfg.Remote("txt", fusCfg.AppName(t.AppName())).GetAllSettings()
-		txtContent := txtSettings[fusCfg.KeyFormat(apolloTxtNamespace)]
+		txtContent := txtSettings[fusCfg.RemoteDefaultKeyFormat(apolloTxtNamespace)]
 		t.Require().EqualValues("updated now", txtContent)
 	})
 }
@@ -148,7 +148,7 @@ func (t *Remote) testKVRead(name string, waitTime time.Duration) {
 		time.Sleep(waitTime)
 		actual := fusCfg.Remote(name, fusCfg.AppName(t.AppName())).GetAllSettings()
 		t.Require().NotEmpty(actual)
-		t.Require().EqualValues(expected, actual[fusCfg.KeyFormat(name)])
+		t.Require().EqualValues(expected, actual[fusCfg.RemoteDefaultKeyFormat(name)])
 	})
 }
 

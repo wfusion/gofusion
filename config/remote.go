@@ -2,9 +2,11 @@ package config
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/utils"
 )
 
@@ -44,7 +46,7 @@ var (
 func RemoteConstruct(ctx context.Context, confs map[string]*RemoteConf, opts ...utils.OptionExtender) func() {
 	opt := utils.ApplyOptions[InitOption](opts...)
 	for name, cfg := range confs {
-		addConfigInstance(ctx, name, cfg, opt)
+		addRemoteConfigInstance(ctx, name, cfg, opt)
 	}
 
 	return func() {
@@ -74,7 +76,14 @@ func Remote(name string, opts ...utils.OptionExtender) RemoteConfigurable {
 	return appRemoteConfigs[opt.AppName][name]
 }
 
-func addConfigInstance(ctx context.Context, name string, conf *RemoteConf, opt *InitOption) {
+// RemoteDefaultKeyFormat format default key for RemoteConfigurable.GetAllSettings
+// for apollo type it is namespace
+// for kv type it is config name
+func RemoteDefaultKeyFormat(nameOrNamespace string) string {
+	return strings.ReplaceAll(nameOrNamespace, ".", "~~")
+}
+
+func addRemoteConfigInstance(ctx context.Context, name string, conf *RemoteConf, opt *InitOption) {
 	var instance RemoteConfigurable
 	switch conf.Type {
 	case confTypeApollo:
@@ -100,4 +109,16 @@ func addConfigInstance(ctx context.Context, name string, conf *RemoteConf, opt *
 	}
 
 	appRemoteConfigs[opt.AppName][name] = instance
+
+	if opt.DI != nil {
+		opt.DI.MustProvide(func() RemoteConfigurable { return Remote(name, AppName(opt.AppName)) }, di.Name(name))
+	}
+	if opt.App != nil {
+		opt.App.MustProvide(
+			func() RemoteConfigurable { return Remote(name, AppName(opt.AppName)) },
+			di.Name(name),
+		)
+	}
+
+	// TODO: metric remote configuration center latency
 }

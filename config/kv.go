@@ -51,7 +51,7 @@ func newKVInstance(ctx context.Context, name string, conf *RemoteConf, appName s
 	viper.RemoteConfig = &remoteConfigProvider{
 		name:        name,
 		appName:     appName,
-		key:         KeyFormat(name),
+		key:         RemoteDefaultKeyFormat(name),
 		listener:    sv,
 		defaultType: defaultType,
 	}

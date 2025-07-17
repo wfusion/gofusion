@@ -1,0 +1,24 @@
+base:
+  debug: true
+  app: gofusion
+  goroutine_pool:
+    force_sync: false
+    max_routine_amount: 10
+    enabled_logger: true
+
+  log:
+    default:
+      log_level: debug
+      stacktrace_level: error
+      enable_console_output: true
+      console_output_option:
+        layout: console
+      enable_file_output: false
+      file_output_option:
+        layout: json
+        path: .
+        name: gofusion.log
+        rotation_max_age: 24h
+        rotation_count: 10
+        rotation_size: 100mib
+        compress: false
