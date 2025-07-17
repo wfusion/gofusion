@@ -2,6 +2,7 @@ package utils
 
 import (
 	"io"
+	"reflect"
 	"runtime/debug"
 
 	"github.com/pkg/errors"
@@ -84,19 +85,31 @@ func MustOk[T any](out T, ok bool) T {
 
 type closerA interface{ Close() }
 type closerB[T any] interface{ Close() T }
+type closerC interface {
+	Close(opts ...OptionExtender) error
+}
 
-func CloseAnyway[T any](closer T) {
-	if any(closer) == nil {
-		return
-	}
-
-	switch c := any(closer).(type) {
-	case io.Closer:
-		_ = c.Close()
-	case closerA:
-		c.Close()
-	case closerB[T]:
-		c.Close()
+func CloseAnyway[T any](closers ...T) {
+	for _, closer := range closers {
+		if any(closer) == nil {
+			continue
+		}
+		switch c := any(closer).(type) {
+		case io.Closer:
+			_ = c.Close()
+		case closerA:
+			c.Close()
+		case closerB[T]:
+			c.Close()
+		case closerC:
+			_ = c.Close()
+		default:
+			v := IndirectValue(reflect.ValueOf(closer))
+			if !v.IsValid() || v.IsNil() || v.Type().Kind() != reflect.Chan {
+				continue
+			}
+			_, _ = Catch(func() { v.Close() })
+		}
 	}
 }
 
@@ -127,8 +140,8 @@ func ErrIgnore(src error, ignored ...error) (dst error) {
 
 type lookupByFuzzyKeywordFuncType[T any] interface {
 	func(string) T |
-		func(string) (T, bool) |
-		func(string) (T, error)
+	func(string) (T, bool) |
+	func(string) (T, error)
 }
 
 func LookupByFuzzyKeyword[T any, F lookupByFuzzyKeywordFuncType[T]](lookup F, keyword string) (v T) {

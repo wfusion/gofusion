@@ -13,6 +13,8 @@ base:
     default:
       # The type of the configuration center. Currently, only 'apollo' is supported.
       type: apollo
+      # Determines if the application must successfully fetch the configuration on its first attempt to start.
+      must_start: true
       apollo:
         # The App ID for this application in Apollo.
         app_id: gofusion
@@ -34,10 +36,9 @@ base:
         label: ""
         # Timeout for fetching configurations from the server. The default is 10s. The unit is seconds.
         sync_server_timeout: 10s
-        # Determines if the application must successfully fetch the configuration on its first attempt to start.
-        must_start: true
     json:
       type: apollo
+      must_start: false
       apollo:
         app_id: gofusion
         cluster: default
@@ -45,9 +46,9 @@ base:
         endpoint: http://apollo-config:8080
         is_backup_config: false
         secret: "e16e6897b788a18357a79a834f37e492f155c879"
-        must_start: false
     txt:
       type: apollo
+      must_start: false
       apollo:
         app_id: gofusion
         cluster: default
@@ -55,8 +56,25 @@ base:
         endpoint: http://apollo-config:8080
         is_backup_config: false
         secret: "e16e6897b788a18357a79a834f37e492f155c879"
-        must_start: false
-
+    etcd:
+      type: kv
+      must_start: false
+      kv:
+        endpoint_configs:
+          - provider: etcd3
+            endpoints: etcd:2379
+            path: gofusion/etcd
+          - provider: consul
+            endpoints: consul:8500
+            path: gofusion/etcd
+    consul:
+      type: kv
+      must_start: false
+      kv:
+        endpoint_configs:
+          - provider: consul
+            endpoints: consul:8500
+            path: gofusion/consul
   crypto:
     config:
       mode: gcm
@@ -90,3 +108,17 @@ base:
     default:
       enable_console_output: true
       enable_file_output: true
+
+  kv:
+    etcd:
+      type: etcd
+      enable_logger: true
+      endpoint:
+        addresses: [ "etcd:2379" ]
+        dial_timeout: 5s
+    consul:
+      type: consul
+      enable_logger: true
+      endpoint:
+        addresses: [ "consul:8500" ]
+        dial_timeout: 5s

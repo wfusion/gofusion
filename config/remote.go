@@ -12,6 +12,7 @@ const (
 	ErrUnsupportedConfigType    utils.Error = "unsupported config type"
 	ErrDuplicatedConfigName     utils.Error = "duplicated config name"
 	ErrApolloNameSpacesRequired utils.Error = "apollo namespaces required"
+	ErrUnsupportedKVType        utils.Error = "unsupported kv type"
 )
 
 type RemoteConfigurable interface {
@@ -35,36 +36,10 @@ type RemoteConfigurable interface {
 	pushChangeEvent(evt *ChangeEvent)
 }
 
-type confType string
-
-const (
-	confTypeApollo confType = "apollo"
-)
-
 var (
 	appRemoteConfigs      = make(map[string]map[string]RemoteConfigurable)
 	appRemoteConfigLocker sync.RWMutex
 )
-
-type RemoteConf struct {
-	Type   confType   `yaml:"type" json:"type" toml:"type"`
-	Apollo ApolloConf `yaml:"apollo" json:"apollo" toml:"apollo"`
-}
-
-type ApolloConf struct {
-	AppID   string `yaml:"app_id" json:"app_id" toml:"app_id"`
-	Cluster string `yaml:"cluster" json:"cluster" toml:"cluster" default:"default"`
-	// Namespace supports multiple namespaces separated by comma, e.g. application.yaml,db.yaml
-	Namespaces        string `yaml:"namespaces" json:"namespaces" toml:"namespaces" default:"application.yaml"`
-	Endpoint          string `yaml:"endpoint" json:"endpoint" toml:"endpoint"`
-	IsBackupConfig    bool   `yaml:"is_backup_config" json:"is_backup_config" toml:"is_backup_config" default:"true"`
-	BackupConfigPath  string `yaml:"backup_config_path" json:"backup_config_path" toml:"backup_config_path" default:"./"`
-	Secret            string `yaml:"secret" json:"secret" toml:"secret"`
-	Label             string `yaml:"label" json:"label" toml:"label"`
-	SyncServerTimeout string `yaml:"sync_server_timeout" json:"sync_server_timeout" toml:"sync_server_timeout" default:"10s"`
-	// MustStart can be used to control the first synchronization must succeed
-	MustStart bool `yaml:"must_start" json:"must_start" toml:"must_start" default:"true"`
-}
 
 func RemoteConstruct(ctx context.Context, confs map[string]*RemoteConf, opts ...utils.OptionExtender) func() {
 	opt := utils.ApplyOptions[InitOption](opts...)
@@ -103,7 +78,9 @@ func addConfigInstance(ctx context.Context, name string, conf *RemoteConf, opt *
 	var instance RemoteConfigurable
 	switch conf.Type {
 	case confTypeApollo:
-		instance = utils.Must(newApolloConfig(&conf.Apollo, opt.AppName))
+		instance = utils.Must(newApolloInstance(ctx, conf, opt.AppName))
+	case confTypeKV:
+		instance = utils.Must(newKVInstance(ctx, name, conf, opt.AppName))
 	default:
 		panic(ErrUnsupportedConfigType)
 	}
