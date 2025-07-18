@@ -66,7 +66,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 			}
 		}
 	}
-	maxReleaseTime := utils.Must(utils.ParseDuration(conf.MaxReleaseTimePerPool))
+	maxReleaseTime := conf.MaxReleaseTimePerPool.Duration
 
 	go startDaemonRoutines(ctx, opt.AppName, &conf)
 

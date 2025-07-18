@@ -2,18 +2,23 @@ package trace
 
 import (
 	"context"
+	"os"
+	"reflect"
 
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/utils"
+	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
 
-	semconv "go.opentelemetry.io/otel/semconv/v1.15.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
 func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {
@@ -41,41 +46,40 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		conf.ServiceName = opt.AppName
 	}
 
-	var exporter trace.SpanExporter
-	switch conf.Type {
-	case exporterTypeJaeger:
-		exporter = utils.Must(newJaegerExporter(ctx, conf))
-	case exporterTypeZipkin:
-		exporter = utils.Must(newZipkinExporter(ctx, conf))
-	case exporterTypeOTLP:
-		exporter = utils.Must(newOTLPExporter(ctx, conf))
-	case exporterTypeStdout:
-		exporter = utils.Must(newStdoutExporter(ctx, conf))
-	default:
-		panic(ErrUnsupportedExporterType)
+	exporter := buildExporter(ctx, conf)
+	opts := []trace.TracerProviderOption{trace.WithResource(buildResource(ctx, conf))}
+	if !conf.EnableBatchExporter {
+		opts = append(opts, trace.WithSyncer(exporter))
+	} else {
+		opts = append(opts, trace.WithBatcher(exporter,
+			trace.WithBatchTimeout(conf.BatchExporterConf.BatchTimeout.Duration),
+			trace.WithMaxExportBatchSize(conf.BatchExporterConf.MaxExportBatchSize),
+			trace.WithMaxQueueSize(conf.BatchExporterConf.MaxQueueSize),
+			trace.WithExportTimeout(conf.BatchExporterConf.ExportTimeout.Duration),
+		))
 	}
 
-	rs := utils.Must(resource.New(
-		ctx,
-		resource.WithOS(),
-		resource.WithHost(),
-		resource.WithContainer(),
-		resource.WithProcessPID(),
-		resource.WithProcessOwner(),
-		resource.WithSchemaURL(semconv.SchemaURL),
-		resource.WithTelemetrySDK(),
-		resource.WithAttributes(
-			semconv.ServiceNameKey.String(conf.ServiceName),
-			semconv.ServiceVersionKey.String(conf.ServiceVersion),
-			semconv.DeploymentEnvironmentKey.String(conf.DeploymentEnv),
-		),
-	))
+	var sampler trace.Sampler
+	if utils.IsStrBlank(conf.Sampler) {
+		sampler = buildSampler(&conf.Sample)
+	} else {
+		val := reflect.New(inspect.TypeOf(conf.Sampler))
+		if val.Type().Implements(customSamplerType) {
+			utils.MustSuccess(val.Interface().(customSampler).Init(ctx, conf))
+		}
+		sampler = val.Interface().(trace.Sampler)
+	}
+	opts = append(opts, trace.WithSampler(sampler))
 
-	tp := trace.NewTracerProvider(
-		trace.WithSampler(buildSampler(conf)),
-		trace.WithBatcher(exporter),
-		trace.WithResource(rs),
-	)
+	if utils.IsStrNotBlank(conf.IDGenerator) {
+		val := reflect.New(inspect.TypeOf(conf.IDGenerator))
+		if val.Type().Implements(customIDGeneratorType) {
+			utils.MustSuccess(val.Interface().(customIDGenerator).Init(ctx, conf))
+		}
+		opts = append(opts, trace.WithIDGenerator(val.Interface().(trace.IDGenerator)))
+	}
+
+	tp := trace.NewTracerProvider(opts...)
 
 	rwlock.Lock()
 	defer rwlock.Unlock()
@@ -92,6 +96,13 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 
 	if name == config.DefaultInstanceKey {
 		otel.SetTracerProvider(tp)
+		if utils.IsStrNotBlank(conf.TextMapPropagator) {
+			val := reflect.New(inspect.TypeOf(conf.TextMapPropagator))
+			if val.Type().Implements(customPropagatorType) {
+				utils.MustSuccess(val.Interface().(customPropagator).Init(ctx, conf))
+			}
+			otel.SetTextMapPropagator(val.Interface().(propagation.TextMapPropagator))
+		}
 	}
 
 	if opt.DI != nil {
@@ -105,7 +116,73 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	}
 }
 
-func buildSampler(conf *Conf) trace.Sampler {
+// buildResource custom overrides env overrides config overrides legacy
+func buildResource(ctx context.Context, conf *Conf) *resource.Resource {
+	legacyResource := utils.Must(
+		resource.New(
+			ctx,
+			resource.WithSchemaURL(semconv.SchemaURL),
+			resource.WithOS(),
+			resource.WithHost(),
+			resource.WithContainer(),
+			resource.WithProcessPID(),
+			resource.WithProcessOwner(),
+			resource.WithTelemetrySDK(),
+		),
+	)
+	configResource := resource.NewWithAttributes(semconv.SchemaURL, []attribute.KeyValue{
+		semconv.HostNameKey.String(utils.Must(os.Hostname())),
+		semconv.ServiceNameKey.String(conf.ServiceName),
+		semconv.ServiceVersionKey.String(conf.ServiceVersion),
+		semconv.DeploymentEnvironmentKey.String(conf.DeploymentEnv),
+		semconv.ProcessCommandKey.String(os.Args[0]),
+		attribute.Key("host.ip").String(utils.NonDefaultLocalIP()),
+	}...)
+	mergedResource := utils.Must(resource.Merge(legacyResource, configResource))
+
+	attrs := make([]attribute.KeyValue, 0, len(conf.CustomResources))
+	for _, v := range resource.Environment().Attributes() {
+		attrs = append(attrs, v)
+	}
+	envResource := resource.NewWithAttributes(semconv.SchemaURL, attrs...)
+	mergedResource = utils.Must(resource.Merge(mergedResource, envResource))
+
+	attrs = attrs[:0]
+	for k, v := range conf.CustomResources {
+		attrs = append(attrs, attribute.Key(k).String(v))
+	}
+	customResource := resource.NewWithAttributes(semconv.SchemaURL, attrs...)
+	mergedResource = utils.Must(resource.Merge(mergedResource, customResource))
+
+	return mergedResource
+}
+
+func buildExporter(ctx context.Context, conf *Conf) (exporter trace.SpanExporter) {
+	switch conf.Type {
+	case exporterTypeJaeger:
+		return utils.Must(newJaegerExporter(ctx, conf))
+	case exporterTypeZipkin:
+		return utils.Must(newZipkinExporter(ctx, conf))
+	case exporterTypeOTLP:
+		return utils.Must(newOTLPExporter(ctx, conf))
+	case exporterTypeStdout:
+		return utils.Must(newStdoutExporter(ctx, conf))
+	case exporterTypeCustom:
+		val := reflect.New(inspect.TypeOf(conf.Exporter))
+		if val.Type().Implements(customSpanExporterType) {
+			utils.MustSuccess(val.Interface().(customSpanExporter).Init(ctx, conf))
+		}
+		return val.Interface().(trace.SpanExporter)
+	default:
+		panic(ErrUnsupportedExporterType)
+	}
+}
+
+func buildSampler(conf *SampleConf) (sampler trace.Sampler) {
+	if conf == nil {
+		return
+	}
+
 	switch conf.SampleType {
 	case sampleTypeAlways:
 		return trace.AlwaysSample()
@@ -120,6 +197,14 @@ func buildSampler(conf *Conf) trace.Sampler {
 			return trace.AlwaysSample()
 		}
 		return trace.TraceIDRatioBased(conf.SampleRatio.InexactFloat64())
+	case sampleTypeParentBased:
+		rootSampler := buildSampler(conf.ParentBased.RootSample)
+		return trace.ParentBased(rootSampler, []trace.ParentBasedSamplerOption{
+			trace.WithRemoteParentSampled(buildSampler(conf.ParentBased.RemoteParentSampled)),
+			trace.WithRemoteParentNotSampled(buildSampler(conf.ParentBased.RemoteParentNotSampled)),
+			trace.WithLocalParentSampled(buildSampler(conf.ParentBased.LocalParentSampled)),
+			trace.WithLocalParentNotSampled(buildSampler(conf.ParentBased.LocalParentNotSampled)),
+		}...)
 	default:
 		panic(ErrUnsupportedSampleType)
 	}

@@ -65,15 +65,15 @@ const (
 )
 
 type Conf struct {
-	Size           int        `yaml:"size" json:"size" toml:"size" default:"10000"`
-	Expired        string     `yaml:"expired" json:"expired" toml:"expired" default:"1h"`
-	Version        int        `yaml:"version" json:"version" toml:"version"`
-	CacheType      cacheType  `yaml:"type" json:"type" toml:"type" default:"local"`
-	RemoteType     remoteType `yaml:"remote_type" json:"remote_type" toml:"remote_type" default:"redis"`
-	RemoteInstance string     `yaml:"remote_instance" json:"remote_instance" toml:"remote_instance"`
-	LocalEvictType string     `yaml:"local_evict_type" json:"local_evict_type" toml:"local_evict_type" default:"arc"`
-	Compress       string     `yaml:"compress" json:"compress" toml:"compress"`
-	SerializeType  string     `yaml:"serialize_type" json:"serialize_type" toml:"serialize_type"`
-	Callback       string     `yaml:"callback" json:"callback" toml:"callback"`
-	LogInstance    string     `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
+	Size           int            `yaml:"size" json:"size" toml:"size" default:"10000"`
+	Expired        utils.Duration `yaml:"expired" json:"expired" toml:"expired" default:"1h"`
+	Version        int            `yaml:"version" json:"version" toml:"version"`
+	CacheType      cacheType      `yaml:"type" json:"type" toml:"type" default:"local"`
+	RemoteType     remoteType     `yaml:"remote_type" json:"remote_type" toml:"remote_type" default:"redis"`
+	RemoteInstance string         `yaml:"remote_instance" json:"remote_instance" toml:"remote_instance"`
+	LocalEvictType string         `yaml:"local_evict_type" json:"local_evict_type" toml:"local_evict_type" default:"arc"`
+	Compress       string         `yaml:"compress" json:"compress" toml:"compress"`
+	SerializeType  string         `yaml:"serialize_type" json:"serialize_type" toml:"serialize_type"`
+	Callback       string         `yaml:"callback" json:"callback" toml:"callback"`
+	LogInstance    string         `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
 }

@@ -85,10 +85,10 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 	if cliCfg := cfg.c; cliCfg == nil || !cliCfg.Mock {
 		c.EnableTrace()
 	} else {
-		c.SetTimeout(utils.Must(utils.ParseDuration(cliCfg.Timeout)))
+		c.SetTimeout(cliCfg.Timeout.Duration)
 		c.SetRetryCount(cliCfg.RetryCount)
-		c.SetRetryWaitTime(utils.Must(utils.ParseDuration(cliCfg.RetryWaitTime)))
-		c.SetRetryMaxWaitTime(utils.Must(utils.ParseDuration(cliCfg.RetryMaxWaitTime)))
+		c.SetRetryWaitTime(cliCfg.RetryWaitTime.Duration)
+		c.SetRetryMaxWaitTime(cliCfg.RetryMaxWaitTime.Duration)
 		for _, funcName := range cliCfg.RetryConditionFuncs {
 			c.AddRetryCondition(*(*resty.RetryConditionFunc)(inspect.FuncOf(funcName)))
 		}
@@ -97,8 +97,8 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 		}
 
 		dialer := &net.Dialer{
-			Timeout:   utils.Must(utils.ParseDuration(cliCfg.DialTimeout)),
-			KeepAlive: utils.Must(utils.ParseDuration(cliCfg.DialKeepaliveTime)),
+			Timeout:   cliCfg.DialTimeout.Duration,
+			KeepAlive: cliCfg.DialKeepaliveTime.Duration,
 		}
 
 		c.SetTransport(&http.Transport{
@@ -106,9 +106,9 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 			DialContext:           dialer.DialContext,
 			ForceAttemptHTTP2:     cliCfg.ForceAttemptHTTP2,
 			DisableCompression:    cliCfg.DisableCompression,
-			IdleConnTimeout:       utils.Must(utils.ParseDuration(cliCfg.IdleConnTimeout)),
-			TLSHandshakeTimeout:   utils.Must(utils.ParseDuration(cliCfg.TLSHandshakeTimeout)),
-			ExpectContinueTimeout: utils.Must(utils.ParseDuration(cliCfg.TLSHandshakeTimeout)),
+			IdleConnTimeout:       cliCfg.IdleConnTimeout.Duration,
+			TLSHandshakeTimeout:   cliCfg.TLSHandshakeTimeout.Duration,
+			ExpectContinueTimeout: cliCfg.ExpectContinueTimeout.Duration,
 			MaxIdleConns:          cliCfg.MaxIdleConns,
 			MaxIdleConnsPerHost:   cliCfg.MaxIdleConnsPerHost,
 			MaxConnsPerHost:       cliCfg.MaxConnsPerHost,

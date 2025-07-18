@@ -6,6 +6,16 @@ base:
     max_routine_amount: 10
     enabled_logger: true
 
+  trace:
+    stdout:
+      type: stdout
+      service_name: gofusion
+      service_version: 1.0.0
+      deployment_env: online
+      sample:
+        type: always
+      pretty_print: true
+
   log:
     default:
       log_level: debug

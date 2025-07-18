@@ -126,13 +126,13 @@ type ApolloConf struct {
 	AppID   string `yaml:"app_id" json:"app_id" toml:"app_id"`
 	Cluster string `yaml:"cluster" json:"cluster" toml:"cluster" default:"default"`
 	// Namespace supports multiple namespaces separated by comma, e.g. application.yaml,db.yaml
-	Namespaces        string `yaml:"namespaces" json:"namespaces" toml:"namespaces" default:"application"`
-	Endpoint          string `yaml:"endpoint" json:"endpoint" toml:"endpoint"`
-	IsBackupConfig    bool   `yaml:"is_backup_config" json:"is_backup_config" toml:"is_backup_config"`
-	BackupConfigPath  string `yaml:"backup_config_path" json:"backup_config_path" toml:"backup_config_path" default:"./"`
-	Secret            string `yaml:"secret" json:"secret" toml:"secret"`
-	Label             string `yaml:"label" json:"label" toml:"label"`
-	SyncServerTimeout string `yaml:"sync_server_timeout" json:"sync_server_timeout" toml:"sync_server_timeout" default:"10s"`
+	Namespaces        string         `yaml:"namespaces" json:"namespaces" toml:"namespaces" default:"application"`
+	Endpoint          string         `yaml:"endpoint" json:"endpoint" toml:"endpoint"`
+	IsBackupConfig    bool           `yaml:"is_backup_config" json:"is_backup_config" toml:"is_backup_config"`
+	BackupConfigPath  string         `yaml:"backup_config_path" json:"backup_config_path" toml:"backup_config_path" default:"./"`
+	Secret            string         `yaml:"secret" json:"secret" toml:"secret"`
+	Label             string         `yaml:"label" json:"label" toml:"label"`
+	SyncServerTimeout utils.Duration `yaml:"sync_server_timeout" json:"sync_server_timeout" toml:"sync_server_timeout" default:"10s"`
 }
 
 type KVConf struct {

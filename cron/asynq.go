@@ -220,7 +220,7 @@ func (a *asynqRouter) initTrigger(ctx context.Context, wrapper *asynqWrapper, lo
 					a.warn(ctx, "enqueue task %s failed: %s", taskName, err)
 				},
 			},
-			SyncInterval: utils.Must(utils.ParseDuration(a.c.RefreshTasksInterval)),
+			SyncInterval: a.c.RefreshTasksInterval.Duration,
 		}),
 	)
 	a.id = a.trigger.ID()
@@ -543,18 +543,15 @@ func (a *asynqWrapper) getConfigs() (result []*asynq.PeriodicTaskConfig, err err
 	}
 	for name, cfg := range conf.Tasks {
 		var (
-			deadline          time.Time
-			interval, timeout time.Duration
-			opts              []asynq.Option
+			deadline time.Time
+			interval time.Duration
+			opts     []asynq.Option
 		)
 		if interval, err = a.getTaskExecuteInterval(cfg.Crontab); err != nil {
 			return
 		}
-		if utils.IsStrNotBlank(cfg.Timeout) {
-			if timeout, err = utils.ParseDuration(cfg.Timeout); err != nil {
-				return
-			}
-			opts = append(opts, asynq.Timeout(timeout))
+		if cfg.Timeout.Duration > 0 {
+			opts = append(opts, asynq.Timeout(cfg.Timeout.Duration))
 		} else {
 			opts = append(opts, asynq.Timeout(interval))
 		}

@@ -21,15 +21,6 @@ func (d *defaultDialect) New(ctx context.Context, option Option, opts ...utils.O
 
 	if option.Cluster {
 		opt := d.parseClusterOption(option)
-		d.wrapDurationSetter(option.PoolTimeout, func(du time.Duration) { opt.PoolTimeout = du })
-		d.wrapDurationSetter(option.DialTimeout, func(du time.Duration) { opt.DialTimeout = du })
-		d.wrapDurationSetter(option.ReadTimeout, func(du time.Duration) { opt.ReadTimeout = du })
-		d.wrapDurationSetter(option.WriteTimeout, func(du time.Duration) { opt.WriteTimeout = du })
-		d.wrapDurationSetter(option.ConnMaxIdleTime, func(du time.Duration) { opt.ConnMaxIdleTime = du })
-		d.wrapDurationSetter(option.ConnMaxLifetime, func(du time.Duration) { opt.ConnMaxLifetime = du })
-		d.wrapDurationSetter(option.MinRetryBackoff, func(du time.Duration) { opt.MinRetryBackoff = du })
-		d.wrapDurationSetter(option.MaxRetryBackoff, func(du time.Duration) { opt.MaxRetryBackoff = du })
-
 		rdsCli := redis.NewClusterClient(opt)
 
 		// authentication check
@@ -46,15 +37,6 @@ func (d *defaultDialect) New(ctx context.Context, option Option, opts ...utils.O
 
 	} else {
 		opt := d.parseOption(option)
-		d.wrapDurationSetter(option.PoolTimeout, func(du time.Duration) { opt.PoolTimeout = du })
-		d.wrapDurationSetter(option.DialTimeout, func(du time.Duration) { opt.DialTimeout = du })
-		d.wrapDurationSetter(option.ReadTimeout, func(du time.Duration) { opt.ReadTimeout = du })
-		d.wrapDurationSetter(option.WriteTimeout, func(du time.Duration) { opt.WriteTimeout = du })
-		d.wrapDurationSetter(option.ConnMaxIdleTime, func(du time.Duration) { opt.ConnMaxIdleTime = du })
-		d.wrapDurationSetter(option.ConnMaxLifetime, func(du time.Duration) { opt.ConnMaxLifetime = du })
-		d.wrapDurationSetter(option.MinRetryBackoff, func(du time.Duration) { opt.MinRetryBackoff = du })
-		d.wrapDurationSetter(option.MaxRetryBackoff, func(du time.Duration) { opt.MaxRetryBackoff = du })
-
 		rdsCli := redis.NewClient(opt)
 
 		// authentication check
@@ -71,26 +53,27 @@ func (d *defaultDialect) New(ctx context.Context, option Option, opts ...utils.O
 	}
 }
 
-func (d *defaultDialect) wrapDurationSetter(s string, setter func(du time.Duration)) {
-	if utils.IsStrBlank(s) {
-		return
-	}
-	duration, err := utils.ParseDuration(s)
-	if err != nil {
-		panic(err)
-	}
-	setter(duration)
+func (d *defaultDialect) wrapDurationSetter(s utils.Duration, setter func(du time.Duration)) {
+	setter(s.Duration)
 }
 
 func (d *defaultDialect) parseOption(option Option) (cfg *redis.Options) {
 	return &redis.Options{
-		Addr:         option.Endpoints[0],
-		Username:     option.User,
-		Password:     option.Password,
-		MaxRetries:   option.MaxRetries,
-		MinIdleConns: option.MinIdleConns,
-		MaxIdleConns: option.MaxIdleConns,
-		PoolSize:     option.PoolSize,
+		Addr:            option.Endpoints[0],
+		Username:        option.User,
+		Password:        option.Password,
+		MaxRetries:      option.MaxRetries,
+		MinIdleConns:    option.MinIdleConns,
+		MaxIdleConns:    option.MaxIdleConns,
+		PoolSize:        option.PoolSize,
+		PoolTimeout:     option.PoolTimeout.Duration,
+		DialTimeout:     option.DialTimeout.Duration,
+		ReadTimeout:     option.ReadTimeout.Duration,
+		WriteTimeout:    option.WriteTimeout.Duration,
+		ConnMaxIdleTime: option.ConnMaxIdleTime.Duration,
+		ConnMaxLifetime: option.ConnMaxLifetime.Duration,
+		MinRetryBackoff: option.MinRetryBackoff.Duration,
+		MaxRetryBackoff: option.MaxRetryBackoff.Duration,
 	}
 }
 

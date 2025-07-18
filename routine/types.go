@@ -40,7 +40,7 @@ type Conf struct {
 	MaxRoutineAmount int `yaml:"max_routine_amount" json:"max_routine_amount" toml:"max_routine_amount" default:"-1"`
 
 	// MaxReleaseTimePerPool 优雅退出时单个 pool 最大等待时间
-	MaxReleaseTimePerPool string `yaml:"max_release_time_per_pool" json:"max_release_time_per_pool" toml:"max_release_time_per_pool" default:"30s"`
+	MaxReleaseTimePerPool utils.Duration `yaml:"max_release_time_per_pool" json:"max_release_time_per_pool" toml:"max_release_time_per_pool" default:"30s"`
 
 	// ForceSync will synchronously execute Go, promise function if true
 	ForceSync bool `yaml:"force_sync" json:"force_sync" toml:"force_sync" default:"false"`

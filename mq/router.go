@@ -69,10 +69,10 @@ func newRouter(ctx context.Context, appName, name string, conf *Conf,
 		case middlewareTypeRetry:
 			r.AddMiddleware(middleware.Retry{
 				MaxRetries:          mwsConf.RetryMaxRetries,
-				InitialInterval:     utils.Must(utils.ParseDuration(mwsConf.RetryInitialInterval)),
-				MaxInterval:         utils.Must(utils.ParseDuration(mwsConf.RetryMaxInterval)),
+				InitialInterval:     mwsConf.RetryInitialInterval.Duration,
+				MaxInterval:         mwsConf.RetryMaxInterval.Duration,
 				Multiplier:          mwsConf.RetryMultiplier,
-				MaxElapsedTime:      utils.Must(utils.ParseDuration(mwsConf.RetryMaxElapsedTime)),
+				MaxElapsedTime:      mwsConf.RetryMaxElapsedTime.Duration,
 				RandomizationFactor: mwsConf.RetryRandomizationFactor,
 				OnRetryHook: func(attempt int, delay time.Duration) {
 					logTrace(ctx, logger, appName, name,
@@ -84,7 +84,7 @@ func newRouter(ctx context.Context, appName, name string, conf *Conf,
 			r.AddMiddleware(
 				middleware.NewThrottle(
 					int64(mwsConf.ThrottleCount),
-					utils.Must(utils.ParseDuration(mwsConf.ThrottleDuration)),
+					mwsConf.ThrottleDuration.Duration,
 				).Middleware,
 			)
 		case middlewareTypeInstanceAck:
@@ -108,8 +108,8 @@ func newRouter(ctx context.Context, appName, name string, conf *Conf,
 			r.AddMiddleware(middleware.NewCircuitBreaker(gobreaker.Settings{
 				Name:        name,
 				MaxRequests: uint32(mwsConf.CircuitBreakerMaxRequests),
-				Interval:    utils.Must(utils.ParseDuration(mwsConf.CircuitBreakerInterval)),
-				Timeout:     utils.Must(utils.ParseDuration(mwsConf.CircuitBreakerTimeout)),
+				Interval:    mwsConf.CircuitBreakerInterval.Duration,
+				Timeout:     mwsConf.CircuitBreakerTimeout.Duration,
 				ReadyToTrip: func(counts gobreaker.Counts) bool {
 					// fallback to default ready to trip expression
 					if expr == nil {

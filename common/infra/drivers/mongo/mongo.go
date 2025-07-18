@@ -33,21 +33,21 @@ type Option struct {
 	//
 	// NOTE(benjirewis): SetTimeout represents unstable, provisional API. The behavior of the driver when a Timeout is specified is
 	// subject to change.
-	Timeout string `yaml:"timeout" json:"timeout" toml:"timeout" default:"5s"`
+	Timeout utils.Duration `yaml:"timeout" json:"timeout" toml:"timeout" default:"5s"`
 	// ConnTimeout specifies a timeout that is used for creating connections to the server. If a custom Dialer is
 	// specified through SetDialer, this option must not be used. This can be set through ApplyURI with the
 	// "connectTimeoutMS" (e.g "connectTimeoutMS=30") option. If set to 0, no timeout will be used. The default is 30
 	// seconds.
-	ConnTimeout string `yaml:"conn_timeout" json:"conn_timeout" toml:"conn_timeout" default:"30s"`
+	ConnTimeout utils.Duration `yaml:"conn_timeout" json:"conn_timeout" toml:"conn_timeout" default:"30s"`
 	// SocketTimeout specifies the timeout to be used for the Client's socket reads and writes.
 	//
 	// NOTE(benjirewis): SocketTimeout will be deprecated in a future release. The more general Timeout option
 	// may be used in its place to control the amount of time that a single operation can run before returning
 	// an error. Setting SocketTimeout and Timeout on a single client will result in undefined behavior.
-	SocketTimeout string `yaml:"socket_timeout" json:"socket_timeout" toml:"socket_timeout" default:"5s"`
+	SocketTimeout utils.Duration `yaml:"socket_timeout" json:"socket_timeout" toml:"socket_timeout" default:"5s"`
 	// HeartbeatInterval specifies the amount of time to wait between periodic background server checks. This can also be
 	// set through the "heartbeatIntervalMS" URI option (e.g. "heartbeatIntervalMS=10000"). The default is 10 seconds.
-	HeartbeatInterval string `yaml:"heartbeat_interval" json:"heartbeat_interval" toml:"heartbeat_interval" default:"10s"`
+	HeartbeatInterval utils.Duration `yaml:"heartbeat_interval" json:"heartbeat_interval" toml:"heartbeat_interval" default:"10s"`
 
 	// MaxConnecting specifies the maximum number of connections a connection pool may establish simultaneously. This can
 	// also be set through the "maxConnecting" URI option (e.g. "maxConnecting=2"). If this is 0, the default is used. The
@@ -64,7 +64,7 @@ type Option struct {
 	// MaxConnIdleTime specifies the maximum amount of time that a connection will remain idle in a connection pool
 	// before it is removed from the pool and closed. This can also be set through the "maxIdleTimeMS" URI option (e.g.
 	// "maxIdleTimeMS=10000"). The default is 0, meaning a connection can remain unused indefinitely.
-	MaxConnIdleTime string `yaml:"max_conn_idle_time" json:"max_conn_idle_time" toml:"max_conn_idle_time" default:"10s"`
+	MaxConnIdleTime utils.Duration `yaml:"max_conn_idle_time" json:"max_conn_idle_time" toml:"max_conn_idle_time" default:"10s"`
 
 	// RetryWrites specifies whether supported write operations should be retried once on certain errors, such as network
 	// errors.
@@ -129,15 +129,11 @@ func (d *defaultDialect) New(ctx context.Context, option Option, opts ...utils.O
 	return
 }
 
-func (d *defaultDialect) wrapDurationSetter(s string, setter func(du time.Duration)) {
-	if utils.IsStrBlank(s) {
+func (d *defaultDialect) wrapDurationSetter(s utils.Duration, setter func(du time.Duration)) {
+	if s.Duration <= 0 {
 		return
 	}
-	duration, err := utils.ParseDuration(s)
-	if err != nil {
-		panic(err)
-	}
-	setter(duration)
+	setter(s.Duration)
 }
 
 func (d *defaultDialect) wrapNumberSetter(n uint64, setter func(nu uint64)) {

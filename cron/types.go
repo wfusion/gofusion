@@ -50,7 +50,7 @@ type Conf struct {
 	Timezone             string               `yaml:"timezone" json:"timezone" toml:"timezone" default:"Asia/Shanghai"`
 	Tasks                map[string]*taskConf `yaml:"tasks" json:"tasks" toml:"tasks"`
 	TaskLoader           string               `yaml:"task_loader" json:"task_loader" toml:"task_loader"`
-	RefreshTasksInterval string               `yaml:"refresh_tasks_interval" json:"refresh_tasks_interval" toml:"refresh_tasks_interval" default:"3m"`
+	RefreshTasksInterval utils.Duration       `yaml:"refresh_tasks_interval" json:"refresh_tasks_interval" toml:"refresh_tasks_interval" default:"3m"`
 
 	EnableLogger bool   `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger" default:"false"`
 	LogLevel     string `yaml:"log_level" json:"log_level" toml:"log_level" default:"info"`
@@ -76,12 +76,12 @@ type routerHandleFunc func(ctx context.Context, task Task) (err error)
 type routerMiddleware func(next routerHandleFunc) routerHandleFunc
 
 type taskConf struct {
-	Crontab  string `yaml:"crontab" json:"crontab" toml:"crontab"`
-	Callback string `yaml:"callback" json:"callback" toml:"callback"`
-	Payload  string `yaml:"payload" json:"payload" toml:"payload"`
-	Retry    int    `yaml:"retry" json:"retry" toml:"retry"`
-	Timeout  string `yaml:"timeout" json:"timeout" toml:"timeout"`
-	Deadline string `yaml:"deadline" json:"deadline" toml:"deadline"`
+	Crontab  string         `yaml:"crontab" json:"crontab" toml:"crontab"`
+	Callback string         `yaml:"callback" json:"callback" toml:"callback"`
+	Payload  string         `yaml:"payload" json:"payload" toml:"payload"`
+	Retry    int            `yaml:"retry" json:"retry" toml:"retry"`
+	Timeout  utils.Duration `yaml:"timeout" json:"timeout" toml:"timeout"`
+	Deadline string         `yaml:"deadline" json:"deadline" toml:"deadline"`
 }
 
 type task struct {

@@ -25,19 +25,19 @@ type Option struct {
 
 	// Dial timeout for establishing new connections.
 	// Default is 5 seconds.
-	DialTimeout string `yaml:"dial_timeout" json:"dial_timeout" toml:"dial_timeout" default:"5s"`
+	DialTimeout utils.Duration `yaml:"dial_timeout" json:"dial_timeout" toml:"dial_timeout" default:"5s"`
 	// Timeout for socket reads. If reached, commands will fail
 	// with a timeout instead of blocking. Supported values:
 	//   - `0` - default timeout (3 seconds).
 	//   - `-1` - no timeout (block indefinitely).
 	//   - `-2` - disables SetReadDeadline calls completely.
-	ReadTimeout string `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"3s"`
+	ReadTimeout utils.Duration `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"3s"`
 	// Timeout for socket writes. If reached, commands will fail
 	// with a timeout instead of blocking.  Supported values:
 	//   - `0` - default timeout (3 seconds).
 	//   - `-1` - no timeout (block indefinitely).
 	//   - `-2` - disables SetWriteDeadline calls completely.
-	WriteTimeout string `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"3s"`
+	WriteTimeout utils.Duration `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"3s"`
 
 	// Minimum number of idle connections which is useful when establishing
 	// new connection is slow.
@@ -51,24 +51,24 @@ type Option struct {
 	// If d <= 0, connections are not closed due to a connection's idle time.
 	//
 	// Default is 30 minutes. -1 disables idle timeout check.
-	ConnMaxIdleTime string `yaml:"conn_max_idle_time" json:"conn_max_idle_time" toml:"conn_max_idle_time" default:"30m"`
+	ConnMaxIdleTime utils.Duration `yaml:"conn_max_idle_time" json:"conn_max_idle_time" toml:"conn_max_idle_time" default:"30m"`
 	// ConnMaxLifetime is the maximum amount of time a connection may be reused.
 	//
 	// Expired connections may be closed lazily before reuse.
 	// If <= 0, connections are not closed due to a connection's age.
 	//
 	// Default is to not close idle connections.
-	ConnMaxLifetime string `yaml:"conn_max_life_time" json:"conn_max_life_time" toml:"conn_max_life_time"`
+	ConnMaxLifetime utils.Duration `yaml:"conn_max_life_time" json:"conn_max_life_time" toml:"conn_max_life_time"`
 
 	// Maximum number of retries before giving up.
 	// Default is 3 retries; -1 (not 0) disables retries.
 	MaxRetries int `yaml:"max_retries" json:"max_retries" toml:"max_retries" default:"3"`
 	// Minimum backoff between each retry.
 	// Default is 8 milliseconds; -1 disables backoff.
-	MinRetryBackoff string `yaml:"min_retry_backoff" json:"min_retry_backoff" toml:"min_retry_backoff" default:"8ms"`
+	MinRetryBackoff utils.Duration `yaml:"min_retry_backoff" json:"min_retry_backoff" toml:"min_retry_backoff" default:"8ms"`
 	// Maximum backoff between each retry.
 	// Default is 512 milliseconds; -1 disables backoff.
-	MaxRetryBackoff string `yaml:"max_retry_backoff" json:"max_retry_backoff" toml:"max_retry_backoff" default:"512ms"`
+	MaxRetryBackoff utils.Duration `yaml:"max_retry_backoff" json:"max_retry_backoff" toml:"max_retry_backoff" default:"512ms"`
 
 	// Maximum number of socket connections.
 	// Default is 10 connections per every available CPU as reported by runtime.GOMAXPROCS.
@@ -76,7 +76,7 @@ type Option struct {
 	// Amount of time client waits for connection if all connections
 	// are busy before returning an error.
 	// Default is ReadTimeout + 1 second.
-	PoolTimeout string `yaml:"pool_timeout" json:"pool_timeout" toml:"pool_timeout"`
+	PoolTimeout utils.Duration `yaml:"pool_timeout" json:"pool_timeout" toml:"pool_timeout"`
 }
 
 type Redis struct {
