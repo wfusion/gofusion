@@ -1,9 +1,12 @@
 package utils
 
 import (
+	"encoding/binary"
+	"fmt"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/wfusion/gofusion/common/utils/serialize/json"
 )
 
 const (
@@ -34,6 +37,92 @@ var (
 		"w":  uint64(7 * 24 * time.Hour),
 	}
 )
+
+type Duration struct {
+	time.Duration
+}
+
+// UnmarshalText implements the encoding.TextUnmarshaler interface.
+func (d *Duration) UnmarshalText(data []byte) (err error) {
+	parsed, err := ParseDuration(string(data))
+	if err != nil {
+		return err
+	}
+	d.Duration = parsed
+	return
+}
+
+// MarshalText implements the encoding.TextMarshaler interface.
+func (d *Duration) MarshalText() (data []byte, err error) {
+	if d == nil {
+		return
+	}
+
+	return []byte(d.Duration.String()), nil
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface.
+func (d *Duration) UnmarshalJSON(data []byte) (err error) {
+	var str string
+	if err := json.Unmarshal(data, &str); err != nil {
+		return fmt.Errorf("duration should be a string, got %s: %w", data, err)
+	}
+	parsed, err := ParseDuration(string(data))
+	if err != nil {
+		return err
+	}
+	d.Duration = parsed
+	return
+}
+
+// MarshalJSON implements the json.Marshaler interface.
+func (d *Duration) MarshalJSON() ([]byte, error) {
+	if d == nil {
+		return []byte("null"), nil
+	}
+	s := d.String()
+	return json.Marshal(s)
+}
+
+// GobEncode implements the gob.GobEncoder interface.
+func (d *Duration) GobEncode() ([]byte, error) { return d.MarshalBinary() }
+
+// GobDecode implements the gob.GobDecoder interface.
+func (d *Duration) GobDecode(data []byte) error {
+	return d.UnmarshalBinary(data)
+}
+
+// UnmarshalBinary implements the encoding.BinaryUnmarshaler interface.
+func (d *Duration) UnmarshalBinary(data []byte) (err error) {
+	if len(data) != 8 {
+		return fmt.Errorf("duration: UnmarshalBinary requires 8 bytes, got %d", len(data))
+	}
+	nanoseconds := binary.BigEndian.Uint64(data)
+	d.Duration = time.Duration(nanoseconds)
+	return
+}
+
+// MarshalBinary implements the encoding.BinaryMarshaler interface.
+func (d *Duration) MarshalBinary() (data []byte, err error) {
+	if d == nil {
+		return
+	}
+
+	data = make([]byte, 8)
+	binary.BigEndian.PutUint64(data, uint64(d.Duration))
+	return
+}
+
+// String returns a string representing the duration in the form "72h3m0.5s".
+// Leading zero units are omitted. As a special case, durations less than one
+// second format use a smaller unit (milli-, micro-, or nanoseconds) to ensure
+// that the leading digit is non-zero. The zero duration formats as 0s.
+func (d *Duration) String() string {
+	if d == nil {
+		return ""
+	}
+	return d.Duration.String()
+}
 
 func MustParseDuration(s string) time.Duration {
 	d, err := ParseDuration(s)

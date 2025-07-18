@@ -48,7 +48,7 @@ func newApolloInstance(ctx context.Context, conf *RemoteConf, appName string) (i
 		BackupConfigPath:  conf.Apollo.BackupConfigPath,
 		Secret:            conf.Apollo.Secret,
 		Label:             conf.Apollo.Label,
-		SyncServerTimeout: int(utils.Must(utils.ParseDuration(conf.Apollo.SyncServerTimeout)).Seconds()),
+		SyncServerTimeout: int(conf.Apollo.SyncServerTimeout.Seconds()),
 		MustStart:         conf.MustStart,
 	}
 

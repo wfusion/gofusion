@@ -333,7 +333,7 @@ func parseEtcdConfig(ctx context.Context, conf *Conf, opt *config.InitOption) (c
 	cfg = &clientv3.Config{
 		Endpoints:            conf.Endpoint.Addresses,
 		AutoSyncInterval:     0,
-		DialTimeout:          utils.Must(utils.ParseDuration(conf.Endpoint.DialTimeout)),
+		DialTimeout:          conf.Endpoint.DialTimeout.Duration,
 		DialKeepAliveTime:    0,
 		DialKeepAliveTimeout: 0,
 		MaxCallSendMsgSize:   0,
@@ -353,14 +353,14 @@ func parseEtcdConfig(ctx context.Context, conf *Conf, opt *config.InitOption) (c
 			cfg.LogConfig = zapCfg
 		}
 	}
-	if conf.Endpoint.EtcdAutoSyncInterval != "" {
-		cfg.AutoSyncInterval = utils.Must(utils.ParseDuration(conf.Endpoint.EtcdAutoSyncInterval))
+	if conf.Endpoint.EtcdAutoSyncInterval.Duration > 0 {
+		cfg.AutoSyncInterval = conf.Endpoint.EtcdAutoSyncInterval.Duration
 	}
-	if conf.Endpoint.EtcdDialKeepAliveTime != "" {
-		cfg.DialKeepAliveTime = utils.Must(utils.ParseDuration(conf.Endpoint.EtcdDialKeepAliveTime))
+	if conf.Endpoint.EtcdDialKeepAliveTime.Duration > 0 {
+		cfg.DialKeepAliveTime = conf.Endpoint.EtcdDialKeepAliveTime.Duration
 	}
-	if conf.Endpoint.EtcdDialKeepAliveTimeout != "" {
-		cfg.DialKeepAliveTimeout = utils.Must(utils.ParseDuration(conf.Endpoint.EtcdDialKeepAliveTimeout))
+	if conf.Endpoint.EtcdDialKeepAliveTimeout.Duration > 0 {
+		cfg.DialKeepAliveTimeout = conf.Endpoint.EtcdDialKeepAliveTimeout.Duration
 	}
 
 	return

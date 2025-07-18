@@ -385,9 +385,7 @@ func (c *cache[K, T, TS]) getConfig() (conf *parsedConf[K, T]) {
 		remoteType:     cfg.RemoteType,
 		remoteInstance: cfg.RemoteInstance,
 		version:        cfg.Version,
-	}
-	if utils.IsStrNotBlank(cfg.Expired) {
-		conf.expired = utils.Must(utils.ParseDuration(cfg.Expired))
+		expired:        cfg.Expired.Duration,
 	}
 	if utils.IsStrNotBlank(cfg.LogInstance) {
 		conf.log = log.Use(cfg.LogInstance, log.AppName(c.appName))

@@ -252,20 +252,20 @@ type middlewareConf struct {
 
 	// Throttle middleware
 	// Example duration and count: NewThrottle(10, time.Second) for 10 messages per second
-	ThrottleCount    int    `yaml:"throttle_count" json:"throttle_count" toml:"throttle_count"`
-	ThrottleDuration string `yaml:"throttle_duration" json:"throttle_duration" toml:"throttle_duration"`
+	ThrottleCount    int            `yaml:"throttle_count" json:"throttle_count" toml:"throttle_count"`
+	ThrottleDuration utils.Duration `yaml:"throttle_duration" json:"throttle_duration" toml:"throttle_duration"`
 
 	// Retry middleware
 	// MaxRetries is maximum number of times a retry will be attempted.
 	RetryMaxRetries int `yaml:"retry_max_retries" json:"retry_max_retries" toml:"retry_max_retries"`
 	// RetryInitialInterval is the first interval between retries. Subsequent intervals will be scaled by Multiplier.
-	RetryInitialInterval string `yaml:"retry_initial_interval" json:"retry_initial_interval" toml:"retry_initial_interval"`
+	RetryInitialInterval utils.Duration `yaml:"retry_initial_interval" json:"retry_initial_interval" toml:"retry_initial_interval"`
 	// RetryMaxInterval sets the limit for the exponential backoff of retries. The interval will not be increased beyond MaxInterval.
-	RetryMaxInterval string `yaml:"retry_max_interval" json:"retry_max_interval" toml:"retry_max_interval"`
+	RetryMaxInterval utils.Duration `yaml:"retry_max_interval" json:"retry_max_interval" toml:"retry_max_interval"`
 	// RetryMultiplier is the factor by which the waiting interval will be multiplied between retries.
 	RetryMultiplier float64 `yaml:"retry_multiplier" json:"retry_multiplier" toml:"retry_multiplier"`
 	// RetryMaxElapsedTime sets the time limit of how long retries will be attempted. Disabled if 0.
-	RetryMaxElapsedTime string `yaml:"retry_max_elapsed_time" json:"retry_max_elapsed_time" toml:"retry_max_elapsed_time"`
+	RetryMaxElapsedTime utils.Duration `yaml:"retry_max_elapsed_time" json:"retry_max_elapsed_time" toml:"retry_max_elapsed_time"`
 	// RetryRandomizationFactor randomizes the spread of the backoff times within the interval of:
 	// [currentInterval * (1 - randomization_factor), currentInterval * (1 + randomization_factor)].
 	RetryRandomizationFactor float64 `yaml:"retry_randomization_factor" json:"retry_randomization_factor" toml:"retry_randomization_factor"`
@@ -285,11 +285,11 @@ type middlewareConf struct {
 	// CircuitBreakerInterval is the cyclic period of the closed state
 	// for the CircuitBreaker to clear the internal Counts.
 	// If CircuitBreakerInterval is less than or equal to 0, the CircuitBreaker doesn't clear internal Counts during the closed state.
-	CircuitBreakerInterval string `yaml:"circuit_breaker_interval" json:"circuit_breaker_interval" toml:"circuit_breaker_interval"`
+	CircuitBreakerInterval utils.Duration `yaml:"circuit_breaker_interval" json:"circuit_breaker_interval" toml:"circuit_breaker_interval"`
 	// CircuitBreakerTimeout is the period of the open state,
 	// after which the state of the CircuitBreaker becomes half-open.
 	// If CircuitBreakerTimeout is less than or equal to 0, the timeout value of the CircuitBreaker is set to 60 seconds.
-	CircuitBreakerTimeout string `yaml:"circuit_breaker_timeout" json:"circuit_breaker_timeout" toml:"circuit_breaker_timeout"`
+	CircuitBreakerTimeout utils.Duration `yaml:"circuit_breaker_timeout" json:"circuit_breaker_timeout" toml:"circuit_breaker_timeout"`
 	// CircuitBreakerTripExpr ready to trip expression
 	// support params: requests, total_successes, total_failures, consecutive_successes, consecutive_failures
 	CircuitBreakerTripExpr string `yaml:"circuit_breaker_trip_expr" json:"circuit_breaker_trip_expr" toml:"circuit_breaker_trip_expr"`

@@ -243,8 +243,8 @@ func (r *router) Config() OutputConf {
 		Key:          cfg.Key,
 		NextProtos:   cfg.NextProtos,
 		SuccessCode:  cfg.SuccessCode,
-		ReadTimeout:  utils.Must(utils.ParseDuration(cfg.ReadTimeout)),
-		WriteTimeout: utils.Must(utils.ParseDuration(cfg.WriteTimeout)),
+		ReadTimeout:  cfg.ReadTimeout.Duration,
+		WriteTimeout: cfg.WriteTimeout.Duration,
 		AsynqConf:    clone.Slowly(cfg.Asynq),
 	}
 }

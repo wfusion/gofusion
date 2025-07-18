@@ -2,10 +2,12 @@ package cases
 
 import (
 	"context"
+	"net/http"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
 	"github.com/wfusion/gofusion/trace"
+	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
 
 	"github.com/wfusion/gofusion/log"
 
@@ -47,8 +49,15 @@ func (t *Trace) testDefault(name string) {
 		ctx := context.Background()
 		tp := trace.Use(name, trace.AppName(t.AppName()))
 		tracer := tp.Tracer("test")
-		ctx, span := tracer.Start(ctx, "testDefault")
-		defer span.End()
+		ctx, span := tracer.Start(ctx, "trace test default")
+		defer func() {
+			span.End()
+			t.Require().True(span.SpanContext().TraceID().IsValid())
+			t.Require().True(span.SpanContext().IsSampled())
+			t.Require().False(span.IsRecording())
+		}()
+
+		span.SetStatus(httpconv.ServerStatus(http.StatusOK))
 		t.Require().True(span.IsRecording())
 	})
 }

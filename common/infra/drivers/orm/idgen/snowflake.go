@@ -36,10 +36,10 @@ func NewSnowflake() Generator {
 			MachineID: func() (id uint16, err error) {
 				pid := os.Getpid()
 				hostIP := utils.HostIPInDocker()
-				localIP := utils.ClientIP()
+				localIP := utils.NonDefaultLocalIP()
 				log.Printf("[Common] snowflake get machine id base [host[%s] local[%s] pid[%v]]", hostIP, localIP, pid)
 				if hostIP == "" {
-					hostIP = utils.ClientIP()
+					hostIP = utils.NonDefaultLocalIP()
 				}
 				hash := fnv.New32a()
 				_, err = hash.Write([]byte(fmt.Sprintf("%s%s%v", hostIP, localIP, pid)))

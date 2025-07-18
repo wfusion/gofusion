@@ -14,13 +14,21 @@ import (
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
 	"go.opentelemetry.io/otel/exporters/zipkin"
 	"go.opentelemetry.io/otel/sdk/trace"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/wfusion/gofusion/common/utils"
 )
 
+type customSpanExporter interface {
+	trace.SpanExporter
+	Init(ctx context.Context, conf *Conf) error
+}
+
 func newZipkinExporter(ctx context.Context, conf *Conf) (exporter trace.SpanExporter, err error) {
-	return zipkin.New(conf.EndpointConf.Endpoint)
+	var opts []zipkin.Option
+	return zipkin.New(conf.EndpointConf.Endpoint, opts...)
 }
 
 func newJaegerExporter(ctx context.Context, conf *Conf) (exporter trace.SpanExporter, err error) {
@@ -39,21 +47,34 @@ func newJaegerExporter(ctx context.Context, conf *Conf) (exporter trace.SpanExpo
 }
 
 func newOTLPExporter(ctx context.Context, conf *Conf) (exporter trace.SpanExporter, err error) {
-	switch conf.EndpointConf.Protocol {
+	switch conf.EndpointConf.OTLPProtocol {
 	case protocolTypeHTTP:
 		opts := []otlptracehttp.Option{
+			otlptracehttp.WithHeaders(conf.EndpointConf.OTLPHeaders),
 			otlptracehttp.WithEndpoint(conf.EndpointConf.Endpoint),
 		}
-		if conf.EndpointConf.Insecure {
+		if conf.EndpointConf.OTLPTimeout.Duration > 0 {
+			opts = append(opts, otlptracehttp.WithTimeout(conf.EndpointConf.OTLPTimeout.Duration))
+		}
+		if conf.EndpointConf.OTLPEnableCompress {
+			opts = append(opts, otlptracehttp.WithCompression(otlptracehttp.GzipCompression))
+		}
+		if conf.EndpointConf.OTLPInsecure {
 			opts = append(opts, otlptracehttp.WithInsecure())
 		}
 		return otlptracehttp.New(ctx, opts...)
 	case protocolTypeGRPC:
 		opts := []otlptracegrpc.Option{
+			otlptracegrpc.WithHeaders(conf.EndpointConf.OTLPHeaders),
 			otlptracegrpc.WithEndpoint(conf.EndpointConf.Endpoint),
+			otlptracegrpc.WithDialOption(grpc.WithBlock()),
 		}
-		if conf.EndpointConf.Insecure {
+		if conf.EndpointConf.OTLPTimeout.Duration > 0 {
+			opts = append(opts, otlptracegrpc.WithTimeout(conf.EndpointConf.OTLPTimeout.Duration))
+		}
+		if conf.EndpointConf.OTLPInsecure {
 			opts = append(opts, otlptracegrpc.WithInsecure())
+			opts = append(opts, otlptracegrpc.WithTLSCredentials(insecure.NewCredentials()))
 		} else {
 			var tlsCfg *tls.Config
 			if tlsCfg, err = buildOTLPGrpcTLSConfig(&conf.EndpointConf); err != nil {
@@ -79,15 +100,15 @@ func newStdoutExporter(ctx context.Context, conf *Conf) (exporter trace.SpanExpo
 
 func buildOTLPGrpcTLSConfig(conf *EndpointConf) (cfg *tls.Config, err error) {
 	var cp *x509.CertPool
-	if utils.IsStrNotBlank(conf.TLSCACert) || utils.IsStrNotBlank(conf.TLSClientCert) {
+	if utils.IsStrNotBlank(conf.OTLPTLSCACert) || utils.IsStrNotBlank(conf.OTLPTLSClientCert) {
 		cp, _ = x509.SystemCertPool()
 		if cp == nil {
 			cp = x509.NewCertPool()
 		}
 
-		caBytes := []byte(conf.TLSCACert)
+		caBytes := []byte(conf.OTLPTLSCACert)
 		if len(caBytes) == 0 {
-			if caBytes, err = os.ReadFile(conf.TLSCAFile); err != nil {
+			if caBytes, err = os.ReadFile(conf.OTLPTLSCAFile); err != nil {
 				return
 			}
 		}
@@ -98,16 +119,16 @@ func buildOTLPGrpcTLSConfig(conf *EndpointConf) (cfg *tls.Config, err error) {
 	}
 
 	var certList []tls.Certificate
-	if utils.IsStrNotBlank(conf.TLSClientCert) && utils.IsStrNotBlank(conf.TLSClientKey) {
-		cert, err := tls.X509KeyPair([]byte(conf.TLSClientCert), []byte(conf.TLSClientKey))
+	if utils.IsStrNotBlank(conf.OTLPTLSClientCert) && utils.IsStrNotBlank(conf.OTLPTLSClientKey) {
+		cert, err := tls.X509KeyPair([]byte(conf.OTLPTLSClientCert), []byte(conf.OTLPTLSClientKey))
 		if err != nil {
 			return nil, fmt.Errorf("failed to load client key pair: %w", err)
 		}
 		certList = append(certList, cert)
 	}
 
-	if utils.IsStrNotBlank(conf.TLSCertFile) && utils.IsStrNotBlank(conf.TLSKeyFile) {
-		cert, err := tls.LoadX509KeyPair(conf.TLSCertFile, conf.TLSKeyFile)
+	if utils.IsStrNotBlank(conf.OTLPTLSCertFile) && utils.IsStrNotBlank(conf.OTLPTLSKeyFile) {
+		cert, err := tls.LoadX509KeyPair(conf.OTLPTLSCertFile, conf.OTLPTLSKeyFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load client key pair: %w", err)
 		}
@@ -117,7 +138,7 @@ func buildOTLPGrpcTLSConfig(conf *EndpointConf) (cfg *tls.Config, err error) {
 	cfg = &tls.Config{
 		RootCAs:      cp,
 		Certificates: certList,
-		ServerName:   conf.TLSServerName,
+		ServerName:   conf.OTLPTLSServerName,
 	}
 	return
 }

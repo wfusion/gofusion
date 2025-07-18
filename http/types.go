@@ -55,8 +55,8 @@ type Conf struct {
 	XSSWhiteURLList []string               `yaml:"xss_white_url_list" json:"xss_white_url_list" toml:"xss_white_url_list" default:"[]"`
 	CORS            corsConf               `yaml:"cors" json:"cors" toml:"cors"`
 	ColorfulConsole bool                   `yaml:"colorful_console" json:"colorful_console" toml:"colorful_console" default:"false"`
-	ReadTimeout     string                 `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"10s"`
-	WriteTimeout    string                 `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"10s"`
+	ReadTimeout     utils.Duration         `yaml:"read_timeout" json:"read_timeout" toml:"read_timeout" default:"10s"`
+	WriteTimeout    utils.Duration         `yaml:"write_timeout" json:"write_timeout" toml:"write_timeout" default:"10s"`
 	EnableLogger    bool                   `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger"`
 	LogInstance     string                 `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
 	Logger          string                 `yaml:"logger" json:"logger" toml:"logger" default:"github.com/wfusion/gofusion/log/customlogger.httpLogger"`
@@ -86,23 +86,23 @@ type asynqConf struct {
 // clientConf http client configure
 //nolint: revive // struct field annotation issue
 type clientConf struct {
-	Mock                  bool     `yaml:"mock" json:"mock" toml:"mock"`
-	Timeout               string   `yaml:"timeout" json:"timeout" toml:"timeout" default:"30s"`
-	DialTimeout           string   `yaml:"dial_timeout" json:"dial_timeout" toml:"dial_timeout" default:"30s"`
-	DialKeepaliveTime     string   `yaml:"dial_keepalive_time" json:"dial_keepalive_time" toml:"dial_keepalive_time" default:"30s"`
-	ForceAttemptHTTP2     bool     `yaml:"force_attempt_http2" json:"force_attempt_http2" toml:"force_attempt_http2" default:"true"`
-	TLSHandshakeTimeout   string   `yaml:"tls_handshake_timeout" json:"tls_handshake_timeout" toml:"tls_handshake_timeout" default:"10s"`
-	DisableCompression    bool     `yaml:"disable_compression" json:"disable_compression" toml:"disable_compression"`
-	MaxIdleConns          int      `yaml:"max_idle_conns" json:"max_idle_conns" toml:"max_idle_conns" default:"100"`
-	MaxIdleConnsPerHost   int      `yaml:"max_idle_conns_per_host" json:"max_idle_conns_per_host" toml:"max_idle_conns_per_host" default:"100"`
-	MaxConnsPerHost       int      `yaml:"max_conns_per_host" json:"max_conns_per_host" toml:"max_conns_per_host"`
-	IdleConnTimeout       string   `yaml:"idle_conn_timeout" json:"idle_conn_timeout" toml:"idle_conn_timeout" default:"90s"`
-	ExpectContinueTimeout string   `yaml:"expect_continue_timeout" json:"expect_continue_timeout" toml:"expect_continue_timeout" default:"1s"`
-	RetryCount            int      `yaml:"retry_count" json:"retry_count" toml:"retry_count"`
-	RetryWaitTime         string   `yaml:"retry_wait_time" json:"retry_wait_time" toml:"retry_wait_time" default:"100ms"`
-	RetryMaxWaitTime      string   `yaml:"retry_max_wait_time" json:"retry_max_wait_time" toml:"retry_max_wait_time" default:"2s"`
-	RetryConditionFuncs   []string `yaml:"retry_condition_funcs" json:"retry_condition_funcs" toml:"retry_condition_funcs"`
-	RetryHooks            []string `yaml:"retry_hooks" json:"retry_hooks" toml:"retry_hooks"`
+	Mock                  bool           `yaml:"mock" json:"mock" toml:"mock"`
+	Timeout               utils.Duration `yaml:"timeout" json:"timeout" toml:"timeout" default:"30s"`
+	DialTimeout           utils.Duration `yaml:"dial_timeout" json:"dial_timeout" toml:"dial_timeout" default:"30s"`
+	DialKeepaliveTime     utils.Duration `yaml:"dial_keepalive_time" json:"dial_keepalive_time" toml:"dial_keepalive_time" default:"30s"`
+	ForceAttemptHTTP2     bool           `yaml:"force_attempt_http2" json:"force_attempt_http2" toml:"force_attempt_http2" default:"true"`
+	TLSHandshakeTimeout   utils.Duration `yaml:"tls_handshake_timeout" json:"tls_handshake_timeout" toml:"tls_handshake_timeout" default:"10s"`
+	DisableCompression    bool           `yaml:"disable_compression" json:"disable_compression" toml:"disable_compression"`
+	MaxIdleConns          int            `yaml:"max_idle_conns" json:"max_idle_conns" toml:"max_idle_conns" default:"100"`
+	MaxIdleConnsPerHost   int            `yaml:"max_idle_conns_per_host" json:"max_idle_conns_per_host" toml:"max_idle_conns_per_host" default:"100"`
+	MaxConnsPerHost       int            `yaml:"max_conns_per_host" json:"max_conns_per_host" toml:"max_conns_per_host"`
+	IdleConnTimeout       utils.Duration `yaml:"idle_conn_timeout" json:"idle_conn_timeout" toml:"idle_conn_timeout" default:"90s"`
+	ExpectContinueTimeout utils.Duration `yaml:"expect_continue_timeout" json:"expect_continue_timeout" toml:"expect_continue_timeout" default:"1s"`
+	RetryCount            int            `yaml:"retry_count" json:"retry_count" toml:"retry_count"`
+	RetryWaitTime         utils.Duration `yaml:"retry_wait_time" json:"retry_wait_time" toml:"retry_wait_time" default:"100ms"`
+	RetryMaxWaitTime      utils.Duration `yaml:"retry_max_wait_time" json:"retry_max_wait_time" toml:"retry_max_wait_time" default:"2s"`
+	RetryConditionFuncs   []string       `yaml:"retry_condition_funcs" json:"retry_condition_funcs" toml:"retry_condition_funcs"`
+	RetryHooks            []string       `yaml:"retry_hooks" json:"retry_hooks" toml:"retry_hooks"`
 }
 
 // metricsConf http metrics configure

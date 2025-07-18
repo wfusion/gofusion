@@ -5,12 +5,12 @@ import (
 )
 
 func ClientIP() (ip string) {
-	addrs, err := net.InterfaceAddrs()
+	ift, err := net.InterfaceAddrs()
 	if err != nil {
 		panic(err)
 	}
 
-	for _, address := range addrs {
+	for _, address := range ift {
 		if addr, ok := address.(*net.IPNet); ok && !addr.IP.IsLoopback() {
 			if addr.IP.To4() != nil {
 				return addr.IP.String()
@@ -19,6 +19,39 @@ func ClientIP() (ip string) {
 		}
 	}
 
+	return
+}
+
+func NonDefaultLocalIP() (ip string) {
+	ift, err := net.Interfaces()
+	if err != nil {
+		panic(err)
+	}
+
+	ip = "127.0.0.1"
+	var addrs []net.Addr
+AnotherLocalIPLoop:
+	for _, iface := range ift {
+		if iface.Flags&net.FlagUp == 0 {
+			continue
+		}
+
+		if addrs, err = iface.Addrs(); err != nil {
+			panic(err)
+		}
+
+		for _, addr := range addrs {
+			if ipNet, ok := addr.(*net.IPNet); ok && !ipNet.IP.IsLoopback() {
+				if ipNet.IP.To4() != nil && ipNet.IP.IsPrivate() {
+					ip = ipNet.IP.String()
+					break AnotherLocalIPLoop
+				}
+				if ipNet.IP.IsGlobalUnicast() {
+					ip = ipNet.IP.String()
+				}
+			}
+		}
+	}
 	return
 }
 

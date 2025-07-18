@@ -69,13 +69,13 @@ type Conf struct {
 	} `yaml:"console_output_option" json:"console_output_option" toml:"console_output_option"`
 	EnableFileOutput bool `yaml:"enable_file_output" json:"enable_file_output" toml:"enable_file_output"`
 	FileOutputOption struct {
-		Layout         string `yaml:"layout" json:"layout" toml:"layout" default:"json"`
-		Path           string `yaml:"path" json:"path" toml:"path"` // Log save path
-		Name           string `yaml:"name" json:"name" toml:"name"` // Name of the saved log, defaults to random generation
-		RotationMaxAge string `yaml:"rotation_max_age" json:"rotation_max_age" toml:"rotation_max_age" default:"30d"`
-		RotationCount  int    `yaml:"rotation_count" json:"rotation_count" toml:"rotation_count"`               // Maximum number of files to keep
-		RotationSize   string `yaml:"rotation_size" json:"rotation_size" toml:"rotation_size" default:"100mib"` // File rotation size
-		Compress       bool   `yaml:"compress" json:"compress" toml:"compress" default:"false"`
+		Layout         string         `yaml:"layout" json:"layout" toml:"layout" default:"json"`
+		Path           string         `yaml:"path" json:"path" toml:"path"` // Log save path
+		Name           string         `yaml:"name" json:"name" toml:"name"` // Name of the saved log, defaults to random generation
+		RotationMaxAge utils.Duration `yaml:"rotation_max_age" json:"rotation_max_age" toml:"rotation_max_age" default:"30d"`
+		RotationCount  int            `yaml:"rotation_count" json:"rotation_count" toml:"rotation_count"`               // Maximum number of files to keep
+		RotationSize   string         `yaml:"rotation_size" json:"rotation_size" toml:"rotation_size" default:"100mib"` // File rotation size
+		Compress       bool           `yaml:"compress" json:"compress" toml:"compress" default:"false"`
 	} `yaml:"file_output_option" json:"file_output_option" toml:"file_output_option"`
 	SkipCallers     []string `yaml:"skip_callers" json:"skip_callers" toml:"skip_callers"`
 	ShorterFilepath bool     `yaml:"shorter_filepath" json:"shorter_filepath" toml:"shorter_filepath"`

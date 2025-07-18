@@ -59,15 +59,11 @@ func (g *gormDriver) New(ctx context.Context, option Option, opts ...utils.Optio
 	if opt.MaxIdleConns > 0 {
 		sqlDB.SetMaxIdleConns(opt.MaxIdleConns)
 	}
-	if utils.IsStrNotBlank(option.ConnMaxLifeTime) {
-		if liftTime, err := utils.ParseDuration(option.ConnMaxLifeTime); err == nil {
-			sqlDB.SetConnMaxLifetime(liftTime)
-		}
+	if option.ConnMaxLifeTime.Duration > 0 {
+		sqlDB.SetConnMaxLifetime(option.ConnMaxLifeTime.Duration)
 	}
-	if utils.IsStrNotBlank(option.ConnMaxLifeTime) {
-		if idleTime, err := utils.ParseDuration(option.ConnMaxIdleTime); err == nil {
-			sqlDB.SetConnMaxIdleTime(idleTime)
-		}
+	if option.ConnMaxIdleTime.Duration > 0 {
+		sqlDB.SetConnMaxIdleTime(option.ConnMaxIdleTime.Duration)
 	}
 
 	newOpt := utils.ApplyOptions[newOption](opts...)
@@ -140,9 +136,9 @@ func (g *gormDriver) parseDBOption(option Option) (parsed *gormDriverOption) {
 	parsed = &gormDriverOption{
 		Driver:       option.Driver,
 		Dialect:      option.Dialect,
-		Timeout:      option.Timeout,
-		ReadTimeout:  option.ReadTimeout,
-		WriteTimeout: option.WriteTimeout,
+		Timeout:      option.Timeout.String(),
+		ReadTimeout:  option.ReadTimeout.String(),
+		WriteTimeout: option.WriteTimeout.String(),
 		User:         option.User,
 		Password:     option.Password,
 		DBName:       option.DB,
