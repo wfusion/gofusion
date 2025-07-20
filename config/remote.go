@@ -62,6 +62,12 @@ func RemoteConstruct(ctx context.Context, confs map[string]*RemoteConf, opts ...
 	}
 }
 
+func NewRemoteDI(name string, opts ...utils.OptionExtender) func() RemoteConfigurable {
+	return func() RemoteConfigurable {
+		return Remote(name, opts...)
+	}
+}
+
 func Remote(name string, opts ...utils.OptionExtender) RemoteConfigurable {
 	opt := utils.ApplyOptions[InitOption](opts...)
 

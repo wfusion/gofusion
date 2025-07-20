@@ -4,7 +4,6 @@ import (
 	"reflect"
 
 	"github.com/shopspring/decimal"
-	"go.opentelemetry.io/otel/trace"
 
 	"github.com/wfusion/gofusion/common/utils"
 )
@@ -23,10 +22,6 @@ var (
 	customSpanExporterType = reflect.TypeOf((*customSpanExporter)(nil)).Elem()
 )
 
-type TracerProvider interface {
-	trace.TracerProvider
-}
-
 type Conf struct {
 	Type                exporterType      `yaml:"type" json:"type" toml:"type"`
 	ServiceName         string            `yaml:"service_name" json:"service_name" toml:"service_name"`
@@ -42,6 +37,7 @@ type Conf struct {
 	TextMapPropagator   string            `yaml:"text_map_propagator" json:"text_map_propagator" toml:"text_map_propagator"`
 	IDGenerator         string            `yaml:"id_generator" json:"id_generator" toml:"id_generator"`
 	CustomResources     map[string]string `yaml:"custom_resources" json:"custom_resources" toml:"custom_resources"`
+	EnableInternalTrace bool              `yaml:"enable_internal_trace" json:"enable_internal_trace" toml:"enable_internal_trace"`
 	CustomProps         map[string]any    `yaml:"custom_props" json:"custom_props" toml:"custom_props"`
 }
 

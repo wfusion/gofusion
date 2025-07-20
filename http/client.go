@@ -4,15 +4,18 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"net/http/httptrace"
 	"sync"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/common/utils/serialize/json"
 	"github.com/wfusion/gofusion/config"
+	"github.com/wfusion/gofusion/trace"
 
 	fusCtx "github.com/wfusion/gofusion/context"
 )
@@ -26,15 +29,21 @@ var (
 type clientOption struct {
 	mu sync.Mutex
 
-	appName         string
-	name            string
-	retryConditions []resty.RetryConditionFunc
-	retryHooks      []resty.OnRetryFunc
+	appName           string
+	name              string
+	retryConditions   []resty.RetryConditionFunc
+	retryHooks        []resty.OnRetryFunc
+	traceProviderName string
 }
 
 func CName(name string) utils.OptionFunc[clientOption] {
 	return func(o *clientOption) {
 		o.name = name
+	}
+}
+
+func TraceProvider(name string) utils.OptionFunc[clientOption] {
+	return func(o *clientOption) {
 	}
 }
 
@@ -68,11 +77,20 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 
 	c := resty.New().
 		OnBeforeRequest(traceHeaderMiddleware).
-		SetTransport(http.DefaultTransport).
 		SetJSONMarshaler(json.Marshal).
 		SetJSONUnmarshaler(json.Unmarshal).
-		SetDebug(true)
+		SetDebug(config.Use(opt.appName).Debug())
 
+	c.EnableTrace()
+	traceOpts := []otelhttp.Option{
+		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string { return r.Method + " " + r.URL.Path }),
+		otelhttp.WithClientTrace(func(c context.Context) *httptrace.ClientTrace { return httptrace.ContextClientTrace(c) }),
+	}
+	if opt.traceProviderName != "" {
+		traceOpts = append(traceOpts, otelhttp.WithTracerProvider(trace.Use(opt.traceProviderName, trace.AppName(opt.appName))))
+	}
+
+	c = c.SetTransport(otelhttp.NewTransport(http.DefaultTransport, traceOpts...))
 	cfg, ok := appClientCfgMap[opt.appName][opt.name]
 	if !ok {
 		cfg = appClientCfgMap[opt.appName][config.DefaultInstanceKey]
@@ -82,9 +100,7 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 		c.SetLogger(cfg.logger)
 	}
 
-	if cliCfg := cfg.c; cliCfg == nil || !cliCfg.Mock {
-		c.EnableTrace()
-	} else {
+	if cliCfg := cfg.c; cliCfg != nil {
 		c.SetTimeout(cliCfg.Timeout.Duration)
 		c.SetRetryCount(cliCfg.RetryCount)
 		c.SetRetryWaitTime(cliCfg.RetryWaitTime.Duration)

@@ -135,7 +135,7 @@ func (t *Remote) testKVRead(name string, waitTime time.Duration) {
 		appSetting := new(appConf)
 		defer fusCfg.New(t.AppName()).Init(&appSetting, fusCfg.Files(t.ConfigFiles()))()
 
-		instance := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		instance := kv.Use(name, kv.AppName(t.AppName()))
 		t.Require().NotNil(instance)
 
 		// When

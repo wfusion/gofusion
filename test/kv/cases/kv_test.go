@@ -79,7 +79,7 @@ func (t *KV) testPut(name, key string) {
 		// Given
 		expect := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 
 		// When
 		t.Require().NoError(cli.Put(ctx, key, expect).Err())
@@ -100,7 +100,7 @@ func (t *KV) testSet(name, key string) {
 		// Given
 		expect := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 
 		// When
 		t.Require().NoError(cli.Put(ctx, key, expect).Err())
@@ -122,7 +122,7 @@ func (t *KV) testHas(name, key string) {
 		// Given
 		expect := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 		t.Require().NoError(cli.Put(ctx, key, expect).Err())
 		defer func() { t.Require().NoError(cli.Del(ctx, key).Err()) }()
 
@@ -140,7 +140,7 @@ func (t *KV) testDel(name, key string) {
 		// Given
 		expect := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 		t.Require().NoError(cli.Put(ctx, key, expect).Err())
 		result := cli.Has(ctx, key)
 		t.Require().NoError(result.Err())
@@ -161,7 +161,7 @@ func (t *KV) testExpire(name, key string, expired, sleepTime time.Duration) {
 		// Given
 		expect := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 		putActual := cli.Put(ctx, key, expect, kv.Expire(expired))
 		t.Require().NoError(putActual.Err())
 		defer func() {
@@ -208,7 +208,7 @@ func (t *KV) testExpireDel(name, key string, expired time.Duration) {
 		expect := "this is a value"
 		ctx := context.Background()
 
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 		putActual := cli.Put(ctx, key, expect, kv.Expire(expired))
 		t.Require().NoError(putActual.Err())
 		getActual := cli.Get(ctx, key)
@@ -232,7 +232,7 @@ func (t *KV) testQueryPrefix(name, key, sep string) {
 		// Given
 		val := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 		t.Require().NoError(cli.Put(ctx, key, val).Err())
 		defer func() { t.Require().NoError(cli.Del(ctx, key).Err()) }()
 
@@ -276,7 +276,7 @@ func (t *KV) testDeletePrefix(name, key, sep string) {
 		// Given
 		val := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 
 		t.Require().NoError(cli.Put(ctx, key, val).Err())
 		key1 := key + sep + "node1"
@@ -316,7 +316,7 @@ func (t *KV) testKeysOnly(name, key, sep string) {
 		// Given
 		val := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 
 		t.Require().NoError(cli.Put(ctx, key, val).Err())
 		key1 := key + sep + "node1"
@@ -355,7 +355,7 @@ func (t *KV) testPaginate(name, key, sep string) {
 		// Given
 		val := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 
 		t.Require().NoError(cli.Put(ctx, key, val).Err())
 		key1 := key + sep + "node1"
@@ -418,7 +418,7 @@ func (t *KV) testPaginateSetPageSize(name, key, sep string) {
 		// Given
 		val := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 
 		t.Require().NoError(cli.Put(ctx, key, val).Err())
 		key1 := key + sep + "node1"
@@ -461,7 +461,7 @@ func (t *KV) testPaginateFromCursor(name, key, sep string) {
 		// Given
 		val := "this is a value"
 		ctx := context.Background()
-		cli := kv.Use(ctx, name, kv.AppName(t.AppName()))
+		cli := kv.Use(name, kv.AppName(t.AppName()))
 
 		t.Require().NoError(cli.Put(ctx, key, val).Err())
 		key1 := key + sep + "node1"

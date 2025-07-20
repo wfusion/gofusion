@@ -69,11 +69,11 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	appInstances[opt.AppName][name] = instance
 
 	if opt.DI != nil {
-		opt.DI.MustProvide(func() Storable { return Use(ctx, name, AppName(opt.AppName)) }, di.Name(name))
+		opt.DI.MustProvide(func() Storable { return Use(name, AppName(opt.AppName)) }, di.Name(name))
 	}
 	if opt.App != nil {
 		opt.App.MustProvide(
-			func() Storable { return Use(ctx, name, AppName(opt.AppName)) },
+			func() Storable { return Use(name, AppName(opt.AppName)) },
 			di.Name(name),
 		)
 	}
@@ -91,7 +91,13 @@ func AppName(name string) utils.OptionFunc[useOption] {
 	}
 }
 
-func Use(ctx context.Context, name string, opts ...utils.OptionExtender) Storable {
+func NewDI(name string, opts ...utils.OptionExtender) func() Storable {
+	return func() Storable {
+		return Use(name, opts...)
+	}
+}
+
+func Use(name string, opts ...utils.OptionExtender) Storable {
 	opt := utils.ApplyOptions[useOption](opts...)
 
 	rwlock.RLock()

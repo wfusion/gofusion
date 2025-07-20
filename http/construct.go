@@ -83,7 +83,7 @@ func addRouter(ctx context.Context, conf Conf, logger resty.Logger, opt *config.
 	engine.Use(
 		gin.Recovery(),
 		middleware.Gateway,
-		middleware.Trace(),
+		middleware.Trace(ctx, opt.AppName, conf.Trace.TraceHeaders, conf.Trace.UserHeaders, conf.Metrics.HeaderLabels),
 		middleware.Logging(ctx, opt.AppName, conf.Metrics.HeaderLabels, logger),
 		middleware.Cors(cors.AllowOrigins, cors.AllowMethods, cors.AllowHeaders,
 			cors.ExposeHeaders, cors.AllowCredentials, cors.OptionsResponse, cors.ForbiddenResponse),

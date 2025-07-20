@@ -79,8 +79,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		opts = append(opts, trace.WithIDGenerator(val.Interface().(trace.IDGenerator)))
 	}
 
-	tp := trace.NewTracerProvider(opts...)
-
+	tp := newTraceProvider(ctx, name, conf, trace.NewTracerProvider(opts...))
 	rwlock.Lock()
 	defer rwlock.Unlock()
 	if appInstances == nil {
@@ -234,6 +233,29 @@ func Use(name string, opts ...utils.OptionExtender) TracerProvider {
 		panic(errors.Errorf("kv trace not found for name: %s", name))
 	}
 	return instance
+}
+
+func NewDI(name string, opts ...utils.OptionExtender) func() TracerProvider {
+	return func() TracerProvider {
+		return Use(name, opts...)
+	}
+}
+
+func Internal(opts ...utils.OptionExtender) (traces []TracerProvider) {
+	opt := utils.ApplyOptions[useOption](opts...)
+	appName := config.Use(opt.appName).AppName()
+	rwlock.Lock()
+	defer rwlock.Unlock()
+	tps, ok := appInstances[appName]
+	if !ok {
+		return
+	}
+	for _, tp := range tps {
+		if tp.config().EnableInternalTrace {
+			traces = append(traces, tp)
+		}
+	}
+	return
 }
 
 func init() {

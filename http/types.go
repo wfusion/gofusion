@@ -63,6 +63,7 @@ type Conf struct {
 	Asynq           []asynqConf            `yaml:"asynq" json:"asynq" toml:"asynq"`
 	Clients         map[string]*clientConf `yaml:"clients" json:"clients" toml:"clients"`
 	Metrics         metricsConf            `yaml:"metrics" json:"metrics" toml:"metrics"`
+	Trace           traceConf              `yaml:"trace" json:"trace" toml:"trace"`
 }
 
 type corsConf struct {
@@ -108,6 +109,11 @@ type clientConf struct {
 // metricsConf http metrics configure
 type metricsConf struct {
 	HeaderLabels []string `yaml:"header_labels" json:"header_labels" toml:"header_labels"`
+}
+
+type traceConf struct {
+	TraceHeaders []string `yaml:"trace_headers" json:"trace_headers" toml:"trace_headers"`
+	UserHeaders  []string `yaml:"user_headers" json:"user_headers" toml:"user_headers"`
 }
 
 type OutputConf struct {
