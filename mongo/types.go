@@ -21,9 +21,11 @@ var (
 // Conf
 //nolint: revive // struct tag too long issue
 type Conf struct {
-	mongo.Option `yaml:",inline" json:",inline" toml:",inline"`
-	EnableLogger bool `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger" default:"false"`
-	LoggerConfig struct {
+	mongo.Option          `yaml:",inline" json:",inline" toml:",inline"`
+	EnableTrace           bool   `yaml:"enable_trace" json:"enable_trace" toml:"enable_trace" default:"false"`
+	TraceProviderInstance string `yaml:"trace_provider_instance" json:"trace_provider_instance" toml:"trace_provider_instance"`
+	EnableLogger          bool   `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger" default:"false"`
+	LoggerConfig          struct {
 		Logger           string   `yaml:"logger" json:"logger" toml:"logger" default:"github.com/wfusion/gofusion/log/customlogger.mongoLogger"`
 		LogInstance      string   `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
 		LoggableCommands []string `yaml:"loggable_commands" json:"loggable_commands" toml:"loggable_commands" default:"[insert,find,update,delete,aggregate,distinct,count,findAndModify]"`
@@ -37,4 +39,5 @@ type customLogger interface {
 
 type logger interface {
 	GetMonitor() *mgoEvt.CommandMonitor
+	SetTraceMonitor(traceMonitor *mgoEvt.CommandMonitor)
 }

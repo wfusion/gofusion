@@ -6,11 +6,14 @@ import (
 	"reflect"
 	"syscall"
 
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
+
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/infra/drivers/mongo"
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/config"
+	"github.com/wfusion/gofusion/trace"
 
 	mgoEvt "go.mongodb.org/mongo-driver/event"
 	mgoDrv "go.mongodb.org/mongo-driver/mongo"
@@ -49,6 +52,15 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 }
 
 func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitOption) {
+	var traceMonitor *mgoEvt.CommandMonitor
+	if conf.EnableTrace {
+		var mopts []otelmongo.Option
+		if utils.IsStrNotBlank(conf.TraceProviderInstance) {
+			mopts = append(mopts, otelmongo.WithTracerProvider(trace.Use(conf.TraceProviderInstance, trace.AppName(opt.AppName))))
+		}
+		traceMonitor = otelmongo.NewMonitor(mopts...)
+	}
+
 	var monitor *mgoEvt.CommandMonitor
 	if utils.IsStrNotBlank(conf.LoggerConfig.Logger) {
 		loggerType := inspect.TypeOf(conf.LoggerConfig.Logger)
@@ -56,8 +68,12 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		if loggerValue.Type().Implements(customLoggerType) {
 			l := fusLog.Use(conf.LoggerConfig.LogInstance, fusLog.AppName(opt.AppName))
 			loggerValue.Interface().(customLogger).Init(l, opt.AppName, name)
+			loggerValue.Interface().(customLogger).SetTraceMonitor(traceMonitor)
 		}
 		monitor = loggerValue.Interface().(logger).GetMonitor()
+	}
+	if monitor == nil {
+		monitor = traceMonitor
 	}
 
 	// conf.Option.Password = config.CryptoDecryptFunc()(conf.Option.Password)

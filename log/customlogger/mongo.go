@@ -29,6 +29,7 @@ type mongoLogger struct {
 	appName            string
 	confName           string
 	loggableCommandSet *utils.Set[string]
+	traceMonitor       *event.CommandMonitor
 
 	mutex sync.RWMutex
 	// requestMap The key is the monotonically atomic incrementing RequestID from the Mongo command event,
@@ -108,11 +109,21 @@ func (m *mongoLogger) GetMonitor() *event.CommandMonitor {
 	}
 }
 
+func (m *mongoLogger) SetTraceMonitor(traceMonitor *event.CommandMonitor) {
+	if m == nil {
+		return
+	}
+	m.traceMonitor = traceMonitor
+}
+
 func (m *mongoLogger) started(ctx context.Context, evt *event.CommandStartedEvent) {
 	if !m.isLoggableCommandName(evt.CommandName) {
 		return
 	}
 	m.pushCommandString(evt.RequestID, evt.Command.String())
+	if m.traceMonitor != nil {
+		m.traceMonitor.Started(ctx, evt)
+	}
 }
 
 func (m *mongoLogger) succeeded(ctx context.Context, evt *event.CommandSucceededEvent) {
@@ -122,6 +133,9 @@ func (m *mongoLogger) succeeded(ctx context.Context, evt *event.CommandSucceeded
 	m.logger().Info(ctx, "%s succeeded: %s [request[%v] command[%s]]",
 		evt.CommandName, evt.Reply, evt.RequestID, m.popCommandString(evt.RequestID),
 		m.fields(log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)}))
+	if m.traceMonitor != nil {
+		m.traceMonitor.Succeeded(ctx, evt)
+	}
 }
 
 func (m *mongoLogger) failed(ctx context.Context, evt *event.CommandFailedEvent) {
@@ -132,6 +146,9 @@ func (m *mongoLogger) failed(ctx context.Context, evt *event.CommandFailedEvent)
 	m.logger().Warn(ctx, "%s failed: %s [request[%v] command[%s]]",
 		evt.CommandName, evt.Failure, evt.RequestID, m.popCommandString(evt.RequestID),
 		m.fields(log.Fields{"latency": int64(evt.Duration) / int64(time.Millisecond)}))
+	if m.traceMonitor != nil {
+		m.traceMonitor.Failed(ctx, evt)
+	}
 }
 
 func (m *mongoLogger) pushCommandString(requestID int64, commandString string) {
