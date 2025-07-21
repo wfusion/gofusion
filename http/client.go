@@ -9,15 +9,13 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/jarcoal/httpmock"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
-
 	"github.com/wfusion/gofusion/common/utils"
 	"github.com/wfusion/gofusion/common/utils/inspect"
 	"github.com/wfusion/gofusion/common/utils/serialize/json"
 	"github.com/wfusion/gofusion/config"
-	"github.com/wfusion/gofusion/trace"
-
 	fusCtx "github.com/wfusion/gofusion/context"
+	"github.com/wfusion/gofusion/trace"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 var (
@@ -29,21 +27,15 @@ var (
 type clientOption struct {
 	mu sync.Mutex
 
-	appName           string
-	name              string
-	retryConditions   []resty.RetryConditionFunc
-	retryHooks        []resty.OnRetryFunc
-	traceProviderName string
+	appName         string
+	name            string
+	retryConditions []resty.RetryConditionFunc
+	retryHooks      []resty.OnRetryFunc
 }
 
 func CName(name string) utils.OptionFunc[clientOption] {
 	return func(o *clientOption) {
 		o.name = name
-	}
-}
-
-func TraceProvider(name string) utils.OptionFunc[clientOption] {
-	return func(o *clientOption) {
 	}
 }
 
@@ -81,16 +73,6 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 		SetJSONUnmarshaler(json.Unmarshal).
 		SetDebug(config.Use(opt.appName).Debug())
 
-	c.EnableTrace()
-	traceOpts := []otelhttp.Option{
-		otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string { return r.Method + " " + r.URL.Path }),
-		otelhttp.WithClientTrace(func(c context.Context) *httptrace.ClientTrace { return httptrace.ContextClientTrace(c) }),
-	}
-	if opt.traceProviderName != "" {
-		traceOpts = append(traceOpts, otelhttp.WithTracerProvider(trace.Use(opt.traceProviderName, trace.AppName(opt.appName))))
-	}
-
-	c = c.SetTransport(otelhttp.NewTransport(http.DefaultTransport, traceOpts...))
 	cfg, ok := appClientCfgMap[opt.appName][opt.name]
 	if !ok {
 		cfg = appClientCfgMap[opt.appName][config.DefaultInstanceKey]
@@ -129,6 +111,22 @@ func New(opts ...utils.OptionExtender) *resty.Client {
 			MaxIdleConnsPerHost:   cliCfg.MaxIdleConnsPerHost,
 			MaxConnsPerHost:       cliCfg.MaxConnsPerHost,
 		})
+
+		if !cliCfg.EnableTrace {
+			c.SetTransport(http.DefaultTransport)
+		} else {
+			traceOpts := []otelhttp.Option{
+				otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string { return r.Method + " " + r.URL.Path }),
+				otelhttp.WithClientTrace(func(c context.Context) *httptrace.ClientTrace { return httptrace.ContextClientTrace(c) }),
+			}
+			if cliCfg.TraceProviderInstance != "" {
+				traceOpts = append(traceOpts,
+					otelhttp.WithTracerProvider(trace.Use(cliCfg.TraceProviderInstance, trace.AppName(opt.appName))),
+				)
+			}
+			c.EnableTrace()
+			c.SetTransport(otelhttp.NewTransport(http.DefaultTransport, traceOpts...))
+		}
 
 		if cliCfg.Mock {
 			httpmock.ActivateNonDefault(c.GetClient())

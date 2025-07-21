@@ -88,6 +88,8 @@ type asynqConf struct {
 //nolint: revive // struct field annotation issue
 type clientConf struct {
 	Mock                  bool           `yaml:"mock" json:"mock" toml:"mock"`
+	EnableTrace           bool           `yaml:"enable_trace" json:"enable_trace" toml:"enable_trace"`
+	TraceProviderInstance string         `yaml:"trace_provider_instance" json:"trace_provider_instance" toml:"trace_provider_instance"`
 	Timeout               utils.Duration `yaml:"timeout" json:"timeout" toml:"timeout" default:"30s"`
 	DialTimeout           utils.Duration `yaml:"dial_timeout" json:"dial_timeout" toml:"dial_timeout" default:"30s"`
 	DialKeepaliveTime     utils.Duration `yaml:"dial_keepalive_time" json:"dial_keepalive_time" toml:"dial_keepalive_time" default:"30s"`

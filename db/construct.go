@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/tracing"
 
 	"github.com/wfusion/gofusion/common/di"
 	"github.com/wfusion/gofusion/common/infra/drivers/orm"
@@ -22,6 +23,7 @@ import (
 	"github.com/wfusion/gofusion/db/callbacks"
 	"github.com/wfusion/gofusion/db/plugins"
 	"github.com/wfusion/gofusion/db/softdelete"
+	"github.com/wfusion/gofusion/trace"
 
 	fusLog "github.com/wfusion/gofusion/log"
 
@@ -91,6 +93,15 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 	mysqlSoftDelete(db, conf)
 	if config.Use(opt.AppName).Debug() {
 		db.DB = db.Debug()
+	}
+
+	// tracing
+	if conf.EnableTrace {
+		plugin := tracing.NewPlugin(
+			tracing.WithDBName(conf.Option.DB),
+			tracing.WithTracerProvider(trace.Use(conf.TraceProviderInstance, trace.AppName(opt.AppName))),
+		)
+		utils.MustSuccess(db.Use(plugin))
 	}
 
 	// sharding

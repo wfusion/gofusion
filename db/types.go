@@ -26,7 +26,9 @@ type Conf struct {
 	orm.Option             `yaml:",inline" json:",inline" toml:",inline"`
 	AutoIncrementIncrement int64          `yaml:"auto_increment_increment" json:"auto_increment_increment" toml:"auto_increment_increment"`
 	Sharding               []shardingConf `yaml:"sharding" json:"sharding" toml:"sharding"`
-	EnableLogger           bool           `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger" default:"false"`
+	EnableTrace            bool           `yaml:"enable_trace" json:"enable_trace" toml:"enable_trace"`
+	TraceProviderInstance  string         `yaml:"trace_provider_instance" json:"trace_provider_instance" toml:"trace_provider_instance"`
+	EnableLogger           bool           `yaml:"enable_logger" json:"enable_logger" toml:"enable_logger"`
 	LoggerConfig           struct {
 		Logger        string `yaml:"logger" json:"logger" toml:"logger" default:"github.com/wfusion/gofusion/log/customlogger.gormLogger"`
 		LogInstance   string `yaml:"log_instance" json:"log_instance" toml:"log_instance" default:"default"`
