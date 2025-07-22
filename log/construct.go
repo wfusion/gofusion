@@ -22,7 +22,7 @@ import (
 	"github.com/wfusion/gofusion/config"
 )
 
-func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {
+func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func(context.Context) {
 	opt := utils.ApplyOptions[config.InitOption](opts...)
 	optU := utils.ApplyOptions[useOption](opts...)
 	if opt.AppName == "" {
@@ -38,7 +38,7 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		}
 	}
 
-	return func() {
+	return func(context.Context) {
 		rwlock.Lock()
 		defer rwlock.Unlock()
 		if appInstances != nil {

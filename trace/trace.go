@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/otel/trace"
+
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 var (
@@ -16,17 +18,26 @@ type TracerProvider interface {
 	trace.TracerProvider
 
 	config() *Conf
+	shutdown(ctx context.Context) (err error)
 }
 
 type traceProvider struct {
 	trace.TracerProvider
-	ctx  context.Context
-	name string
-	conf *Conf
+	name     string
+	conf     *Conf
+	exporter sdktrace.SpanExporter
 }
 
-func newTraceProvider(ctx context.Context, name string, conf *Conf, tp trace.TracerProvider) TracerProvider {
-	return &traceProvider{ctx: ctx, name: name, conf: conf, TracerProvider: tp}
+func newTraceProvider(ctx context.Context, name string, conf *Conf,
+	tp *sdktrace.TracerProvider, exporter sdktrace.SpanExporter) TracerProvider {
+	return &traceProvider{name: name, conf: conf, TracerProvider: tp, exporter: exporter}
+}
+
+func (t *traceProvider) shutdown(ctx context.Context) (err error) {
+	if t == nil {
+		return
+	}
+	return t.exporter.Shutdown(ctx)
 }
 
 func (t *traceProvider) config() *Conf {

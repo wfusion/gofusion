@@ -21,7 +21,7 @@ var (
 	producers = map[string]map[string]Producable{}
 )
 
-func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {
+func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func(context.Context) {
 	opt := utils.ApplyOptions[config.InitOption](opts...)
 	optU := utils.ApplyOptions[useOption](opts...)
 	if opt.AppName == "" {
@@ -31,7 +31,7 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 	for name, conf := range confs {
 		addInstance(ctx, name, conf, opt)
 	}
-	return func() {
+	return func(context.Context) {
 		locker.Lock()
 		defer locker.Unlock()
 

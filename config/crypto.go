@@ -23,7 +23,7 @@ var (
 	cryptoFlagString string
 )
 
-func CryptoConstruct(ctx context.Context, c CryptoConf, _ ...utils.OptionExtender) func() {
+func CryptoConstruct(ctx context.Context, c CryptoConf, _ ...utils.OptionExtender) func(context.Context) {
 	if c.Config != nil {
 		checkCryptoConf("", c.Config)
 	}
@@ -33,7 +33,7 @@ func CryptoConstruct(ctx context.Context, c CryptoConf, _ ...utils.OptionExtende
 		}
 	}
 
-	return func() {
+	return func(context.Context) {
 
 	}
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/wfusion/gofusion/config"
 )
 
-func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) func() {
+func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) func(context.Context) {
 	var err error
 	lang := defaultLang
 	if utils.IsStrNotBlank(conf.DefaultLang) {
@@ -48,7 +48,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 			MustProvide(func() Localizable[string] { return NewBundle[string](lang) })
 	}
 
-	return func() {
+	return func(context.Context) {
 		locker.Lock()
 		defer locker.Unlock()
 		Bundle = &bundle[int]{

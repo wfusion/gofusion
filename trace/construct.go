@@ -2,8 +2,10 @@ package trace
 
 import (
 	"context"
+	"log"
 	"os"
 	"reflect"
+	"syscall"
 
 	"github.com/pkg/errors"
 	"github.com/shopspring/decimal"
@@ -21,7 +23,7 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
 )
 
-func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {
+func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func(context.Context) {
 	opt := utils.ApplyOptions[config.InitOption](opts...)
 	optU := utils.ApplyOptions[useOption](opts...)
 	if opt.AppName == "" {
@@ -31,11 +33,19 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		addInstance(ctx, name, conf, opt)
 	}
 
-	return func() {
+	return func(ctx context.Context) {
 		rwlock.Lock()
 		defer rwlock.Unlock()
 
+		pid := syscall.Getpid()
+		app := config.Use(opt.AppName).AppName()
 		if appInstances != nil {
+			for name, instance := range appInstances[opt.AppName] {
+				if err := instance.shutdown(ctx); err != nil {
+					log.Printf("%v [Gofusion] %s %s %s shutdown error: %s",
+						pid, app, config.ComponentTrace, name, err)
+				}
+			}
 			delete(appInstances, opt.AppName)
 		}
 	}
@@ -79,7 +89,7 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		opts = append(opts, trace.WithIDGenerator(val.Interface().(trace.IDGenerator)))
 	}
 
-	tp := newTraceProvider(ctx, name, conf, trace.NewTracerProvider(opts...))
+	tp := newTraceProvider(ctx, name, conf, trace.NewTracerProvider(opts...), exporter)
 	rwlock.Lock()
 	defer rwlock.Unlock()
 	if appInstances == nil {

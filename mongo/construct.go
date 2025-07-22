@@ -23,7 +23,7 @@ import (
 	_ "github.com/wfusion/gofusion/log/customlogger"
 )
 
-func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func() {
+func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.OptionExtender) func(context.Context) {
 	opt := utils.ApplyOptions[config.InitOption](opts...)
 	optU := utils.ApplyOptions[useOption](opts...)
 	if opt.AppName == "" {
@@ -33,7 +33,7 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		addInstance(ctx, name, conf, opt)
 	}
 
-	return func() {
+	return func(ctx context.Context) {
 		rwlock.Lock()
 		defer rwlock.Unlock()
 
@@ -41,7 +41,7 @@ func Construct(ctx context.Context, confs map[string]*Conf, opts ...utils.Option
 		app := config.Use(opt.AppName).AppName()
 		if appInstances != nil {
 			for name, instance := range appInstances[opt.AppName] {
-				if err := instance.GetProxy().Disconnect(nil); err != nil {
+				if err := instance.GetProxy().Disconnect(ctx); err != nil {
 					log.Printf("%v [Gofusion] %s %s %s disconnect error: %s",
 						pid, app, config.ComponentMongo, name, err)
 				}

@@ -11,6 +11,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/iancoleman/strcase"
 	"github.com/mitchellh/mapstructure"
@@ -400,13 +401,13 @@ func (r *registry) makeAllConfigStruct() reflect.Type {
 func (r *registry) loadComponents() {
 	r.loadComponentsOnce.Do(func() {
 		// app
-		r.AddComponent(ComponentApp, func(context.Context, string, ...utils.OptionExtender) func() { return nil },
+		r.AddComponent(ComponentApp, func(context.Context, string, ...utils.OptionExtender) func(context.Context) { return nil },
 			WithTag("yaml", "app"), WithTag("json", "app"), WithTag("toml", "app"),
 			WithFlag(utils.AnyPtr("null")),
 		)
 
 		// debug
-		r.AddComponent(ComponentDebug, func(context.Context, bool, ...utils.OptionExtender) func() { return nil },
+		r.AddComponent(ComponentDebug, func(context.Context, bool, ...utils.OptionExtender) func(context.Context) { return nil },
 			WithTag("yaml", "debug"), WithTag("json", "debug"), WithTag("toml", "debug"),
 			WithFlag(utils.AnyPtr("null")),
 		)
@@ -428,7 +429,7 @@ func (r *registry) loadComponents() {
 		}
 
 		/* example */
-		// registry.AddComponent("ComponentExample", func(context.Context, string) func() { return nil },
+		// registry.AddComponent("ComponentExample", func(context.Context, string) func(context.Context) { return nil },
 		//    WithTag("custom_tag", "val"), WithTag("yaml", "val"))
 	})
 }
@@ -617,10 +618,15 @@ func (r *registry) initComponents(parent context.Context,
 			r.initWg.Done()
 			r.initWg.Wait()
 			cancel()
+
+			ctx, cancel = context.WithTimeout(parent, 30*time.Second)
+			defer cancel()
+
+			ctxVal = reflect.ValueOf(ctx)
 			for i := len(destructors) - 1; i >= 0; i-- {
 				log.Printf("%v [Gofusion] %s %s exiting...", pid, app, gracefullyComponentNames[i])
 				if destructors[i].IsValid() {
-					destructors[i].Call(nil)
+					destructors[i].Call([]reflect.Value{ctxVal})
 				}
 				log.Printf("%v [Gofusion] %s %s exited", pid, app, gracefullyComponentNames[i])
 			}

@@ -13,12 +13,12 @@ import (
 )
 
 // Construct cache only check some configures
-func Construct(ctx context.Context, confs map[string]*Conf, _ ...utils.OptionExtender) func() {
+func Construct(ctx context.Context, confs map[string]*Conf, _ ...utils.OptionExtender) func(context.Context) {
 	for _, conf := range confs {
 		addInstance(ctx, conf)
 	}
 
-	return func() {
+	return func(context.Context) {
 
 	}
 }

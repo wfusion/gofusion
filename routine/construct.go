@@ -22,7 +22,7 @@ const (
 	defaultMaxPoolSize = 10000000
 )
 
-func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) func() {
+func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) func(context.Context) {
 	opt := utils.ApplyOptions[config.InitOption](opts...)
 	optU := utils.ApplyOptions[candyOption](opts...)
 	if opt.AppName == "" {
@@ -70,7 +70,7 @@ func Construct(ctx context.Context, conf Conf, opts ...utils.OptionExtender) fun
 
 	go startDaemonRoutines(ctx, opt.AppName, &conf)
 
-	return func() {
+	return func(context.Context) {
 		rwlock.Lock()
 		defer rwlock.Unlock()
 

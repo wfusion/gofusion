@@ -43,13 +43,13 @@ var (
 	appRemoteConfigLocker sync.RWMutex
 )
 
-func RemoteConstruct(ctx context.Context, confs map[string]*RemoteConf, opts ...utils.OptionExtender) func() {
+func RemoteConstruct(ctx context.Context, confs map[string]*RemoteConf, opts ...utils.OptionExtender) func(context.Context) {
 	opt := utils.ApplyOptions[InitOption](opts...)
 	for name, cfg := range confs {
 		addRemoteConfigInstance(ctx, name, cfg, opt)
 	}
 
-	return func() {
+	return func(context.Context) {
 		appRemoteConfigLocker.Lock()
 		defer appRemoteConfigLocker.Unlock()
 

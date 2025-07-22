@@ -164,8 +164,8 @@ func parseConstructor(fn any) (fnVal reflect.Value, input reflect.Type) {
 	if retTyp.Kind() != reflect.Func {
 		panic(errors.New("component constructor should return one finalizer function"))
 	}
-	if retTyp.NumIn() != 0 {
-		panic(errors.New("component constructor should return one finalizer function looks like func()"))
+	if retTyp.NumIn() != 1 && retTyp.In(0) != constant.ContextType {
+		panic(errors.New("component constructor should return one finalizer function looks like func(context.Context)"))
 	}
 
 	// check input
