@@ -15,7 +15,8 @@ const (
 )
 
 var (
-	customLoggerType = reflect.TypeOf((*customLogger)(nil)).Elem()
+	customLoggerType          = reflect.TypeOf((*customLogger)(nil)).Elem()
+	customLoggerWithTraceType = reflect.TypeOf((*loggerWithTrace)(nil)).Elem()
 )
 
 // Conf
@@ -39,5 +40,8 @@ type customLogger interface {
 
 type logger interface {
 	GetMonitor() *mgoEvt.CommandMonitor
+}
+
+type loggerWithTrace interface {
 	SetTraceMonitor(traceMonitor *mgoEvt.CommandMonitor)
 }

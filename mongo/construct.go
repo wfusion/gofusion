@@ -68,7 +68,9 @@ func addInstance(ctx context.Context, name string, conf *Conf, opt *config.InitO
 		if loggerValue.Type().Implements(customLoggerType) {
 			l := fusLog.Use(conf.LoggerConfig.LogInstance, fusLog.AppName(opt.AppName))
 			loggerValue.Interface().(customLogger).Init(l, opt.AppName, name)
-			loggerValue.Interface().(customLogger).SetTraceMonitor(traceMonitor)
+		}
+		if loggerValue.Type().Implements(customLoggerWithTraceType) {
+			loggerValue.Interface().(loggerWithTrace).SetTraceMonitor(traceMonitor)
 		}
 		monitor = loggerValue.Interface().(logger).GetMonitor()
 	}
