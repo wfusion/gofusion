@@ -275,7 +275,7 @@ type middlewareConf struct {
 	PoisonTopic string `yaml:"poison_topic" json:"poison_topic" toml:"poison_topic"`
 
 	// Timeout middleware
-	Timeout string `yaml:"timeout" json:"timeout" toml:"timeout"`
+	Timeout utils.Duration `yaml:"timeout" json:"timeout" toml:"timeout"`
 
 	// CircuitBreaker middleware
 	// CircuitBreakerMaxRequests is the maximum number of requests allowed to pass through

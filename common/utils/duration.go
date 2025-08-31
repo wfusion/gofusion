@@ -44,6 +44,9 @@ type Duration struct {
 
 // UnmarshalText implements the encoding.TextUnmarshaler interface.
 func (d *Duration) UnmarshalText(data []byte) (err error) {
+	if string(data) == "" {
+		return
+	}
 	parsed, err := ParseDuration(string(data))
 	if err != nil {
 		return err
@@ -63,11 +66,18 @@ func (d *Duration) MarshalText() (data []byte, err error) {
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
 func (d *Duration) UnmarshalJSON(data []byte) (err error) {
+	if string(data) == "" || string(data) == "null" {
+		return
+	}
+
 	var str string
-	if err := json.Unmarshal(data, &str); err != nil {
+	if err = json.Unmarshal(data, &str); err != nil {
 		return fmt.Errorf("duration should be a string, got %s: %w", data, err)
 	}
-	parsed, err := ParseDuration(string(data))
+	if str == "" {
+		return
+	}
+	parsed, err := ParseDuration(str)
 	if err != nil {
 		return err
 	}
