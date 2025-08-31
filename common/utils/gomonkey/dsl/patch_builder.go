@@ -3,6 +3,8 @@ package dsl
 import (
 	"fmt"
 	"reflect"
+
+	. "github.com/wfusion/gofusion/common/utils/gomonkey"
 )
 
 type FuncPara struct {

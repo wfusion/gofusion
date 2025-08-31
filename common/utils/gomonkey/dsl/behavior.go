@@ -1,5 +1,9 @@
 package dsl
 
+import (
+	. "github.com/wfusion/gofusion/common/utils/gomonkey"
+)
+
 type Behavior interface {
 	Apply() []Params
 }

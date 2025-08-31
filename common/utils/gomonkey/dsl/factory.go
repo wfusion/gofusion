@@ -1,5 +1,9 @@
 package dsl
 
+import (
+	. "github.com/wfusion/gofusion/common/utils/gomonkey"
+)
+
 func Any() Constraint {
 	return &AnyConstraint{}
 }

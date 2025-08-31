@@ -96,7 +96,7 @@ func parseApolloNamespaceContent(cli agollo.Client, vp *viper.Viper, namespace s
 	isTxt := strings.HasSuffix(namespace, ".txt")
 	isJson := strings.HasSuffix(namespace, ".json")
 	if !isTxt && !isJson {
-		cli.GetConfig(namespace).GetCache().Range(func(k, v any) bool {
+		cli.GetConfigCache(namespace).Range(func(k, v any) bool {
 			key := cast.ToString(k)
 			vp.Set(key, v)
 			return true
