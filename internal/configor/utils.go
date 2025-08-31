@@ -221,6 +221,7 @@ func unmarshalJSON(data []byte, config any, errorOnUnmatchedKeys bool) error {
 
 	err := decoder.Decode(config)
 	if err != nil && err != io.EOF {
+		fmt.Printf("%s\n", utils.MustJsonMarshal(config))
 		return err
 	}
 	return nil

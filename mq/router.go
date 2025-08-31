@@ -99,7 +99,7 @@ func newRouter(ctx context.Context, appName, name string, conf *Conf,
 				)),
 			)
 		case middlewareTypeTimeout:
-			r.AddMiddleware(middleware.Timeout(utils.Must(utils.ParseDuration(mwsConf.Timeout))))
+			r.AddMiddleware(middleware.Timeout(mwsConf.Timeout.Duration))
 		case middlewareTypeCircuitBreaker:
 			var expr gval.Evaluable
 			if utils.IsStrNotBlank(mwsConf.CircuitBreakerTripExpr) {
