@@ -81,6 +81,18 @@ func newRouter(ctx context.Context, r gin.IRouter, appName string, successCode, 
 }
 
 func (r *router) Use(middlewares ...gin.HandlerFunc) IRouter {
+	routes := r.use().Use(middlewares...)
+
+	var ptr dispatch
+	switch routes.(type) {
+	case *gin.RouterGroup:
+		ptr = dispatchGroup
+	case *gin.Engine:
+		ptr = dispatchIRouter
+	default:
+		ptr = dispatchRoutes
+	}
+
 	return &router{
 		IRouter:      r.IRouter,
 		open:         r.open,
@@ -90,9 +102,9 @@ func (r *router) Use(middlewares ...gin.HandlerFunc) IRouter {
 		successCode:  r.successCode,
 		errorCode:    r.errorCode,
 		shutdownFunc: r.shutdownFunc,
-		routes:       r.use().Use(middlewares...),
+		routes:       routes,
 		group:        r.group,
-		ptr:          dispatchRoutes,
+		ptr:          ptr,
 	}
 }
 
