@@ -138,15 +138,16 @@ func (s *Set[T]) Filter(fn func(T) bool) *Set[T] {
 }
 
 func (s *Set[T]) Equals(o *Set[T]) bool {
-	s.m.RLock()
-	defer s.m.RUnlock()
-
 	if s == nil && o == nil {
 		return true
 	}
 	if s == nil || o == nil || s.Size() != o.Size() {
 		return false
 	}
+
+	s.m.RLock()
+	defer s.m.RUnlock()
+	defer s.lockOthers(o)()
 
 	for item := range s.storage {
 		if _, ok := o.storage[item]; !ok {
