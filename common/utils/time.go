@@ -21,20 +21,16 @@ const (
 	maxYear = 2262
 )
 
-// GetTime 将毫秒级的时间戳转换成时间
+// GetTime converts a millisecond timestamp to time.Time
 func GetTime(timestampMs int64) time.Time {
 	return time.UnixMilli(timestampMs)
 }
 
-// GetTimeStamp 将时间转换成毫秒级的时间戳
-func GetTimeStamp(t time.Time) int64 {
-	if year := t.Year(); year >= maxYear || year < minYear {
-		return t.Unix() * 1e3
-	}
-	return t.UnixNano() / 1e6
-}
+// GetTimeStamp converts time.Time to a millisecond timestamp
+func GetTimeStamp(t time.Time) int64 { return t.UnixMilli() }
 
-// IsValidTimestamp 返回 false 表示无法对毫秒时间戳和 time.Time 进行精确转换
+// IsValidTimestamp returns false if the time cannot be accurately represented as a nanosecond timestamp.
+// UnixNano() is only valid for dates between year 1678 and 2262.
 func IsValidTimestamp(timeMS int64) bool {
 	year := GetTime(timeMS).Year()
 	return year >= minYear && year < maxYear
